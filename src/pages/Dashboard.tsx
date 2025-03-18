@@ -12,14 +12,21 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
 } from 'recharts';
-import { Upload, FileSpreadsheet, Download, LogOut, User, BarChart4, PieChart as PieChartIcon } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, LogOut, User, BarChart4, PieChart as PieChartIcon, Loader } from 'lucide-react';
+import { 
+  parseExcelFile, 
+  analyzeResults, 
+  downloadCSVReport,
+  type StudentRecord,
+  type ResultAnalysis
+} from '@/utils/excelProcessor';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload');
@@ -27,31 +34,10 @@ const Dashboard = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [resultsAvailable, setResultsAvailable] = useState(false);
+  const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
+  const [resultAnalysis, setResultAnalysis] = useState<ResultAnalysis | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // Placeholder data for demo purposes
-  const gradeData = [
-    { name: 'A+', count: 12, fill: '#0ea5e9' },
-    { name: 'A', count: 18, fill: '#22c55e' },
-    { name: 'B+', count: 22, fill: '#84cc16' },
-    { name: 'B', count: 15, fill: '#eab308' },
-    { name: 'C', count: 8, fill: '#f97316' },
-    { name: 'F', count: 5, fill: '#ef4444' },
-  ];
-
-  const passFailData = [
-    { name: 'Pass', value: 75, fill: '#22c55e' },
-    { name: 'Fail', value: 25, fill: '#ef4444' },
-  ];
-
-  const subjectPerformanceData = [
-    { subject: 'Mathematics', pass: 85, fail: 15 },
-    { subject: 'Physics', pass: 78, fail: 22 },
-    { subject: 'Chemistry', pass: 80, fail: 20 },
-    { subject: 'Computer Science', pass: 92, fail: 8 },
-    { subject: 'English', pass: 88, fail: 12 },
-  ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
@@ -81,19 +67,21 @@ const Dashboard = () => {
     setIsUploading(true);
     
     try {
-      // Simulate API call for file upload
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Parse the Excel file
+      const records = await parseExcelFile(file);
+      setStudentRecords(records);
       
       toast({
         title: "File uploaded successfully!",
-        description: "Your Excel file has been uploaded.",
+        description: `Parsed ${records.length} records from Excel file.`,
       });
       
       setIsUploading(false);
       setIsAnalyzing(true);
       
-      // Simulate analysis process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Analyze the data
+      const analysis = analyzeResults(records);
+      setResultAnalysis(analysis);
       
       setIsAnalyzing(false);
       setResultsAvailable(true);
@@ -105,30 +93,34 @@ const Dashboard = () => {
       });
       
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Upload/analysis error:", error);
       toast({
         variant: "destructive",
-        title: "Upload failed",
-        description: "There was a problem uploading your file. Please try again.",
+        title: "Processing failed",
+        description: error instanceof Error ? error.message : "There was a problem processing your file. Please try again.",
       });
       setIsUploading(false);
+      setIsAnalyzing(false);
     }
   };
 
   const handleDownloadReport = () => {
-    // In a real application, this would generate and download a PDF or Excel report
-    toast({
-      title: "Report downloading",
-      description: "Your report will be downloaded shortly.",
-    });
-    
-    // Simulate download process
-    setTimeout(() => {
+    if (!resultAnalysis || !studentRecords.length) {
       toast({
-        title: "Download complete",
-        description: "Report has been downloaded successfully.",
+        variant: "destructive",
+        title: "No data available",
+        description: "Please upload and analyze data before downloading a report.",
       });
-    }, 1500);
+      return;
+    }
+    
+    // Download CSV report
+    downloadCSVReport(resultAnalysis, studentRecords);
+    
+    toast({
+      title: "Report downloaded",
+      description: "Your analysis report has been downloaded as CSV.",
+    });
   };
 
   const handleLogout = () => {
@@ -142,6 +134,200 @@ const Dashboard = () => {
     setTimeout(() => {
       navigate('/login');
     }, 1000);
+  };
+
+  const renderDataContent = () => {
+    if (!resultAnalysis) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader className="h-12 w-12 text-primary animate-spin mb-4" />
+          <p className="text-muted-foreground">No data available. Please upload an Excel file.</p>
+        </div>
+      );
+    }
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Pass Rate</CardTitle>
+              <CardDescription>Overall course completion</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={resultAnalysis.passFailData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}%`}
+                    >
+                      {resultAnalysis.passFailData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value) => `${value}%`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Grade Distribution</CardTitle>
+              <CardDescription>Count of grades across classes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={resultAnalysis.gradeDistribution}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Bar dataKey="count" name="Count">
+                      {resultAnalysis.gradeDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Performance Summary</CardTitle>
+              <CardDescription>Key metrics at a glance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Average CGPA</span>
+                  <span className="text-lg font-semibold">{resultAnalysis.averageCGPA}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Highest SGPA</span>
+                  <span className="text-lg font-semibold">{resultAnalysis.highestSGPA}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Lowest SGPA</span>
+                  <span className="text-lg font-semibold">{resultAnalysis.lowestSGPA}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Total Students</span>
+                  <span className="text-lg font-semibold">{resultAnalysis.totalStudents}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Subject-wise Performance</CardTitle>
+              <CardDescription>Pass/fail rate across different subjects</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={resultAnalysis.subjectPerformance}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="subject" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Legend />
+                    <Bar dataKey="pass" stackId="a" fill="#22c55e" name="Pass %" />
+                    <Bar dataKey="fail" stackId="a" fill="#ef4444" name="Fail %" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  Top Performers
+                </CardTitle>
+                <CardDescription>Students with highest CGPA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {resultAnalysis.topPerformers.map((student, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
+                      <div>
+                        <p className="font-medium">Student</p>
+                        <p className="text-xs text-muted-foreground">ID: {student.id}</p>
+                      </div>
+                      <div className="flex items-center">
+                        <span className={`px-2 py-1 rounded-full text-xs mr-2 ${
+                          student.grade === "O" ? "bg-primary/10 text-primary" :
+                          student.grade === "A+" ? "bg-green-100 text-green-800" :
+                          "bg-blue-100 text-blue-800"
+                        }`}>
+                          {student.grade}
+                        </span>
+                        <span className="font-semibold">{student.cgpa}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  Needs Improvement
+                </CardTitle>
+                <CardDescription>Students requiring additional support</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {resultAnalysis.needsImprovement.map((student, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
+                      <div>
+                        <p className="font-medium">Student</p>
+                        <p className="text-xs text-muted-foreground">ID: {student.id}</p>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-destructive">{student.cgpa}</span>
+                        <p className="text-xs text-muted-foreground">{student.subjects}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={handleDownloadReport} className="flex items-center">
+              <Download className="h-4 w-4 mr-2" />
+              Download Full Report
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    );
   };
 
   return (
@@ -191,7 +377,9 @@ const Dashboard = () => {
                     Upload Excel File
                   </CardTitle>
                   <CardDescription>
-                    Upload your Excel file containing student results data for analysis
+                    Upload your Excel file containing student results data for analysis.
+                    The file should contain columns: CNo (Department Code), SEM (Semester),
+                    REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -232,193 +420,7 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="results" className="space-y-6">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Pass Rate</CardTitle>
-                      <CardDescription>Overall course completion</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={passFailData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={80}
-                              paddingAngle={5}
-                              dataKey="value"
-                            >
-                              {passFailData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Grade Distribution</CardTitle>
-                      <CardDescription>Count of grades across classes</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={gradeData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="count" fill="#0ea5e9" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Performance Summary</CardTitle>
-                      <CardDescription>Key metrics at a glance</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Average CGPA</span>
-                          <span className="text-lg font-semibold">7.85</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Highest SGPA</span>
-                          <span className="text-lg font-semibold">9.8</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Lowest SGPA</span>
-                          <span className="text-lg font-semibold">4.2</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Total Students</span>
-                          <span className="text-lg font-semibold">80</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Subject-wise Performance</CardTitle>
-                      <CardDescription>Pass/fail rate across different subjects</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={subjectPerformanceData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="subject" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="pass" stackId="a" fill="#22c55e" name="Pass %" />
-                            <Bar dataKey="fail" stackId="a" fill="#ef4444" name="Fail %" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <User className="h-5 w-5 mr-2" />
-                          Top Performers
-                        </CardTitle>
-                        <CardDescription>Students with highest CGPA</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {[
-                            { id: "ST001", name: "Aditya Sharma", cgpa: "9.8", grade: "A+" },
-                            { id: "ST015", name: "Priya Patel", cgpa: "9.6", grade: "A+" },
-                            { id: "ST023", name: "Rahul Verma", cgpa: "9.4", grade: "A" },
-                            { id: "ST042", name: "Ananya Singh", cgpa: "9.2", grade: "A" },
-                            { id: "ST078", name: "Vikram Joshi", cgpa: "9.0", grade: "A" }
-                          ].map((student, index) => (
-                            <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
-                              <div>
-                                <p className="font-medium">{student.name}</p>
-                                <p className="text-xs text-muted-foreground">ID: {student.id}</p>
-                              </div>
-                              <div className="flex items-center">
-                                <span className={`px-2 py-1 rounded-full text-xs mr-2 ${
-                                  student.grade === "A+" ? "bg-primary/10 text-primary" :
-                                  "bg-green-100 text-green-800"
-                                }`}>
-                                  {student.grade}
-                                </span>
-                                <span className="font-semibold">{student.cgpa}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <User className="h-5 w-5 mr-2" />
-                          Needs Improvement
-                        </CardTitle>
-                        <CardDescription>Students requiring additional support</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {[
-                            { id: "ST031", name: "Rajesh Kumar", cgpa: "4.2", subjects: "Mathematics, Physics" },
-                            { id: "ST052", name: "Neha Gupta", cgpa: "4.8", subjects: "Chemistry, English" },
-                            { id: "ST063", name: "Suresh Mehta", cgpa: "5.1", subjects: "Physics" },
-                            { id: "ST025", name: "Meera Shah", cgpa: "5.3", subjects: "Mathematics" },
-                            { id: "ST047", name: "Vivek Tiwari", cgpa: "5.5", subjects: "Computer Science" }
-                          ].map((student, index) => (
-                            <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
-                              <div>
-                                <p className="font-medium">{student.name}</p>
-                                <p className="text-xs text-muted-foreground">ID: {student.id}</p>
-                              </div>
-                              <div>
-                                <span className="font-semibold text-destructive">{student.cgpa}</span>
-                                <p className="text-xs text-muted-foreground">{student.subjects}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button onClick={handleDownloadReport} className="flex items-center">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Full Report
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
+              {renderDataContent()}
             </TabsContent>
           </Tabs>
         </div>
