@@ -30,7 +30,8 @@ import {
   Loader, 
   FileText, 
   FileImage, 
-  FileSpreadsheetIcon 
+  FileSpreadsheetIcon, 
+  FilePdf 
 } from 'lucide-react';
 import { 
   parseExcelFile, 
@@ -38,7 +39,7 @@ import {
   downloadCSVReport,
   downloadExcelReport,
   downloadWordReport,
-  captureAndDownloadDashboard,
+  downloadPdfReport,
   type StudentRecord,
   type ResultAnalysis
 } from '@/utils/excelProcessor';
@@ -55,6 +56,7 @@ const Dashboard = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [resultsAvailable, setResultsAvailable] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [resultAnalysis, setResultAnalysis] = useState<ResultAnalysis | null>(null);
   const [activeSubjectTab, setActiveSubjectTab] = useState<string | null>(null);
@@ -132,7 +134,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleDownloadReport = (format: 'csv' | 'excel' | 'word' | 'image') => {
+  const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
     if (!resultAnalysis || !studentRecords.length) {
       toast({
         variant: "destructive",
@@ -142,6 +144,8 @@ const Dashboard = () => {
       return;
     }
     
+    setIsDownloading(true);
+    
     try {
       // Download report based on selected format
       if (format === 'csv') {
@@ -150,8 +154,9 @@ const Dashboard = () => {
         downloadExcelReport(resultAnalysis, studentRecords);
       } else if (format === 'word') {
         downloadWordReport(resultAnalysis, studentRecords);
-      } else if (format === 'image') {
-        captureAndDownloadDashboard('dashboard-content');
+      } else if (format === 'pdf') {
+        const success = await downloadPdfReport('dashboard-content');
+        if (!success) throw new Error("Failed to generate PDF");
       }
       
       toast({
@@ -165,6 +170,8 @@ const Dashboard = () => {
         title: "Download failed",
         description: "There was a problem generating your report. Please try again.",
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -222,13 +229,13 @@ const Dashboard = () => {
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}%`}
+                      label={({ name, value }) => `${name}: ${Number(value).toFixed(2)}%`}
                     >
                       {resultAnalysis.passFailData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(value) => `${value}%`} />
+                    <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}%`} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -268,15 +275,15 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Average CGPA</span>
-                  <span className="text-lg font-semibold">{resultAnalysis.averageCGPA}</span>
+                  <span className="text-lg font-semibold">{Number(resultAnalysis.averageCGPA).toFixed(4)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Highest SGPA</span>
-                  <span className="text-lg font-semibold">{resultAnalysis.highestSGPA}</span>
+                  <span className="text-lg font-semibold">{Number(resultAnalysis.highestSGPA).toFixed(4)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Lowest SGPA</span>
-                  <span className="text-lg font-semibold">{resultAnalysis.lowestSGPA}</span>
+                  <span className="text-lg font-semibold">{Number(resultAnalysis.lowestSGPA).toFixed(4)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Total Students</span>
@@ -342,7 +349,7 @@ const Dashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="subject" />
                   <YAxis />
-                  <RechartsTooltip />
+                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}%`} />
                   <Legend />
                   <Bar dataKey="pass" stackId="a" fill="#22c55e" name="Pass %" />
                   <Bar dataKey="fail" stackId="a" fill="#ef4444" name="Fail %" />
@@ -377,7 +384,7 @@ const Dashboard = () => {
                       }`}>
                         {student.grade}
                       </span>
-                      <span className="font-semibold">{student.sgpa}</span>
+                      <span className="font-semibold">{Number(student.sgpa).toFixed(4)}</span>
                     </div>
                   </div>
                 ))}
@@ -391,7 +398,7 @@ const Dashboard = () => {
                 <User className="h-5 w-5 mr-2" />
                 Needs Improvement
               </CardTitle>
-              <CardDescription>Students with SGPA below 6.5</CardDescription>
+              <CardDescription>Students with SGPA below 6.5 or with arrears</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -403,31 +410,85 @@ const Dashboard = () => {
                         <p className="text-xs text-muted-foreground">ID: {student.id}</p>
                       </div>
                       <div>
-                        <span className="font-semibold text-destructive">{student.sgpa}</span>
+                        <span className="font-semibold text-destructive">{Number(student.sgpa).toFixed(4)}</span>
                         <p className="text-xs text-muted-foreground">{student.subjects}</p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-muted-foreground text-center">No students with SGPA below 6.5</p>
+                  <p className="text-muted-foreground text-center">No students with SGPA below 6.5 or with arrears</p>
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
+        
+        {/* Student-wise SGPA Analysis */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Student-wise SGPA Analysis</CardTitle>
+            <CardDescription>SGPA calculation for each student</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-4 text-left">Registration Number</th>
+                    <th className="py-2 px-4 text-left">SGPA</th>
+                    <th className="py-2 px-4 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resultAnalysis.studentSgpaDetails?.map((student, index) => (
+                    <tr 
+                      key={index} 
+                      className={`border-b ${
+                        student.hasArrears ? "bg-red-50" : 
+                        Number(student.sgpa) < 6.5 ? "bg-amber-50" : 
+                        "hover:bg-gray-50"
+                      }`}
+                    >
+                      <td className="py-2 px-4">{student.id}</td>
+                      <td className="py-2 px-4 font-medium">{Number(student.sgpa).toFixed(4)}</td>
+                      <td className="py-2 px-4">
+                        {student.hasArrears ? (
+                          <span className="text-red-500 text-sm">Has Arrears</span>
+                        ) : Number(student.sgpa) < 6.5 ? (
+                          <span className="text-amber-500 text-sm">SGPA below 6.5</span>
+                        ) : (
+                          <span className="text-green-500 text-sm">Good Standing</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button>
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
+              <Button disabled={isDownloading}>
+                {isDownloading ? (
+                  <>
+                    <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Report
+                  </>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleDownloadReport('image')}>
-                <FileImage className="h-4 w-4 mr-2" />
-                <span>Download as Image</span>
+              <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
+                <FilePdf className="h-4 w-4 mr-2" />
+                <span>Download as PDF</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
                 <FileText className="h-4 w-4 mr-2" />

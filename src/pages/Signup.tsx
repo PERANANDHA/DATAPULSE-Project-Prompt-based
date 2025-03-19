@@ -16,7 +16,15 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { ArrowLeft, Eye, EyeOff, Check, X } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Check, X, AlertTriangle } from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Enhanced password validation
 const signupSchema = z.object({
@@ -38,7 +46,10 @@ const signupSchema = z.object({
     .refine(password => /[^A-Za-z0-9]/.test(password), {
       message: "Password must contain at least one special character",
     }),
-  confirmPassword: z.string()
+  confirmPassword: z.string(),
+  robotCheck: z.boolean().refine(val => val === true, {
+    message: "Please confirm you are not a robot",
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -50,8 +61,9 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [existingUsers, setExistingUsers] = useState<{ email: string }[]>([]);
+  const [existingUsers, setExistingUsers] = useState<{ email: string; staffId: string; phoneNumber: string }[]>([]);
   const [password, setPassword] = useState("");
+  const [showRobotCheck, setShowRobotCheck] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -80,6 +92,7 @@ const Signup = () => {
       department: "",
       password: "",
       confirmPassword: "",
+      robotCheck: false,
     },
   });
 
@@ -101,6 +114,35 @@ const Signup = () => {
           title: "Email already in use",
           description: "An account with this email address already exists. Please log in or use a different email.",
         });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if staffId already exists
+      if (existingUsers.some(user => user.staffId === values.staffId)) {
+        toast({
+          variant: "destructive",
+          title: "Staff ID already in use",
+          description: "An account with this Staff ID already exists. Please use a different Staff ID.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if phone number already exists
+      if (existingUsers.some(user => user.phoneNumber === values.phoneNumber)) {
+        toast({
+          variant: "destructive",
+          title: "Phone number already in use",
+          description: "An account with this phone number already exists. Please use a different phone number.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if the robot verification is completed
+      if (!values.robotCheck) {
+        setShowRobotCheck(true);
         setIsLoading(false);
         return;
       }
@@ -223,7 +265,11 @@ const Signup = () => {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input placeholder="+1 (555) 123-4567" {...field} />
+                          <Input 
+                            type="tel" 
+                            placeholder="+1 (555) 123-4567" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -355,6 +401,25 @@ const Signup = () => {
                   )}
                 />
                 
+                <FormField
+                  control={form.control}
+                  name="robotCheck"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>I am not a robot</FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
                 <Button type="submit" className="w-full mt-6" disabled={isLoading}>
                   {isLoading ? "Creating account..." : "Create account"}
                 </Button>
@@ -370,6 +435,30 @@ const Signup = () => {
           </div>
         </motion.div>
       </div>
+      
+      {/* Robot verification dialog */}
+      <Dialog open={showRobotCheck} onOpenChange={setShowRobotCheck}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
+              Verification Required
+            </DialogTitle>
+            <DialogDescription>
+              Please confirm you are not a robot by checking the box before continuing.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-4">
+            <Button onClick={() => {
+              form.setValue('robotCheck', true);
+              setShowRobotCheck(false);
+              form.handleSubmit(onSubmit)();
+            }}>
+              I am not a robot
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

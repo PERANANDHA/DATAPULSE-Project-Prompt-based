@@ -16,7 +16,7 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, AlertCircle, RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -36,8 +37,25 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   otp: z.string().min(6, { message: "Please enter a valid OTP." }).optional(),
-  newPassword: z.string().min(8, { message: "Password must be at least 8 characters." }).optional(),
+  newPassword: z.string()
+    .min(8, { message: "Password must be at least 8 characters." })
+    .refine(password => /[A-Z]/.test(password), {
+      message: "Password must contain at least one uppercase letter",
+    })
+    .refine(password => /[a-z]/.test(password), {
+      message: "Password must contain at least one lowercase letter",
+    })
+    .refine(password => /[0-9]/.test(password), {
+      message: "Password must contain at least one number",
+    })
+    .refine(password => /[^A-Za-z0-9]/.test(password), {
+      message: "Password must contain at least one special character",
+    })
+    .optional(),
   confirmPassword: z.string().optional(),
+  robotCheck: z.boolean().refine(val => val === true, {
+    message: "Please confirm you're not a robot",
+  }).optional(),
 }).refine(data => !data.newPassword || data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -51,7 +69,9 @@ const Login = () => {
   const [isAccountNotFound, setIsAccountNotFound] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordStep, setForgotPasswordStep] = useState<'email' | 'otp' | 'newPassword'>('email');
-  const [users, setUsers] = useState<{email: string, password: string}[]>([]);
+  const [users, setUsers] = useState<{email: string, password: string, phoneNumber: string}[]>([]);
+  const [redirectToSignup, setRedirectToSignup] = useState(false);
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -62,6 +82,17 @@ const Login = () => {
       setUsers(JSON.parse(storedUsers));
     }
   }, []);
+
+  // Redirect to signup if needed
+  useEffect(() => {
+    if (redirectToSignup) {
+      const timer = setTimeout(() => {
+        navigate('/signup');
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [redirectToSignup, navigate]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -78,6 +109,7 @@ const Login = () => {
       otp: "",
       newPassword: "",
       confirmPassword: "",
+      robotCheck: false,
     },
   });
 
@@ -92,6 +124,7 @@ const Login = () => {
       if (!userExists) {
         console.log("Account not found:", values.email);
         setIsAccountNotFound(true);
+        setRedirectToSignup(true);
         setIsLoading(false);
         return;
       }
@@ -143,6 +176,16 @@ const Login = () => {
       const userExists = users.some(user => user.email === values.email);
       
       if (forgotPasswordStep === 'email') {
+        if (!values.robotCheck) {
+          toast({
+            variant: "destructive",
+            title: "Verification required",
+            description: "Please confirm you're not a robot.",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
         if (!userExists) {
           toast({
             variant: "destructive",
@@ -162,6 +205,7 @@ const Login = () => {
         });
         
         setForgotPasswordStep('otp');
+        setShowOtpVerification(true);
       } else if (forgotPasswordStep === 'otp') {
         // Simulate verifying OTP - in a real app, you would verify against a real OTP
         if (values.otp !== '123456') {
@@ -175,6 +219,7 @@ const Login = () => {
         }
         
         setForgotPasswordStep('newPassword');
+        setShowOtpVerification(false);
       } else if (forgotPasswordStep === 'newPassword') {
         // In a real app, you would update the user's password in your database
         // Here we'll update it in localStorage
@@ -216,6 +261,15 @@ const Login = () => {
     setForgotPasswordStep('email');
     forgotPasswordForm.reset();
     setShowForgotPassword(false);
+    setShowOtpVerification(false);
+  };
+
+  // Function to generate a new OTP (demo purposes)
+  const refreshOtp = () => {
+    toast({
+      title: "New OTP Sent",
+      description: "A new OTP has been sent to your registered phone number.",
+    });
   };
 
   return (
@@ -246,10 +300,10 @@ const Login = () => {
                 <div>
                   <p className="text-sm font-medium text-destructive">Account not found</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    This email is not registered. Please 
+                    This email is not registered. You will be redirected to 
                     <Link to="/signup" className="text-primary font-medium ml-1 hover:underline">
                       sign up
-                    </Link> to create an account.
+                    </Link> page in a few seconds.
                   </p>
                 </div>
               </div>
@@ -329,7 +383,7 @@ const Login = () => {
           <DialogHeader>
             <DialogTitle>Reset your password</DialogTitle>
             <DialogDescription>
-              {forgotPasswordStep === 'email' && "Enter your email to receive an OTP."}
+              {forgotPasswordStep === 'email' && "Enter your email to receive an OTP on your registered phone number."}
               {forgotPasswordStep === 'otp' && "Enter the OTP sent to your registered phone number."}
               {forgotPasswordStep === 'newPassword' && "Create a new password for your account."}
             </DialogDescription>
@@ -338,19 +392,40 @@ const Login = () => {
           <Form {...forgotPasswordForm}>
             <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
               {forgotPasswordStep === 'email' && (
-                <FormField
-                  control={forgotPasswordForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="your.email@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <>
+                  <FormField
+                    control={forgotPasswordForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="your.email@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={forgotPasswordForm.control}
+                    name="robotCheck"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>I am not a robot</FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
               
               {forgotPasswordStep === 'otp' && (
@@ -359,7 +434,17 @@ const Login = () => {
                   name="otp"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>One-Time Password</FormLabel>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>One-Time Password</FormLabel>
+                        <button 
+                          type="button"
+                          className="text-xs text-primary hover:underline flex items-center"
+                          onClick={refreshOtp}
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Resend OTP
+                        </button>
+                      </div>
                       <FormControl>
                         <Input placeholder="Enter 6-digit OTP" {...field} />
                       </FormControl>
@@ -384,6 +469,9 @@ const Login = () => {
                           <Input type="password" placeholder="••••••••" {...field} />
                         </FormControl>
                         <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Password must have at least 8 characters, including uppercase, lowercase, number, and special character.
+                        </p>
                       </FormItem>
                     )}
                   />
@@ -411,6 +499,58 @@ const Login = () => {
                     forgotPasswordStep === 'otp' ? "Verify OTP" : 
                     "Reset Password"
                   }
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* OTP Verification Dialog - Show when needed */}
+      <Dialog open={showOtpVerification} onOpenChange={(open) => {
+        if (!open) resetForgotPassword();
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>OTP Verification</DialogTitle>
+            <DialogDescription>
+              A one-time password has been sent to your registered phone number. 
+              Please enter it below to continue.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...forgotPasswordForm}>
+            <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+              <FormField
+                control={forgotPasswordForm.control}
+                name="otp"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>One-Time Password</FormLabel>
+                      <button 
+                        type="button"
+                        className="text-xs text-primary hover:underline flex items-center"
+                        onClick={refreshOtp}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Resend OTP
+                      </button>
+                    </div>
+                    <FormControl>
+                      <Input placeholder="Enter 6-digit OTP" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      For demonstration, use OTP: 123456
+                    </p>
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="submit" disabled={isLoading} className="w-full">
+                  {isLoading ? "Verifying..." : "Verify OTP"}
                 </Button>
               </DialogFooter>
             </form>

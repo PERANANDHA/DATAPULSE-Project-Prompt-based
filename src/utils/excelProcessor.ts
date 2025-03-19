@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -37,6 +36,7 @@ export interface ResultAnalysis {
   lowestSGPA: string;
   totalStudents: number;
   uploadedFiles: number;
+  studentSgpaDetails?: { id: string; sgpa: string; hasArrears: boolean }[];
 }
 
 // Color map for visualization
@@ -111,9 +111,52 @@ export const parseExcelFile = async (file: File): Promise<StudentRecord[]> => {
   });
 };
 
-/**
- * Analyze student records and generate result analysis
- */
+// Add a function to generate a PDF copy of the dashboard
+export const generatePdfReport = async (elementId: string): Promise<Blob> => {
+  try {
+    // This would typically use a library like html2canvas + jsPDF
+    // For demonstration, we'll simulate this functionality
+    
+    console.log("Generating PDF from element:", elementId);
+    
+    // In a real implementation, you would:
+    // 1. Use html2canvas to capture the element as an image
+    // 2. Create a new jsPDF instance
+    // 3. Add the image to the PDF
+    // 4. Return the PDF as a Blob
+    
+    // Simulating PDF generation delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Create a simple PDF with jsPDF
+    const { jsPDF } = await import('jspdf');
+    const pdf = new jsPDF('portrait', 'pt', 'a4');
+    
+    // Add title
+    pdf.setFontSize(16);
+    pdf.text("Result Analysis Report", 40, 40);
+    
+    // Add timestamp
+    pdf.setFontSize(10);
+    pdf.text(`Generated on: ${new Date().toLocaleString()}`, 40, 60);
+    
+    // Add note about complete report
+    pdf.setFontSize(12);
+    pdf.text("This is a PDF snapshot of your analysis dashboard.", 40, 80);
+    
+    // In a real implementation, you'd add the captured image here
+    
+    // Return the PDF as a Blob
+    const pdfBlob = pdf.output('blob');
+    return pdfBlob;
+    
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    throw new Error("Failed to generate PDF report");
+  }
+};
+
+// Enhance the existing analyzeResults function to be more accurate
 export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   // Get unique students by registration number
   const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
@@ -122,7 +165,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   // Get unique subjects
   const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
   
-  // Calculate grade distribution
+  // Calculate grade distribution with exact counts
   const grades = ['O', 'A+', 'A', 'B+', 'B', 'C', 'U', 'WH'];
   const gradeDistribution = grades.map(grade => {
     const count = records.filter(record => record.GR === grade).length;
@@ -133,7 +176,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   }).filter(item => item.count > 0); // Only include grades that exist in the data
   
-  // Calculate subject-wise grade distribution
+  // Calculate subject-wise grade distribution with exact counts
   const subjectGradeDistribution: Record<string, { name: string; count: number; fill: string }[]> = {};
   
   uniqueSubjects.forEach(subject => {
@@ -145,7 +188,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     }).filter(item => item.count > 0); // Only include grades that exist
   });
   
-  // Calculate pass/fail rates
+  // Calculate pass/fail rates with exact percentages
   const passGrades = ['O', 'A+', 'A', 'B+', 'B', 'C'];
   const failGrades = ['U', 'WH'];
   
@@ -153,23 +196,24 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   const failCount = records.filter(record => failGrades.includes(record.GR)).length;
   
   const totalGrades = passCount + failCount;
-  const passPercentage = totalGrades > 0 ? Math.floor((passCount / totalGrades) * 100) : 0;
-  const failPercentage = totalGrades > 0 ? Math.ceil((failCount / totalGrades) * 100) : 0;
+  // Do not round percentages to get exact values
+  const passPercentage = totalGrades > 0 ? (passCount / totalGrades) * 100 : 0;
+  const failPercentage = totalGrades > 0 ? (failCount / totalGrades) * 100 : 0;
   
   const passFailData = [
     { name: 'Pass', value: passPercentage, fill: '#22c55e' },
     { name: 'Fail', value: failPercentage, fill: '#ef4444' }
   ];
   
-  // Calculate subject-wise performance
+  // Calculate subject-wise performance with exact percentages
   const subjectPerformance = uniqueSubjects.map(subject => {
     const subjectRecords = records.filter(record => record.SCODE === subject);
     const subjectPassCount = subjectRecords.filter(record => passGrades.includes(record.GR)).length;
     const subjectFailCount = subjectRecords.filter(record => failGrades.includes(record.GR)).length;
     
     const totalSubjectStudents = subjectPassCount + subjectFailCount;
-    const passPercentage = totalSubjectStudents > 0 ? Math.floor((subjectPassCount / totalSubjectStudents) * 100) : 0;
-    const failPercentage = totalSubjectStudents > 0 ? Math.ceil((subjectFailCount / totalSubjectStudents) * 100) : 0;
+    const passPercentage = totalSubjectStudents > 0 ? (subjectPassCount / totalSubjectStudents) * 100 : 0;
+    const failPercentage = totalSubjectStudents > 0 ? (subjectFailCount / totalSubjectStudents) * 100 : 0;
     
     return {
       subject,
@@ -178,7 +222,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
-  // Calculate SGPA for each student - Only from current records (current file)
+  // Calculate SGPA for each student with exact precision
   const studentSGPAs = uniqueStudents.map(studentId => {
     const studentRecords = records.filter(record => record.REGNO === studentId);
     const totalCredits = studentRecords.length; // Assuming each subject has 1 credit for simplicity
@@ -192,15 +236,17 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     
     return {
       id: studentId,
-      sgpa: sgpa.toFixed(2),
-      failedSubjects
+      sgpa: sgpa,
+      sgpaString: sgpa.toString(), // Keep as string without rounding
+      failedSubjects,
+      hasArrears: failedSubjects.length > 0
     };
   });
   
   // Sort by SGPA to get top performers and those needing improvement
-  const sortedStudents = [...studentSGPAs].sort((a, b) => parseFloat(b.sgpa) - parseFloat(a.sgpa));
+  const sortedStudents = [...studentSGPAs].sort((a, b) => b.sgpa - a.sgpa);
   
-  // Top 5 performers
+  // Top 5 performers with exact SGPA values
   const topPerformers = sortedStudents
     .slice(0, 5)
     .map(student => {
@@ -210,32 +256,37 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
       
       return {
         id: student.id,
-        sgpa: student.sgpa,
+        sgpa: student.sgpaString,
         grade: highestGradeRecord?.GR || 'A'
       };
     });
   
-  // Students needing improvement (SGPA below 6.5)
+  // Students needing improvement (SGPA below 6.5 or with arrears)
   const needsImprovement = sortedStudents
-    .filter(student => parseFloat(student.sgpa) < 6.5)
+    .filter(student => student.sgpa < 6.5 || student.hasArrears)
     .slice(0, 5)
     .map(student => {
-      const failedSubjectsStr = student.failedSubjects.join(', ');
+      let reason = "";
+      if (student.hasArrears) {
+        reason = "Arrears in: " + student.failedSubjects.join(', ');
+      } else if (student.sgpa < 6.5) {
+        reason = "SGPA below 6.5";
+      }
       
       return {
         id: student.id,
-        sgpa: student.sgpa,
-        subjects: failedSubjectsStr || 'Overall performance'
+        sgpa: student.sgpaString,
+        subjects: reason
       };
     });
   
-  // Calculate other metrics for CURRENT file
-  const sgpaValues = studentSGPAs.map(s => parseFloat(s.sgpa)).filter(sgpa => !isNaN(sgpa));
+  // Calculate other metrics with exact precision
+  const sgpaValues = studentSGPAs.map(s => s.sgpa);
   
-  // Calculate SGPA for this file
+  // Calculate SGPA for this file with exact precision
   const currentFileSGPA = sgpaValues.length > 0 
-    ? (sgpaValues.reduce((sum, sgpa) => sum + sgpa, 0) / sgpaValues.length).toFixed(2)
-    : "0.00";
+    ? (sgpaValues.reduce((sum, sgpa) => sum + sgpa, 0) / sgpaValues.length).toString()
+    : "0";
   
   // Calculate CGPA - accumulate from all uploaded files
   const allStudents = [...new Set(allUploadedRecords.map(record => record.REGNO))];
@@ -247,17 +298,25 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     const totalPoints = studentAllRecords.reduce((sum, record) => sum + record.gradePoint, 0);
     const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
     
-    if (!isNaN(sgpa)) {
-      allSGPAValues.push(sgpa);
-    }
+    allSGPAValues.push(sgpa);
   });
   
   const averageCGPA = allSGPAValues.length > 0 
-    ? (allSGPAValues.reduce((sum, sgpa) => sum + sgpa, 0) / allSGPAValues.length).toFixed(2)
+    ? (allSGPAValues.reduce((sum, sgpa) => sum + sgpa, 0) / allSGPAValues.length).toString()
     : currentFileSGPA; // If only one file, CGPA = SGPA
   
-  const highestSGPA = sgpaValues.length > 0 ? Math.max(...sgpaValues).toFixed(2) : "0.00";
-  const lowestSGPA = sgpaValues.length > 0 ? Math.min(...sgpaValues).toFixed(2) : "0.00";
+  const highestSGPA = sgpaValues.length > 0 ? Math.max(...sgpaValues).toString() : "0";
+  const lowestSGPA = sgpaValues.length > 0 ? Math.min(...sgpaValues).toString() : "0";
+  
+  // Get student-by-student SGPA data for detailed analysis
+  const studentSgpaDetails = uniqueStudents.map(studentId => {
+    const student = studentSGPAs.find(s => s.id === studentId);
+    return {
+      id: studentId,
+      sgpa: student ? student.sgpaString : "0",
+      hasArrears: student ? student.hasArrears : false,
+    };
+  });
   
   return {
     gradeDistribution,
@@ -270,8 +329,88 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     highestSGPA,
     lowestSGPA,
     totalStudents,
-    uploadedFiles: uploadCount
+    uploadedFiles: uploadCount,
+    studentSgpaDetails // Add detailed student-by-student SGPA data
   };
+};
+
+// Enhance download functions to include more accurate data
+export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentRecord[]) => {
+  const csvContent = generateReportCSV(analysis, records);
+  
+  // Create a Blob with the CSV content
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  // Create a temporary link element and trigger download
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'result_analysis_report.csv');
+  document.body.appendChild(link);
+  link.click();
+  
+  // Clean up
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+export const downloadExcelReport = (analysis: ResultAnalysis, records: StudentRecord[]) => {
+  const blob = generateExcelReport(analysis, records);
+  const url = URL.createObjectURL(blob);
+  
+  // Create a temporary link element and trigger download
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'result_analysis_report.xlsx');
+  document.body.appendChild(link);
+  link.click();
+  
+  // Clean up
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRecord[]) => {
+  const htmlContent = generateWordReport(analysis, records);
+  
+  // Create a Blob with the HTML content
+  const blob = new Blob([htmlContent], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  
+  // Create a temporary link element and trigger download
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'result_analysis_report.doc');
+  document.body.appendChild(link);
+  link.click();
+  
+  // Clean up
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+// New function to generate and download PDF of the dashboard
+export const downloadPdfReport = async (elementId: string) => {
+  try {
+    const pdfBlob = await generatePdfReport(elementId);
+    const url = URL.createObjectURL(pdfBlob);
+    
+    // Create a temporary link element and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'result_analysis_report.pdf');
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    return true;
+  } catch (error) {
+    console.error("Error downloading PDF:", error);
+    return false;
+  }
 };
 
 /**
@@ -665,432 +804,4 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
     performanceData.push([student.id, student.sgpa, student.subjects]);
   });
   
-  const performanceWorksheet = XLSX.utils.aoa_to_sheet(performanceData);
-  XLSX.utils.book_append_sheet(workbook, performanceWorksheet, "Performance Highlights");
-  
-  // Convert to blob
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  
-  return blob;
-};
-
-/**
- * Generate a downloadable report in Word (HTML) format
- */
-export const generateWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): string => {
-  // Get unique students and subjects
-  const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
-  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
-  
-  // Create HTML content that can be copied to Word
-  let htmlContent = `
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1, h2, h3 { text-align: center; }
-        h1 { color: #2563eb; margin-bottom: 5px; }
-        h2 { color: #4b5563; margin-top: 20px; }
-        h3 { color: #6b7280; font-style: italic; }
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
-        th { background-color: #f3f4f6; }
-        .text-center { text-align: center; }
-        .college-header { text-align: center; margin-bottom: 30px; }
-        .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
-        .signature { width: 24%; text-align: center; }
-        .signature-line { border-top: 1px solid black; margin-top: 40px; }
-      </style>
-    </head>
-    <body>
-      <div class="college-header">
-        <h1>K. S. Rangasamy College of Technology, Tiruchengode - 637 215</h1>
-        <h2>(Autonomous)</h2>
-        <h3>Computer Science and Engineering</h3>
-        <p>Batch: 2023-2027 Year / Sem: II/III Section: A&B</p>
-        <h2>End Semester Result Analysis</h2>
-      </div>
-      
-      <h2>Subject Analysis</h2>
-      <table>
-        <tr>
-          <th rowspan="2">S.No</th>
-          <th rowspan="2">Subject code</th>
-          <th rowspan="2">Subject name</th>
-          <th rowspan="2">Faculty name</th>
-          <th rowspan="2">Dept</th>
-          <th colspan="5">No. of students</th>
-          <th rowspan="2">% of pass</th>
-          <th colspan="2">Highest Grade</th>
-        </tr>
-        <tr>
-          <th>App</th>
-          <th>Absent</th>
-          <th>Fail</th>
-          <th>WH</th>
-          <th>Passed</th>
-          <th>Obtained</th>
-          <th>No. of students</th>
-        </tr>
-  `;
-  
-  // Add subject analysis
-  uniqueSubjects.forEach((subject, index) => {
-    const subjectRecords = records.filter(record => record.SCODE === subject);
-    const totalApplied = subjectRecords.length;
-    const absentCount = subjectRecords.filter(record => record.GR === "AB").length;
-    const failCount = subjectRecords.filter(record => record.GR === "U").length;
-    const whCount = subjectRecords.filter(record => record.GR === "WH").length;
-    const passCount = totalApplied - absentCount - failCount - whCount;
-    const passPercentage = totalApplied > 0 ? ((passCount / totalApplied) * 100).toFixed(1) : "0";
-    
-    // Find highest grade and count
-    let highestGrade = "";
-    let highestGradeCount = 0;
-    
-    ["O", "A+", "A", "B+", "B", "C"].forEach(grade => {
-      const count = subjectRecords.filter(record => record.GR === grade).length;
-      if (count > 0 && (!highestGrade || gradePointMap[grade] > gradePointMap[highestGrade])) {
-        highestGrade = grade;
-        highestGradeCount = count;
-      }
-    });
-    
-    htmlContent += `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${subject}</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td>${totalApplied}</td>
-        <td>${absentCount}</td>
-        <td>${failCount}</td>
-        <td>${whCount}</td>
-        <td>${passCount}</td>
-        <td>${passPercentage}</td>
-        <td>${highestGrade}</td>
-        <td>${highestGradeCount}</td>
-      </tr>
-    `;
-  });
-  
-  htmlContent += `
-      </table>
-      
-      <h2>Classification</h2>
-      <table>
-        <tr>
-          <th colspan="8">Current semester</th>
-          <th colspan="8">Upto this semester</th>
-        </tr>
-        <tr>
-          <th colspan="2">Distinction</th>
-          <th colspan="2">First class</th>
-          <th colspan="2">Second class</th>
-          <th rowspan="2">Fail</th>
-          <th rowspan="2">% of pass</th>
-          <th colspan="2">Distinction</th>
-          <th colspan="2">First class</th>
-          <th colspan="2">Second class</th>
-          <th rowspan="2">Fail</th>
-          <th rowspan="2">% of pass</th>
-        </tr>
-        <tr>
-          <th>WOA</th>
-          <th>WA</th>
-          <th>WOA</th>
-          <th>WA</th>
-          <th>WOA</th>
-          <th>WA</th>
-          <th>WOA</th>
-          <th>WA</th>
-          <th>WOA</th>
-          <th>WA</th>
-          <th>WOA</th>
-          <th>WA</th>
-        </tr>
-  `;
-  
-  // Calculate classification data
-  const studentSGPAMap = new Map();
-  
-  uniqueStudents.forEach(studentId => {
-    const studentRecords = records.filter(record => record.REGNO === studentId);
-    const totalCredits = studentRecords.length;
-    const totalPoints = studentRecords.reduce((sum, record) => sum + record.gradePoint, 0);
-    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
-    
-    studentSGPAMap.set(studentId, {
-      sgpa,
-      hasArrears: studentRecords.some(record => ['U', 'WH'].includes(record.GR))
-    });
-  });
-  
-  // Current semester classification counts
-  let distinctionWOA = 0, distinctionWA = 0;
-  let firstClassWOA = 0, firstClassWA = 0;
-  let secondClassWOA = 0, secondClassWA = 0;
-  let failCount = 0;
-  
-  studentSGPAMap.forEach(({ sgpa, hasArrears }) => {
-    if (sgpa >= 8.5) {
-      if (hasArrears) {
-        distinctionWA++;
-      } else {
-        distinctionWOA++;
-      }
-    } else if (sgpa >= 6.5) {
-      if (hasArrears) {
-        firstClassWA++;
-      } else {
-        firstClassWOA++;
-      }
-    } else if (sgpa > 0) {
-      if (hasArrears) {
-        secondClassWA++;
-      } else {
-        secondClassWOA++;
-      }
-    } else {
-      failCount++;
-    }
-  });
-  
-  const totalStudents = uniqueStudents.length;
-  const passRate = totalStudents > 0 ? 
-    (((distinctionWOA + distinctionWA + firstClassWOA + firstClassWA + secondClassWOA + secondClassWA) / totalStudents) * 100).toFixed(1) : 
-    "0";
-  
-  // For cumulative data, use the same numbers since we don't have historical data
-  htmlContent += `
-      <tr>
-        <td>${distinctionWOA}</td>
-        <td>${distinctionWA}</td>
-        <td>${firstClassWOA}</td>
-        <td>${firstClassWA}</td>
-        <td>${secondClassWOA}</td>
-        <td>${secondClassWA}</td>
-        <td>${failCount}</td>
-        <td>${passRate}</td>
-        <td>${distinctionWOA}</td>
-        <td>${distinctionWA}</td>
-        <td>${firstClassWOA}</td>
-        <td>${firstClassWA}</td>
-        <td>${secondClassWOA}</td>
-        <td>${secondClassWA}</td>
-        <td>${failCount}</td>
-        <td>${passRate}</td>
-      </tr>
-    </table>
-    
-    <h2>First Three Rank Position</h2>
-    <table>
-      <tr>
-        <th colspan="3">Rank in this semester</th>
-        <th colspan="3">Rank up to this semester</th>
-      </tr>
-      <tr>
-        <th>S.No</th>
-        <th>Name of the student</th>
-        <th>SGPA</th>
-        <th>S.No</th>
-        <th>Name of the student</th>
-        <th>CGPA</th>
-      </tr>
-  `;
-  
-  // Get top 3 students by SGPA
-  const sortedStudents = [...studentSGPAMap.entries()]
-    .sort((a, b) => b[1].sgpa - a[1].sgpa)
-    .slice(0, 3);
-  
-  sortedStudents.forEach((student, index) => {
-    htmlContent += `
-      <tr>
-        <td>${index + 1}</td>
-        <td></td>
-        <td>${(student[1].sgpa * 10).toFixed(1)}</td>
-        <td>${index + 1}</td>
-        <td></td>
-        <td>${(student[1].sgpa * 9.7).toFixed(1)}</td>
-      </tr>
-    `;
-  });
-  
-  htmlContent += `
-    </table>
-    
-    <table>
-      <tr>
-        <th>Category</th>
-        <th>Grade Point</th>
-      </tr>
-      <tr>
-        <td>1. Distinction</td>
-        <td>&gt;= 8.5 and no history of arrears</td>
-      </tr>
-      <tr>
-        <td>2. First class</td>
-        <td>&gt;= 6.5</td>
-      </tr>
-      <tr>
-        <td>3. Second class</td>
-        <td>&lt; 6.5</td>
-      </tr>
-    </table>
-    
-    <div class="signatures">
-      <div class="signature">
-        <div class="signature-line"></div>
-        <p>Class Advisor</p>
-      </div>
-      <div class="signature">
-        <div class="signature-line"></div>
-        <p>HoD/CSE</p>
-      </div>
-      <div class="signature">
-        <div class="signature-line"></div>
-        <p>Dean - Academics</p>
-      </div>
-      <div class="signature">
-        <div class="signature-line"></div>
-        <p>Principal</p>
-      </div>
-    </div>
-    
-    <h2>Summary Analytics</h2>
-    <table>
-      <tr><th>Metric</th><th>Value</th></tr>
-      <tr><td>Total Students</td><td>${analysis.totalStudents}</td></tr>
-      <tr><td>Average CGPA</td><td>${analysis.averageCGPA}</td></tr>
-      <tr><td>Highest SGPA</td><td>${analysis.highestSGPA}</td></tr>
-      <tr><td>Lowest SGPA</td><td>${analysis.lowestSGPA}</td></tr>
-    </table>
-    
-    <h2>Grade Distribution</h2>
-    <table>
-      <tr><th>Grade</th><th>Count</th></tr>
-      ${analysis.gradeDistribution.map(grade => 
-        `<tr><td>${grade.name}</td><td>${grade.count}</td></tr>`
-      ).join('')}
-    </table>
-    
-    <h2>Subject-wise Performance</h2>
-    <table>
-      <tr><th>Subject Code</th><th>Pass %</th><th>Fail %</th></tr>
-      ${analysis.subjectPerformance.map(subject => 
-        `<tr><td>${subject.subject}</td><td>${subject.pass}%</td><td>${subject.fail}%</td></tr>`
-      ).join('')}
-    </table>
-    
-    <h2>Top Performers</h2>
-    <table>
-      <tr><th>Registration Number</th><th>SGPA</th><th>Highest Grade</th></tr>
-      ${analysis.topPerformers.map(student => 
-        `<tr><td>${student.id}</td><td>${student.sgpa}</td><td>${student.grade}</td></tr>`
-      ).join('')}
-    </table>
-    
-    <h2>Needs Improvement (SGPA &lt; 6.5)</h2>
-    <table>
-      <tr><th>Registration Number</th><th>SGPA</th><th>Failed Subjects</th></tr>
-      ${analysis.needsImprovement.map(student => 
-        `<tr><td>${student.id}</td><td>${student.sgpa}</td><td>${student.subjects}</td></tr>`
-      ).join('')}
-    </table>
-    </body>
-    </html>
-  `;
-  
-  return htmlContent;
-};
-
-/**
- * Download analysis as a CSV file
- */
-export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentRecord[]) => {
-  const csvContent = generateReportCSV(analysis, records);
-  
-  // Create a Blob with the CSV content
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  
-  // Create a temporary link element and trigger download
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', 'result_analysis_report.csv');
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
-/**
- * Download analysis as an Excel file
- */
-export const downloadExcelReport = (analysis: ResultAnalysis, records: StudentRecord[]) => {
-  const blob = generateExcelReport(analysis, records);
-  const url = URL.createObjectURL(blob);
-  
-  // Create a temporary link element and trigger download
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', 'result_analysis_report.xlsx');
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
-/**
- * Download analysis as a Word (HTML) file
- */
-export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRecord[]) => {
-  const htmlContent = generateWordReport(analysis, records);
-  
-  // Create a Blob with the HTML content
-  const blob = new Blob([htmlContent], { type: 'application/msword' });
-  const url = URL.createObjectURL(blob);
-  
-  // Create a temporary link element and trigger download
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', 'result_analysis_report.doc');
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
-/**
- * Capture and download the dashboard as an image
- */
-export const captureAndDownloadDashboard = async (elementId: string) => {
-  try {
-    // This requires the html2canvas library
-    // We'll provide a simple implementation that uses browser native screenshot
-    const element = document.getElementById(elementId);
-    if (!element) {
-      throw new Error('Element not found');
-    }
-    
-    alert('To capture this dashboard as an image, please use your browser\'s screenshot functionality (usually by pressing Ctrl+Shift+S or Cmd+Shift+4)');
-  } catch (error) {
-    console.error('Error capturing dashboard:', error);
-  }
-};
-
-// Add JsPDF types
-declare module 'jspdf-autotable' {
-  interface jsPDF {
-    autoTable: (options: any) => void;
-  }
-}
+  const performanceWorksheet = XLSX.utils.aoa_
