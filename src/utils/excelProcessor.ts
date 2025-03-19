@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -22,6 +23,7 @@ export interface StudentRecord {
   SCODE: string;     // Subject Code
   GR: string;        // Grade
   gradePoint: number; // Calculated grade point
+  creditValue?: number; // Added credit value for the subject
 }
 
 export interface ResultAnalysis {
@@ -87,7 +89,8 @@ export const parseExcelFile = async (file: File): Promise<StudentRecord[]> => {
           REGNO: String(row.REGNO || ''),
           SCODE: String(row.SCODE || ''),
           GR: String(row.GR || ''),
-          gradePoint: gradePointMap[row.GR] || 0
+          gradePoint: gradePointMap[row.GR] || 0,
+          creditValue: 3 // Default credit value, will be updated later
         }));
         
         // Add to accumulated records
@@ -156,7 +159,7 @@ export const generatePdfReport = async (elementId: string): Promise<Blob> => {
   }
 };
 
-// Enhance the existing analyzeResults function to be more accurate
+// Enhanced analyzeResults function with credit-based SGPA calculation
 export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   // Get unique students by registration number
   const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
@@ -222,12 +225,19 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
-  // Calculate SGPA for each student with exact precision
+  // Calculate SGPA for each student with exact precision using credit values
   const studentSGPAs = uniqueStudents.map(studentId => {
     const studentRecords = records.filter(record => record.REGNO === studentId);
-    const totalCredits = studentRecords.length; // Assuming each subject has 1 credit for simplicity
-    const totalPoints = studentRecords.reduce((sum, record) => sum + record.gradePoint, 0);
-    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
+    
+    // Calculate total credits and grade points properly
+    const totalCredits = studentRecords.reduce((sum, record) => sum + (record.creditValue || 3), 0);
+    const totalGradePoints = studentRecords.reduce((sum, record) => {
+      // For each subject: grade point × credit value
+      return sum + (record.gradePoint * (record.creditValue || 3));
+    }, 0);
+    
+    // SGPA = Total grade points / Total credits
+    const sgpa = totalCredits > 0 ? (totalGradePoints / totalCredits) : 0;
     
     // Count failed subjects for this student
     const failedSubjects = studentRecords
@@ -294,10 +304,14 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   
   allStudents.forEach(studentId => {
     const studentAllRecords = allUploadedRecords.filter(record => record.REGNO === studentId);
-    const totalCredits = studentAllRecords.length;
-    const totalPoints = studentAllRecords.reduce((sum, record) => sum + record.gradePoint, 0);
-    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
     
+    // Calculate total credits and grade points properly for CGPA
+    const totalCredits = studentAllRecords.reduce((sum, record) => sum + (record.creditValue || 3), 0);
+    const totalGradePoints = studentAllRecords.reduce((sum, record) => {
+      return sum + (record.gradePoint * (record.creditValue || 3));
+    }, 0);
+    
+    const sgpa = totalCredits > 0 ? (totalGradePoints / totalCredits) : 0;
     allSGPAValues.push(sgpa);
   });
   
@@ -469,8 +483,8 @@ export const generateReportCSV = (analysis: ResultAnalysis, records: StudentReco
   csvContent += "\n";
   
   // Needs improvement
-  csvContent += "NEEDS IMPROVEMENT (SGPA < 6.5)\n";
-  csvContent += "Registration Number,SGPA,Failed Subjects\n";
+  csvContent += "NEEDS IMPROVEMENT (SGPA < 6.5 OR WITH ARREARS)\n";
+  csvContent += "Registration Number,SGPA,Reason\n";
   analysis.needsImprovement.forEach(student => {
     csvContent += `${student.id},${student.sgpa},${student.subjects}\n`;
   });
@@ -478,21 +492,27 @@ export const generateReportCSV = (analysis: ResultAnalysis, records: StudentReco
   
   // Student details
   csvContent += "STUDENT DETAILS\n";
-  csvContent += "Registration Number,SGPA,Failed Subjects\n";
+  csvContent += "Registration Number,SGPA,Status\n";
   
   // Calculate SGPA and failed subjects for each student
   uniqueStudents.forEach(studentId => {
     const studentRecords = records.filter(record => record.REGNO === studentId);
-    const totalCredits = studentRecords.length; // Assuming each subject has 1 credit
-    const totalPoints = studentRecords.reduce((sum, record) => sum + record.gradePoint, 0);
-    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "0.00";
+    
+    // Calculate SGPA with credit values
+    const totalCredits = studentRecords.reduce((sum, record) => sum + (record.creditValue || 3), 0);
+    const totalGradePoints = studentRecords.reduce((sum, record) => {
+      return sum + (record.gradePoint * (record.creditValue || 3));
+    }, 0);
+    const sgpa = totalCredits > 0 ? (totalGradePoints / totalCredits) : 0;
     
     const failedSubjects = studentRecords
       .filter(record => ['U', 'WH'].includes(record.GR))
       .map(record => record.SCODE)
       .join(', ');
     
-    csvContent += `${studentId},${sgpa},${failedSubjects || 'None'}\n`;
+    const status = failedSubjects ? 'Has Arrears' : sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing';
+    
+    csvContent += `${studentId},${sgpa},${status}\n`;
   });
   
   return csvContent;
@@ -524,17 +544,33 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
   const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
   
   // Create header row with subject codes
-  const gradesHeader = ["Reg.No", ...uniqueSubjects];
+  const gradesHeader = ["Reg.No", ...uniqueSubjects, "SGPA", "Status"];
   const gradesData = [gradesHeader];
   
   // Add student grades
   uniqueStudents.forEach(student => {
+    const studentRecords = records.filter(record => record.REGNO === student);
     const row = [student];
     
+    // Add grades for each subject
     uniqueSubjects.forEach(subject => {
       const record = records.find(r => r.REGNO === student && r.SCODE === subject);
       row.push(record ? record.GR : "");
     });
+    
+    // Calculate and add SGPA
+    const totalCredits = studentRecords.reduce((sum, record) => sum + (record.creditValue || 3), 0);
+    const totalGradePoints = studentRecords.reduce((sum, record) => {
+      return sum + (record.gradePoint * (record.creditValue || 3));
+    }, 0);
+    const sgpa = totalCredits > 0 ? (totalGradePoints / totalCredits) : 0;
+    
+    // Check for arrears
+    const hasArrears = studentRecords.some(record => ['U', 'WH'].includes(record.GR));
+    const status = hasArrears ? 'Has Arrears' : sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing';
+    
+    row.push(sgpa.toString());
+    row.push(status);
     
     gradesData.push(row);
   });
@@ -606,9 +642,13 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
   
   uniqueStudents.forEach(studentId => {
     const studentRecords = records.filter(record => record.REGNO === studentId);
-    const totalCredits = studentRecords.length;
-    const totalPoints = studentRecords.reduce((sum, record) => sum + record.gradePoint, 0);
-    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
+    
+    // Calculate SGPA with credit values
+    const totalCredits = studentRecords.reduce((sum, record) => sum + (record.creditValue || 3), 0);
+    const totalGradePoints = studentRecords.reduce((sum, record) => {
+      return sum + (record.gradePoint * (record.creditValue || 3));
+    }, 0);
+    const sgpa = totalCredits > 0 ? (totalGradePoints / totalCredits) : 0;
     
     studentSGPAMap.set(studentId, {
       sgpa,
@@ -688,10 +728,10 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
     classificationData.push([
       (index + 1).toString(),
       "", // Student name placeholder
-      (student[1].sgpa * 10).toFixed(1), // Convert to percentage-like format
+      student[1].sgpa.toString(), // Exact SGPA
       (index + 1).toString(),
       "", // Student name placeholder
-      (student[1].sgpa * 9.7).toFixed(1), // Approximate CGPA for example
+      student[1].sgpa.toString(), // Use same as CGPA for this sample
     ]);
   });
   
@@ -764,21 +804,27 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
   const studentDetailsData: any[][] = [
     ["Student Performance Details"],
     [],
-    ["Registration Number", "SGPA", "Failed Subjects"]
+    ["Registration Number", "SGPA", "Status"]
   ];
   
   uniqueStudents.forEach(studentId => {
     const studentRecords = records.filter(record => record.REGNO === studentId);
-    const totalCredits = studentRecords.length;
-    const totalPoints = studentRecords.reduce((sum, record) => sum + record.gradePoint, 0);
-    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "0.00";
+    
+    // Calculate SGPA with credit values
+    const totalCredits = studentRecords.reduce((sum, record) => sum + (record.creditValue || 3), 0);
+    const totalGradePoints = studentRecords.reduce((sum, record) => {
+      return sum + (record.gradePoint * (record.creditValue || 3));
+    }, 0);
+    const sgpa = totalCredits > 0 ? (totalGradePoints / totalCredits) : 0;
     
     const failedSubjects = studentRecords
       .filter(record => ['U', 'WH'].includes(record.GR))
       .map(record => record.SCODE)
       .join(', ');
     
-    studentDetailsData.push([studentId, sgpa, failedSubjects || 'None']);
+    const status = failedSubjects ? 'Has Arrears' : sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing';
+    
+    studentDetailsData.push([studentId, sgpa.toString(), status]);
   });
   
   const studentDetailsWorksheet = XLSX.utils.aoa_to_sheet(studentDetailsData);
@@ -798,10 +844,244 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
   
   performanceData.push([]);
   performanceData.push(["Needs Improvement (SGPA < 6.5 or with Arrears)"]);
-  performanceData.push(["Registration Number", "SGPA", "Failed Subjects"]);
+  performanceData.push(["Registration Number", "SGPA", "Reason"]);
   
   analysis.needsImprovement.forEach(student => {
     performanceData.push([student.id, student.sgpa, student.subjects]);
   });
   
-  const performanceWorksheet = XLSX.
+  const performanceWorksheet = XLSX.utils.aoa_to_sheet(performanceData);
+  XLSX.utils.book_append_sheet(workbook, performanceWorksheet, "Performance");
+  
+  // Convert the workbook to a binary string and create a Blob
+  const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
+  
+  // Convert binary string to ArrayBuffer
+  const buf = new ArrayBuffer(wbout.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < wbout.length; i++) {
+    view[i] = wbout.charCodeAt(i) & 0xFF;
+  }
+  
+  // Create and return Blob
+  return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};
+
+/**
+ * Generate a downloadable report in Word format using HTML
+ */
+export const generateWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): string => {
+  // Get unique students and subjects
+  const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
+  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
+  
+  // Create HTML content with styling
+  let htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Result Analysis Report</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 40px;
+          line-height: 1.5;
+        }
+        h1 {
+          text-align: center;
+          color: #2563eb;
+          font-size: 24px;
+          margin-bottom: 20px;
+        }
+        h2 {
+          color: #1d4ed8;
+          font-size: 18px;
+          margin-top: 30px;
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 5px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 15px 0;
+        }
+        th, td {
+          border: 1px solid #d1d5db;
+          padding: 8px;
+          text-align: left;
+        }
+        th {
+          background-color: #f3f4f6;
+        }
+        .college-header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .college-name {
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .department {
+          font-size: 16px;
+          margin-bottom: 5px;
+        }
+        .batch {
+          font-size: 14px;
+        }
+        .summary-item {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        .chart-placeholder {
+          background-color: #f9fafb;
+          border: 1px dashed #d1d5db;
+          height: 200px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 15px 0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="college-header">
+        <div class="college-name">K. S. Rangasamy College of Technology</div>
+        <div class="department">Department of Computer Science and Engineering</div>
+        <div class="batch">Semester Results Analysis Report</div>
+      </div>
+      
+      <h1>Result Analysis Report</h1>
+      
+      <h2>Summary</h2>
+      <div>
+        <div class="summary-item">
+          <span>Total Students:</span>
+          <span>${analysis.totalStudents}</span>
+        </div>
+        <div class="summary-item">
+          <span>Average CGPA:</span>
+          <span>${analysis.averageCGPA}</span>
+        </div>
+        <div class="summary-item">
+          <span>Highest SGPA:</span>
+          <span>${analysis.highestSGPA}</span>
+        </div>
+        <div class="summary-item">
+          <span>Lowest SGPA:</span>
+          <span>${analysis.lowestSGPA}</span>
+        </div>
+      </div>
+      
+      <h2>Grade Distribution</h2>
+      <div class="chart-placeholder">
+        [Grade Distribution Chart]
+      </div>
+      <table>
+        <tr>
+          <th>Grade</th>
+          <th>Count</th>
+        </tr>
+        ${analysis.gradeDistribution.map(grade => `
+          <tr>
+            <td>${grade.name}</td>
+            <td>${grade.count}</td>
+          </tr>
+        `).join('')}
+      </table>
+      
+      <h2>Pass/Fail Rate</h2>
+      <div class="chart-placeholder">
+        [Pass/Fail Chart]
+      </div>
+      <table>
+        <tr>
+          <th>Result</th>
+          <th>Percentage</th>
+        </tr>
+        ${analysis.passFailData.map(data => `
+          <tr>
+            <td>${data.name}</td>
+            <td>${data.value}%</td>
+          </tr>
+        `).join('')}
+      </table>
+      
+      <h2>Subject-wise Performance</h2>
+      <div class="chart-placeholder">
+        [Subject Performance Chart]
+      </div>
+      <table>
+        <tr>
+          <th>Subject Code</th>
+          <th>Pass %</th>
+          <th>Fail %</th>
+        </tr>
+        ${analysis.subjectPerformance.map(subject => `
+          <tr>
+            <td>${subject.subject}</td>
+            <td>${subject.pass}%</td>
+            <td>${subject.fail}%</td>
+          </tr>
+        `).join('')}
+      </table>
+      
+      <h2>Top Performers</h2>
+      <table>
+        <tr>
+          <th>Registration Number</th>
+          <th>SGPA</th>
+          <th>Highest Grade</th>
+        </tr>
+        ${analysis.topPerformers.map(student => `
+          <tr>
+            <td>${student.id}</td>
+            <td>${student.sgpa}</td>
+            <td>${student.grade}</td>
+          </tr>
+        `).join('')}
+      </table>
+      
+      <h2>Needs Improvement (SGPA < 6.5 or with Arrears)</h2>
+      <table>
+        <tr>
+          <th>Registration Number</th>
+          <th>SGPA</th>
+          <th>Reason</th>
+        </tr>
+        ${analysis.needsImprovement.map(student => `
+          <tr>
+            <td>${student.id}</td>
+            <td>${student.sgpa}</td>
+            <td>${student.subjects}</td>
+          </tr>
+        `).join('')}
+      </table>
+      
+      <h2>Student-wise SGPA Details</h2>
+      <table>
+        <tr>
+          <th>Registration Number</th>
+          <th>SGPA</th>
+          <th>Status</th>
+        </tr>
+        ${analysis.studentSgpaDetails?.map(student => `
+          <tr>
+            <td>${student.id}</td>
+            <td>${student.sgpa}</td>
+            <td>${student.hasArrears ? 'Has Arrears' : Number(student.sgpa) < 6.5 ? 'SGPA below 6.5' : 'Good Standing'}</td>
+          </tr>
+        `).join('')}
+      </table>
+      
+      <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #6b7280;">
+        <p>Generated on: ${new Date().toLocaleString()}</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  return htmlContent;
+};

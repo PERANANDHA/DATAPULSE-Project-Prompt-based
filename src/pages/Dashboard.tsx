@@ -1,11 +1,12 @@
 
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import SubjectCreditInput from '@/components/SubjectCreditInput';
 import {
   BarChart,
   Bar,
@@ -50,6 +51,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface SubjectCredit {
+  subjectCode: string;
+  creditValue: number;
+}
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload');
   const [file, setFile] = useState<File | null>(null);
@@ -60,6 +66,9 @@ const Dashboard = () => {
   const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [resultAnalysis, setResultAnalysis] = useState<ResultAnalysis | null>(null);
   const [activeSubjectTab, setActiveSubjectTab] = useState<string | null>(null);
+  const [uniqueSubjects, setUniqueSubjects] = useState<string[]>([]);
+  const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
+  const [creditsAssigned, setCreditsAssigned] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -67,6 +76,14 @@ const Dashboard = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     setFile(selectedFile);
+    
+    // Reset states when a new file is selected
+    setResultsAvailable(false);
+    setStudentRecords([]);
+    setResultAnalysis(null);
+    setUniqueSubjects([]);
+    setSubjectCredits([]);
+    setCreditsAssigned(false);
   };
 
   const handleUpload = async () => {
@@ -96,16 +113,60 @@ const Dashboard = () => {
       const records = await parseExcelFile(file);
       setStudentRecords(records);
       
+      // Extract unique subjects from the records
+      const subjects = [...new Set(records.map(record => record.SCODE))];
+      setUniqueSubjects(subjects);
+      
       toast({
         title: "File uploaded successfully!",
         description: `Parsed ${records.length} records from Excel file.`,
       });
       
       setIsUploading(false);
-      setIsAnalyzing(true);
       
-      // Analyze the data
-      const analysis = analyzeResults(records);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        variant: "destructive",
+        title: "Processing failed",
+        description: error instanceof Error ? error.message : "There was a problem processing your file. Please try again.",
+      });
+      setIsUploading(false);
+    }
+  };
+
+  const handleCreditAssigned = (credits: SubjectCredit[]) => {
+    setSubjectCredits(credits);
+    setCreditsAssigned(true);
+    
+    // Now analyze with the credit values
+    analyzeData(credits);
+  };
+
+  const analyzeData = async (credits: SubjectCredit[]) => {
+    if (!studentRecords.length) {
+      toast({
+        variant: "destructive",
+        title: "No data to analyze",
+        description: "Please upload an Excel file first.",
+      });
+      return;
+    }
+    
+    setIsAnalyzing(true);
+    
+    try {
+      // Assign the credit values to the records
+      const recordsWithCredits = studentRecords.map(record => {
+        const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
+        return {
+          ...record,
+          creditValue: creditInfo ? creditInfo.creditValue : 3 // Default to 3 if not found
+        };
+      });
+      
+      // Analyze the data with credits
+      const analysis = analyzeResults(recordsWithCredits);
       setResultAnalysis(analysis);
       
       // Set the first subject as active for subject-specific charts
@@ -123,13 +184,12 @@ const Dashboard = () => {
       });
       
     } catch (error) {
-      console.error("Upload/analysis error:", error);
+      console.error("Analysis error:", error);
       toast({
         variant: "destructive",
-        title: "Processing failed",
-        description: error instanceof Error ? error.message : "There was a problem processing your file. Please try again.",
+        title: "Analysis failed",
+        description: error instanceof Error ? error.message : "There was a problem analyzing your data. Please try again.",
       });
-      setIsUploading(false);
       setIsAnalyzing(false);
     }
   };
@@ -549,53 +609,62 @@ const Dashboard = () => {
             </div>
 
             <TabsContent value="upload" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-5 w-5" />
-                    Upload Excel File
-                  </CardTitle>
-                  <CardDescription>
-                    Upload your Excel file containing student results data for analysis.
-                    The file should contain columns: CNo (Department Code), SEM (Semester),
-                    REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <div 
-                      className="border-2 border-dashed border-input rounded-lg p-8 w-full flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                    >
-                      <input
-                        id="file-upload"
-                        type="file"
-                        accept=".xlsx,.xls"
-                        className="hidden"
-                        onChange={handleFileChange}
-                      />
-                      <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-4" />
-                      <p className="text-sm font-medium">Drag and drop your file here or click to browse</p>
-                      <p className="text-xs text-muted-foreground mt-1">Supports .xlsx and .xls files</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5" />
+                      Upload Excel File
+                    </CardTitle>
+                    <CardDescription>
+                      Upload your Excel file containing student results data for analysis.
+                      The file should contain columns: CNo (Department Code), SEM (Semester),
+                      REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div 
+                        className="border-2 border-dashed border-input rounded-lg p-8 w-full flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        <input
+                          id="file-upload"
+                          type="file"
+                          accept=".xlsx,.xls"
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+                        <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-4" />
+                        <p className="text-sm font-medium">Drag and drop your file here or click to browse</p>
+                        <p className="text-xs text-muted-foreground mt-1">Supports .xlsx and .xls files</p>
+                        
+                        {file && (
+                          <div className="mt-4 p-2 bg-secondary rounded-md w-full max-w-md">
+                            <p className="text-sm font-medium truncate">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</p>
+                          </div>
+                        )}
+                      </div>
                       
-                      {file && (
-                        <div className="mt-4 p-2 bg-secondary rounded-md w-full max-w-md">
-                          <p className="text-sm font-medium truncate">{file.name}</p>
-                          <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</p>
-                        </div>
-                      )}
+                      <Button 
+                        onClick={handleUpload} 
+                        disabled={!file || isUploading || isAnalyzing}
+                        className="w-full max-w-md"
+                      >
+                        {isUploading ? "Uploading..." : "Upload File"}
+                      </Button>
                     </div>
-                    
-                    <Button 
-                      onClick={handleUpload} 
-                      disabled={!file || isUploading || isAnalyzing}
-                      className="w-full max-w-md"
-                    >
-                      {isUploading ? "Uploading..." : isAnalyzing ? "Analyzing..." : "Upload & Analyze"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Subject Credit Input Section */}
+                <SubjectCreditInput 
+                  onCreditAssigned={handleCreditAssigned}
+                  uploadedSubjects={uniqueSubjects}
+                  isProcessing={isAnalyzing}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="results" className="space-y-6">
