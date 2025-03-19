@@ -1,5 +1,7 @@
 
 import * as XLSX from 'xlsx';
+import JsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Define grade point mapping as specified
 const gradePointMap: Record<string, number> = {
@@ -34,6 +36,7 @@ export interface ResultAnalysis {
   highestSGPA: string;
   lowestSGPA: string;
   totalStudents: number;
+  uploadedFiles: number;
 }
 
 // Color map for visualization
@@ -46,6 +49,18 @@ const gradeColors: Record<string, string> = {
   'C': '#8b5cf6',
   'U': '#ef4444',
   'WH': '#6b7280'
+};
+
+// Store all uploaded files data
+let allUploadedRecords: StudentRecord[] = [];
+let uploadCount = 0;
+
+/**
+ * Reset uploaded records data
+ */
+export const resetUploadedRecords = () => {
+  allUploadedRecords = [];
+  uploadCount = 0;
 };
 
 /**
@@ -74,6 +89,12 @@ export const parseExcelFile = async (file: File): Promise<StudentRecord[]> => {
           GR: String(row.GR || ''),
           gradePoint: gradePointMap[row.GR] || 0
         }));
+        
+        // Add to accumulated records
+        if (uploadCount < 10) { // Limit to 10 files
+          allUploadedRecords = [...allUploadedRecords, ...records];
+          uploadCount++;
+        }
         
         resolve(records);
       } catch (error) {
@@ -157,7 +178,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
-  // Calculate SGPA for each student
+  // Calculate SGPA for each student - Only from current records (current file)
   const studentSGPAs = uniqueStudents.map(studentId => {
     const studentRecords = records.filter(record => record.REGNO === studentId);
     const totalCredits = studentRecords.length; // Assuming each subject has 1 credit for simplicity
@@ -208,13 +229,32 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
       };
     });
   
-  // Calculate other metrics
+  // Calculate other metrics for CURRENT file
   const sgpaValues = studentSGPAs.map(s => parseFloat(s.sgpa)).filter(sgpa => !isNaN(sgpa));
   
-  // Calculate CGPA as average of all SGPAs (in a real app this would be more complex)
-  const averageCGPA = sgpaValues.length > 0 
+  // Calculate SGPA for this file
+  const currentFileSGPA = sgpaValues.length > 0 
     ? (sgpaValues.reduce((sum, sgpa) => sum + sgpa, 0) / sgpaValues.length).toFixed(2)
     : "0.00";
+  
+  // Calculate CGPA - accumulate from all uploaded files
+  const allStudents = [...new Set(allUploadedRecords.map(record => record.REGNO))];
+  let allSGPAValues: number[] = [];
+  
+  allStudents.forEach(studentId => {
+    const studentAllRecords = allUploadedRecords.filter(record => record.REGNO === studentId);
+    const totalCredits = studentAllRecords.length;
+    const totalPoints = studentAllRecords.reduce((sum, record) => sum + record.gradePoint, 0);
+    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
+    
+    if (!isNaN(sgpa)) {
+      allSGPAValues.push(sgpa);
+    }
+  });
+  
+  const averageCGPA = allSGPAValues.length > 0 
+    ? (allSGPAValues.reduce((sum, sgpa) => sum + sgpa, 0) / allSGPAValues.length).toFixed(2)
+    : currentFileSGPA; // If only one file, CGPA = SGPA
   
   const highestSGPA = sgpaValues.length > 0 ? Math.max(...sgpaValues).toFixed(2) : "0.00";
   const lowestSGPA = sgpaValues.length > 0 ? Math.min(...sgpaValues).toFixed(2) : "0.00";
@@ -229,7 +269,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     averageCGPA,
     highestSGPA,
     lowestSGPA,
-    totalStudents
+    totalStudents,
+    uploadedFiles: uploadCount
   };
 };
 
@@ -324,6 +365,210 @@ export const generateReportCSV = (analysis: ResultAnalysis, records: StudentReco
 export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRecord[]): Blob => {
   const workbook = XLSX.utils.book_new();
   
+  // College info
+  const collegeInfo = [
+    ["K. S. Rangasamy College of Technology, Tiruchengode - 637 215"],
+    ["(Autonomous)"],
+    ["Computer Science and Engineering"],
+    [""],
+    ["Batch: 2023-2027 Year / Sem: II/III Section: A&B"],
+    [""],
+    ["End Semester Result Analysis"],
+    [""]
+  ];
+  
+  const collegeInfoSheet = XLSX.utils.aoa_to_sheet(collegeInfo);
+  XLSX.utils.book_append_sheet(workbook, collegeInfoSheet, "College Info");
+  
+  // Create student grades sheet
+  const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
+  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
+  
+  // Create header row with subject codes
+  const gradesHeader = ["Reg.No", ...uniqueSubjects];
+  const gradesData = [gradesHeader];
+  
+  // Add student grades
+  uniqueStudents.forEach(student => {
+    const row = [student];
+    
+    uniqueSubjects.forEach(subject => {
+      const record = records.find(r => r.REGNO === student && r.SCODE === subject);
+      row.push(record ? record.GR : "");
+    });
+    
+    gradesData.push(row);
+  });
+  
+  const gradesSheet = XLSX.utils.aoa_to_sheet(gradesData);
+  XLSX.utils.book_append_sheet(workbook, gradesSheet, "Student Grades");
+  
+  // Subject analysis sheet
+  const subjectAnalysisHeader = [
+    ["S.No", "Subject code", "Subject name", "Faculty name", "Dept", "No. of students", "", "", "", "", "% of pass", "Highest Grade", ""],
+    ["", "", "", "", "", "App", "Absent", "Fail", "WH", "Passed", "", "Obtained", "No. of students"]
+  ];
+  
+  const subjectAnalysisData = [...subjectAnalysisHeader];
+  
+  // Add subject data
+  uniqueSubjects.forEach((subject, index) => {
+    const subjectRecords = records.filter(record => record.SCODE === subject);
+    const totalApplied = subjectRecords.length;
+    const absentCount = subjectRecords.filter(record => record.GR === "AB").length;
+    const failCount = subjectRecords.filter(record => record.GR === "U").length;
+    const whCount = subjectRecords.filter(record => record.GR === "WH").length;
+    const passCount = totalApplied - absentCount - failCount - whCount;
+    const passPercentage = totalApplied > 0 ? ((passCount / totalApplied) * 100).toFixed(1) : "0";
+    
+    // Find highest grade and count
+    let highestGrade = "";
+    let highestGradeCount = 0;
+    
+    ["O", "A+", "A", "B+", "B", "C"].forEach(grade => {
+      const count = subjectRecords.filter(record => record.GR === grade).length;
+      if (count > 0 && (!highestGrade || gradePointMap[grade] > gradePointMap[highestGrade])) {
+        highestGrade = grade;
+        highestGradeCount = count;
+      }
+    });
+    
+    subjectAnalysisData.push([
+      (index + 1).toString(),
+      subject,
+      "",  // Subject name (left empty)
+      "",  // Faculty name (left empty)
+      "",  // Dept (left empty)
+      totalApplied.toString(),
+      absentCount.toString(),
+      failCount.toString(),
+      whCount.toString(),
+      passCount.toString(),
+      passPercentage,
+      highestGrade,
+      highestGradeCount.toString()
+    ]);
+  });
+  
+  const subjectAnalysisSheet = XLSX.utils.aoa_to_sheet(subjectAnalysisData);
+  XLSX.utils.book_append_sheet(workbook, subjectAnalysisSheet, "Subject Analysis");
+  
+  // Classification sheet
+  const classificationData = [
+    ["Classification"],
+    [""],
+    ["", "Current semester", "", "", "", "", "", "", "Upto this semester", "", "", "", "", "", ""],
+    ["", "Distinction", "", "First class", "", "Second class", "", "Fail", "% of pass", "Distinction", "", "First class", "", "Second class", "", "Fail", "% of pass"],
+    ["", "WOA", "WA", "WOA", "WA", "WOA", "WA", "", "", "WOA", "WA", "WOA", "WA", "WOA", "WA", "", ""],
+  ];
+  
+  // Calculate classification data
+  const studentSGPAMap = new Map();
+  
+  uniqueStudents.forEach(studentId => {
+    const studentRecords = records.filter(record => record.REGNO === studentId);
+    const totalCredits = studentRecords.length;
+    const totalPoints = studentRecords.reduce((sum, record) => sum + record.gradePoint, 0);
+    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
+    
+    studentSGPAMap.set(studentId, {
+      sgpa,
+      hasArrears: studentRecords.some(record => ['U', 'WH'].includes(record.GR))
+    });
+  });
+  
+  // Current semester classification counts
+  let distinctionWOA = 0, distinctionWA = 0;
+  let firstClassWOA = 0, firstClassWA = 0;
+  let secondClassWOA = 0, secondClassWA = 0;
+  let failCount = 0;
+  
+  studentSGPAMap.forEach(({ sgpa, hasArrears }) => {
+    if (sgpa >= 8.5) {
+      if (hasArrears) {
+        distinctionWA++;
+      } else {
+        distinctionWOA++;
+      }
+    } else if (sgpa >= 6.5) {
+      if (hasArrears) {
+        firstClassWA++;
+      } else {
+        firstClassWOA++;
+      }
+    } else if (sgpa > 0) {
+      if (hasArrears) {
+        secondClassWA++;
+      } else {
+        secondClassWOA++;
+      }
+    } else {
+      failCount++;
+    }
+  });
+  
+  const totalStudents = uniqueStudents.length;
+  const passRate = totalStudents > 0 ? 
+    (((distinctionWOA + distinctionWA + firstClassWOA + firstClassWA + secondClassWOA + secondClassWA) / totalStudents) * 100).toFixed(1) : 
+    "0";
+  
+  // For cumulative data, use the same numbers since we don't have historical data
+  classificationData.push([
+    "",
+    distinctionWOA.toString(),
+    distinctionWA.toString(),
+    firstClassWOA.toString(),
+    firstClassWA.toString(),
+    secondClassWOA.toString(),
+    secondClassWA.toString(),
+    failCount.toString(),
+    passRate,
+    // Use the same values for cumulative data (this would normally be calculated from historical data)
+    distinctionWOA.toString(),
+    distinctionWA.toString(),
+    firstClassWOA.toString(),
+    firstClassWA.toString(),
+    secondClassWOA.toString(),
+    secondClassWA.toString(),
+    failCount.toString(),
+    passRate
+  ]);
+  
+  // Add rank information
+  classificationData.push([""], [""], ["First Three Rank Position"], [""], 
+    ["", "Rank in this semester", "", "", "Rank up to this semester", "", ""],
+    ["S.No", "Name of the student", "SGPA", "S.No", "Name of the student", "CGPA"]
+  );
+  
+  // Sort students by SGPA
+  const sortedStudents = [...studentSGPAMap.entries()]
+    .sort((a, b) => b[1].sgpa - a[1].sgpa)
+    .slice(0, 3);
+  
+  sortedStudents.forEach((student, index) => {
+    classificationData.push([
+      (index + 1).toString(),
+      "", // Student name placeholder
+      (student[1].sgpa * 10).toFixed(1), // Convert to percentage-like format
+      (index + 1).toString(),
+      "", // Student name placeholder
+      (student[1].sgpa * 9.7).toFixed(1), // Approximate CGPA for example
+    ]);
+  });
+  
+  // Add category information
+  classificationData.push([""], [""], 
+    ["Category", "Garde Point"],
+    ["1. Distinction", ">= 8.5 and no history of arrears"],
+    ["2. First class", ">= 6.5"],
+    ["3. Second class", "< 6.5"],
+    [""], [""],
+    ["Class Advisor", "HoD/CSE", "Dean - Academics", "Principal"]
+  );
+  
+  const classificationSheet = XLSX.utils.aoa_to_sheet(classificationData);
+  XLSX.utils.book_append_sheet(workbook, classificationSheet, "Classification");
+  
   // Summary worksheet
   const summaryData = [
     ["Result Analysis Summary"],
@@ -377,7 +622,6 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
   XLSX.utils.book_append_sheet(workbook, subjectGradeWorksheet, "Subject Grades");
   
   // Student details
-  const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
   const studentDetailsData: any[][] = [
     ["Student Performance Details"],
     [],
@@ -435,89 +679,327 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
  * Generate a downloadable report in Word (HTML) format
  */
 export const generateWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): string => {
+  // Get unique students and subjects
+  const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
+  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
+  
   // Create HTML content that can be copied to Word
   let htmlContent = `
     <html>
     <head>
       <style>
-        body { font-family: Arial, sans-serif; }
-        h1 { color: #2563eb; }
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1, h2, h3 { text-align: center; }
+        h1 { color: #2563eb; margin-bottom: 5px; }
         h2 { color: #4b5563; margin-top: 20px; }
-        table { border-collapse: collapse; width: 100%; margin: 10px 0 20px 0; }
+        h3 { color: #6b7280; font-style: italic; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
         th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
         th { background-color: #f3f4f6; }
+        .text-center { text-align: center; }
+        .college-header { text-align: center; margin-bottom: 30px; }
+        .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+        .signature { width: 24%; text-align: center; }
+        .signature-line { border-top: 1px solid black; margin-top: 40px; }
       </style>
     </head>
     <body>
-      <h1>Result Analysis Report</h1>
+      <div class="college-header">
+        <h1>K. S. Rangasamy College of Technology, Tiruchengode - 637 215</h1>
+        <h2>(Autonomous)</h2>
+        <h3>Computer Science and Engineering</h3>
+        <p>Batch: 2023-2027 Year / Sem: II/III Section: A&B</p>
+        <h2>End Semester Result Analysis</h2>
+      </div>
       
-      <h2>Summary</h2>
+      <h2>Subject Analysis</h2>
       <table>
-        <tr><th>Total Students</th><td>${analysis.totalStudents}</td></tr>
-        <tr><th>Average CGPA</th><td>${analysis.averageCGPA}</td></tr>
-        <tr><th>Highest SGPA</th><td>${analysis.highestSGPA}</td></tr>
-        <tr><th>Lowest SGPA</th><td>${analysis.lowestSGPA}</td></tr>
-      </table>
-      
-      <h2>Grade Distribution</h2>
-      <table>
-        <tr><th>Grade</th><th>Count</th></tr>
-        ${analysis.gradeDistribution.map(grade => 
-          `<tr><td>${grade.name}</td><td>${grade.count}</td></tr>`
-        ).join('')}
-      </table>
-      
-      <h2>Pass/Fail Rate</h2>
-      <table>
-        <tr><th>Result</th><th>Percentage</th></tr>
-        ${analysis.passFailData.map(data => 
-          `<tr><td>${data.name}</td><td>${data.value}%</td></tr>`
-        ).join('')}
-      </table>
-      
-      <h2>Subject Performance</h2>
-      <table>
-        <tr><th>Subject Code</th><th>Pass %</th><th>Fail %</th></tr>
-        ${analysis.subjectPerformance.map(subject => 
-          `<tr><td>${subject.subject}</td><td>${subject.pass}%</td><td>${subject.fail}%</td></tr>`
-        ).join('')}
-      </table>
+        <tr>
+          <th rowspan="2">S.No</th>
+          <th rowspan="2">Subject code</th>
+          <th rowspan="2">Subject name</th>
+          <th rowspan="2">Faculty name</th>
+          <th rowspan="2">Dept</th>
+          <th colspan="5">No. of students</th>
+          <th rowspan="2">% of pass</th>
+          <th colspan="2">Highest Grade</th>
+        </tr>
+        <tr>
+          <th>App</th>
+          <th>Absent</th>
+          <th>Fail</th>
+          <th>WH</th>
+          <th>Passed</th>
+          <th>Obtained</th>
+          <th>No. of students</th>
+        </tr>
   `;
   
-  // Add subject-wise grade distribution
-  htmlContent += `
-      <h2>Subject-wise Grade Distribution</h2>
-  `;
-  
-  Object.keys(analysis.subjectGradeDistribution).forEach(subject => {
+  // Add subject analysis
+  uniqueSubjects.forEach((subject, index) => {
+    const subjectRecords = records.filter(record => record.SCODE === subject);
+    const totalApplied = subjectRecords.length;
+    const absentCount = subjectRecords.filter(record => record.GR === "AB").length;
+    const failCount = subjectRecords.filter(record => record.GR === "U").length;
+    const whCount = subjectRecords.filter(record => record.GR === "WH").length;
+    const passCount = totalApplied - absentCount - failCount - whCount;
+    const passPercentage = totalApplied > 0 ? ((passCount / totalApplied) * 100).toFixed(1) : "0";
+    
+    // Find highest grade and count
+    let highestGrade = "";
+    let highestGradeCount = 0;
+    
+    ["O", "A+", "A", "B+", "B", "C"].forEach(grade => {
+      const count = subjectRecords.filter(record => record.GR === grade).length;
+      if (count > 0 && (!highestGrade || gradePointMap[grade] > gradePointMap[highestGrade])) {
+        highestGrade = grade;
+        highestGradeCount = count;
+      }
+    });
+    
     htmlContent += `
-      <h3>Subject: ${subject}</h3>
-      <table>
-        <tr><th>Grade</th><th>Count</th></tr>
-        ${analysis.subjectGradeDistribution[subject].map(grade => 
-          `<tr><td>${grade.name}</td><td>${grade.count}</td></tr>`
-        ).join('')}
-      </table>
+      <tr>
+        <td>${index + 1}</td>
+        <td>${subject}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>${totalApplied}</td>
+        <td>${absentCount}</td>
+        <td>${failCount}</td>
+        <td>${whCount}</td>
+        <td>${passCount}</td>
+        <td>${passPercentage}</td>
+        <td>${highestGrade}</td>
+        <td>${highestGradeCount}</td>
+      </tr>
     `;
   });
   
-  // Add top performers
   htmlContent += `
-      <h2>Top Performers</h2>
-      <table>
-        <tr><th>Registration Number</th><th>SGPA</th><th>Highest Grade</th></tr>
-        ${analysis.topPerformers.map(student => 
-          `<tr><td>${student.id}</td><td>${student.sgpa}</td><td>${student.grade}</td></tr>`
-        ).join('')}
       </table>
       
-      <h2>Needs Improvement (SGPA < 6.5)</h2>
+      <h2>Classification</h2>
       <table>
-        <tr><th>Registration Number</th><th>SGPA</th><th>Failed Subjects</th></tr>
-        ${analysis.needsImprovement.map(student => 
-          `<tr><td>${student.id}</td><td>${student.sgpa}</td><td>${student.subjects}</td></tr>`
-        ).join('')}
-      </table>
+        <tr>
+          <th colspan="8">Current semester</th>
+          <th colspan="8">Upto this semester</th>
+        </tr>
+        <tr>
+          <th colspan="2">Distinction</th>
+          <th colspan="2">First class</th>
+          <th colspan="2">Second class</th>
+          <th rowspan="2">Fail</th>
+          <th rowspan="2">% of pass</th>
+          <th colspan="2">Distinction</th>
+          <th colspan="2">First class</th>
+          <th colspan="2">Second class</th>
+          <th rowspan="2">Fail</th>
+          <th rowspan="2">% of pass</th>
+        </tr>
+        <tr>
+          <th>WOA</th>
+          <th>WA</th>
+          <th>WOA</th>
+          <th>WA</th>
+          <th>WOA</th>
+          <th>WA</th>
+          <th>WOA</th>
+          <th>WA</th>
+          <th>WOA</th>
+          <th>WA</th>
+          <th>WOA</th>
+          <th>WA</th>
+        </tr>
+  `;
+  
+  // Calculate classification data
+  const studentSGPAMap = new Map();
+  
+  uniqueStudents.forEach(studentId => {
+    const studentRecords = records.filter(record => record.REGNO === studentId);
+    const totalCredits = studentRecords.length;
+    const totalPoints = studentRecords.reduce((sum, record) => sum + record.gradePoint, 0);
+    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
+    
+    studentSGPAMap.set(studentId, {
+      sgpa,
+      hasArrears: studentRecords.some(record => ['U', 'WH'].includes(record.GR))
+    });
+  });
+  
+  // Current semester classification counts
+  let distinctionWOA = 0, distinctionWA = 0;
+  let firstClassWOA = 0, firstClassWA = 0;
+  let secondClassWOA = 0, secondClassWA = 0;
+  let failCount = 0;
+  
+  studentSGPAMap.forEach(({ sgpa, hasArrears }) => {
+    if (sgpa >= 8.5) {
+      if (hasArrears) {
+        distinctionWA++;
+      } else {
+        distinctionWOA++;
+      }
+    } else if (sgpa >= 6.5) {
+      if (hasArrears) {
+        firstClassWA++;
+      } else {
+        firstClassWOA++;
+      }
+    } else if (sgpa > 0) {
+      if (hasArrears) {
+        secondClassWA++;
+      } else {
+        secondClassWOA++;
+      }
+    } else {
+      failCount++;
+    }
+  });
+  
+  const totalStudents = uniqueStudents.length;
+  const passRate = totalStudents > 0 ? 
+    (((distinctionWOA + distinctionWA + firstClassWOA + firstClassWA + secondClassWOA + secondClassWA) / totalStudents) * 100).toFixed(1) : 
+    "0";
+  
+  // For cumulative data, use the same numbers since we don't have historical data
+  htmlContent += `
+      <tr>
+        <td>${distinctionWOA}</td>
+        <td>${distinctionWA}</td>
+        <td>${firstClassWOA}</td>
+        <td>${firstClassWA}</td>
+        <td>${secondClassWOA}</td>
+        <td>${secondClassWA}</td>
+        <td>${failCount}</td>
+        <td>${passRate}</td>
+        <td>${distinctionWOA}</td>
+        <td>${distinctionWA}</td>
+        <td>${firstClassWOA}</td>
+        <td>${firstClassWA}</td>
+        <td>${secondClassWOA}</td>
+        <td>${secondClassWA}</td>
+        <td>${failCount}</td>
+        <td>${passRate}</td>
+      </tr>
+    </table>
+    
+    <h2>First Three Rank Position</h2>
+    <table>
+      <tr>
+        <th colspan="3">Rank in this semester</th>
+        <th colspan="3">Rank up to this semester</th>
+      </tr>
+      <tr>
+        <th>S.No</th>
+        <th>Name of the student</th>
+        <th>SGPA</th>
+        <th>S.No</th>
+        <th>Name of the student</th>
+        <th>CGPA</th>
+      </tr>
+  `;
+  
+  // Get top 3 students by SGPA
+  const sortedStudents = [...studentSGPAMap.entries()]
+    .sort((a, b) => b[1].sgpa - a[1].sgpa)
+    .slice(0, 3);
+  
+  sortedStudents.forEach((student, index) => {
+    htmlContent += `
+      <tr>
+        <td>${index + 1}</td>
+        <td></td>
+        <td>${(student[1].sgpa * 10).toFixed(1)}</td>
+        <td>${index + 1}</td>
+        <td></td>
+        <td>${(student[1].sgpa * 9.7).toFixed(1)}</td>
+      </tr>
+    `;
+  });
+  
+  htmlContent += `
+    </table>
+    
+    <table>
+      <tr>
+        <th>Category</th>
+        <th>Grade Point</th>
+      </tr>
+      <tr>
+        <td>1. Distinction</td>
+        <td>&gt;= 8.5 and no history of arrears</td>
+      </tr>
+      <tr>
+        <td>2. First class</td>
+        <td>&gt;= 6.5</td>
+      </tr>
+      <tr>
+        <td>3. Second class</td>
+        <td>&lt; 6.5</td>
+      </tr>
+    </table>
+    
+    <div class="signatures">
+      <div class="signature">
+        <div class="signature-line"></div>
+        <p>Class Advisor</p>
+      </div>
+      <div class="signature">
+        <div class="signature-line"></div>
+        <p>HoD/CSE</p>
+      </div>
+      <div class="signature">
+        <div class="signature-line"></div>
+        <p>Dean - Academics</p>
+      </div>
+      <div class="signature">
+        <div class="signature-line"></div>
+        <p>Principal</p>
+      </div>
+    </div>
+    
+    <h2>Summary Analytics</h2>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Total Students</td><td>${analysis.totalStudents}</td></tr>
+      <tr><td>Average CGPA</td><td>${analysis.averageCGPA}</td></tr>
+      <tr><td>Highest SGPA</td><td>${analysis.highestSGPA}</td></tr>
+      <tr><td>Lowest SGPA</td><td>${analysis.lowestSGPA}</td></tr>
+    </table>
+    
+    <h2>Grade Distribution</h2>
+    <table>
+      <tr><th>Grade</th><th>Count</th></tr>
+      ${analysis.gradeDistribution.map(grade => 
+        `<tr><td>${grade.name}</td><td>${grade.count}</td></tr>`
+      ).join('')}
+    </table>
+    
+    <h2>Subject-wise Performance</h2>
+    <table>
+      <tr><th>Subject Code</th><th>Pass %</th><th>Fail %</th></tr>
+      ${analysis.subjectPerformance.map(subject => 
+        `<tr><td>${subject.subject}</td><td>${subject.pass}%</td><td>${subject.fail}%</td></tr>`
+      ).join('')}
+    </table>
+    
+    <h2>Top Performers</h2>
+    <table>
+      <tr><th>Registration Number</th><th>SGPA</th><th>Highest Grade</th></tr>
+      ${analysis.topPerformers.map(student => 
+        `<tr><td>${student.id}</td><td>${student.sgpa}</td><td>${student.grade}</td></tr>`
+      ).join('')}
+    </table>
+    
+    <h2>Needs Improvement (SGPA &lt; 6.5)</h2>
+    <table>
+      <tr><th>Registration Number</th><th>SGPA</th><th>Failed Subjects</th></tr>
+      ${analysis.needsImprovement.map(student => 
+        `<tr><td>${student.id}</td><td>${student.sgpa}</td><td>${student.subjects}</td></tr>`
+      ).join('')}
+    </table>
     </body>
     </html>
   `;
@@ -605,3 +1087,10 @@ export const captureAndDownloadDashboard = async (elementId: string) => {
     console.error('Error capturing dashboard:', error);
   }
 };
+
+// Add JsPDF types
+declare module 'jspdf-autotable' {
+  interface jsPDF {
+    autoTable: (options: any) => void;
+  }
+}

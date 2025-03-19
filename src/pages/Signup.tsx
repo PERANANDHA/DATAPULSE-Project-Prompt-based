@@ -16,15 +16,28 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Check, X } from 'lucide-react';
 
+// Enhanced password validation
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   staffId: z.string().min(1, { message: "Staff ID is required." }),
   phoneNumber: z.string().min(10, { message: "Please enter a valid phone number." }),
   department: z.string().min(1, { message: "Department name is required." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters." })
+    .refine(password => /[A-Z]/.test(password), {
+      message: "Password must contain at least one uppercase letter",
+    })
+    .refine(password => /[a-z]/.test(password), {
+      message: "Password must contain at least one lowercase letter",
+    })
+    .refine(password => /[0-9]/.test(password), {
+      message: "Password must contain at least one number",
+    })
+    .refine(password => /[^A-Za-z0-9]/.test(password), {
+      message: "Password must contain at least one special character",
+    }),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -38,8 +51,16 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [existingUsers, setExistingUsers] = useState<{ email: string }[]>([]);
+  const [password, setPassword] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Password validation criteria checks
+  const hasMinLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
 
   // Load stored users from localStorage
   useEffect(() => {
@@ -61,6 +82,13 @@ const Signup = () => {
       confirmPassword: "",
     },
   });
+
+  // Update password state when form field changes
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    form.setValue("password", newPassword);
+  };
 
   const onSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
@@ -228,7 +256,11 @@ const Signup = () => {
                           <Input 
                             type={showPassword ? "text" : "password"} 
                             placeholder="••••••••" 
-                            {...field} 
+                            {...field}
+                            onChange={(e) => {
+                              handlePasswordChange(e);
+                              field.onChange(e);
+                            }}
                           />
                           <button 
                             type="button"
@@ -240,6 +272,58 @@ const Signup = () => {
                         </div>
                       </FormControl>
                       <FormMessage />
+                      
+                      {/* Password strength indicators */}
+                      <div className="mt-2 space-y-1.5">
+                        <p className="text-xs font-medium mb-1">Password must contain:</p>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="flex items-center">
+                            {hasMinLength ? 
+                              <Check className="h-3 w-3 mr-2 text-green-500" /> : 
+                              <X className="h-3 w-3 mr-2 text-red-500" />
+                            }
+                            <span className={`text-xs ${hasMinLength ? "text-green-500" : "text-muted-foreground"}`}>
+                              At least 8 characters
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            {hasUpperCase ? 
+                              <Check className="h-3 w-3 mr-2 text-green-500" /> : 
+                              <X className="h-3 w-3 mr-2 text-red-500" />
+                            }
+                            <span className={`text-xs ${hasUpperCase ? "text-green-500" : "text-muted-foreground"}`}>
+                              At least one uppercase letter
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            {hasLowerCase ? 
+                              <Check className="h-3 w-3 mr-2 text-green-500" /> : 
+                              <X className="h-3 w-3 mr-2 text-red-500" />
+                            }
+                            <span className={`text-xs ${hasLowerCase ? "text-green-500" : "text-muted-foreground"}`}>
+                              At least one lowercase letter
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            {hasNumber ? 
+                              <Check className="h-3 w-3 mr-2 text-green-500" /> : 
+                              <X className="h-3 w-3 mr-2 text-red-500" />
+                            }
+                            <span className={`text-xs ${hasNumber ? "text-green-500" : "text-muted-foreground"}`}>
+                              At least one number
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            {hasSpecialChar ? 
+                              <Check className="h-3 w-3 mr-2 text-green-500" /> : 
+                              <X className="h-3 w-3 mr-2 text-red-500" />
+                            }
+                            <span className={`text-xs ${hasSpecialChar ? "text-green-500" : "text-muted-foreground"}`}>
+                              At least one special character
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </FormItem>
                   )}
                 />
