@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -17,7 +16,15 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -26,11 +33,35 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  otp: z.string().min(6, { message: "Please enter a valid OTP." }).optional(),
+  newPassword: z.string().min(8, { message: "Password must be at least 8 characters." }).optional(),
+  confirmPassword: z.string().optional(),
+}).refine(data => !data.newPassword || data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAccountNotFound, setIsAccountNotFound] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<'email' | 'otp' | 'newPassword'>('email');
+  const [users, setUsers] = useState<{email: string, password: string}[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Load stored users from localStorage
+  useEffect(() => {
+    const storedUsers = localStorage.getItem('registeredUsers');
+    if (storedUsers) {
+      setUsers(JSON.parse(storedUsers));
+    }
+  }, []);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -40,11 +71,43 @@ const Login = () => {
     },
   });
 
+  const forgotPasswordForm = useForm<ForgotPasswordValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: "",
+      otp: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
+    setIsAccountNotFound(false);
     
     try {
-      // In a real application, this would call an API
+      // Check if user exists in localStorage
+      const userExists = users.some(user => user.email === values.email);
+      
+      if (!userExists) {
+        console.log("Account not found:", values.email);
+        setIsAccountNotFound(true);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if password matches
+      const user = users.find(user => user.email === values.email);
+      if (user && user.password !== values.password) {
+        toast({
+          variant: "destructive",
+          title: "Authentication failed",
+          description: "The email or password you entered is incorrect.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       console.log("Login credentials:", values);
       
       // Simulate API call
@@ -72,7 +135,88 @@ const Login = () => {
     }
   };
 
+  const handleForgotPassword = async (values: ForgotPasswordValues) => {
+    setIsLoading(true);
+    
+    try {
+      // Check if email exists in registered users
+      const userExists = users.some(user => user.email === values.email);
+      
+      if (forgotPasswordStep === 'email') {
+        if (!userExists) {
+          toast({
+            variant: "destructive",
+            title: "Account not found",
+            description: "There is no account associated with this email address.",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Simulate sending OTP
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        toast({
+          title: "OTP Sent",
+          description: "A one-time password has been sent to your registered phone number.",
+        });
+        
+        setForgotPasswordStep('otp');
+      } else if (forgotPasswordStep === 'otp') {
+        // Simulate verifying OTP - in a real app, you would verify against a real OTP
+        if (values.otp !== '123456') {
+          toast({
+            variant: "destructive",
+            title: "Invalid OTP",
+            description: "The OTP you entered is incorrect. Please try again.",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        setForgotPasswordStep('newPassword');
+      } else if (forgotPasswordStep === 'newPassword') {
+        // In a real app, you would update the user's password in your database
+        // Here we'll update it in localStorage
+        const updatedUsers = users.map(user => {
+          if (user.email === values.email) {
+            return { ...user, password: values.newPassword as string };
+          }
+          return user;
+        });
+        
+        localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
+        setUsers(updatedUsers);
+        
+        toast({
+          title: "Password Reset Successful",
+          description: "Your password has been reset. You can now log in with your new password.",
+        });
+        
+        // Close dialog and reset form
+        setShowForgotPassword(false);
+        setForgotPasswordStep('email');
+        forgotPasswordForm.reset();
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "There was an error processing your request. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+  const resetForgotPassword = () => {
+    setForgotPasswordStep('email');
+    forgotPasswordForm.reset();
+    setShowForgotPassword(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -95,6 +239,21 @@ const Login = () => {
               <h1 className="text-2xl font-semibold mb-2">Welcome back</h1>
               <p className="text-muted-foreground text-sm">Enter your credentials to access your account</p>
             </div>
+            
+            {isAccountNotFound && (
+              <div className="mb-6 p-3 border border-destructive/50 bg-destructive/10 rounded-md flex items-start">
+                <AlertCircle className="h-5 w-5 text-destructive mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-destructive">Account not found</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This email is not registered. Please 
+                    <Link to="/signup" className="text-primary font-medium ml-1 hover:underline">
+                      sign up
+                    </Link> to create an account.
+                  </p>
+                </div>
+              </div>
+            )}
             
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -119,9 +278,13 @@ const Login = () => {
                     <FormItem>
                       <div className="flex items-center justify-between">
                         <FormLabel>Password</FormLabel>
-                        <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                        <button 
+                          type="button"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => setShowForgotPassword(true)}
+                        >
                           Forgot password?
-                        </Link>
+                        </button>
                       </div>
                       <FormControl>
                         <div className="relative">
@@ -159,6 +322,101 @@ const Login = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={resetForgotPassword}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>
+              {forgotPasswordStep === 'email' && "Enter your email to receive an OTP."}
+              {forgotPasswordStep === 'otp' && "Enter the OTP sent to your registered phone number."}
+              {forgotPasswordStep === 'newPassword' && "Create a new password for your account."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...forgotPasswordForm}>
+            <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
+              {forgotPasswordStep === 'email' && (
+                <FormField
+                  control={forgotPasswordForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="your.email@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {forgotPasswordStep === 'otp' && (
+                <FormField
+                  control={forgotPasswordForm.control}
+                  name="otp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>One-Time Password</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter 6-digit OTP" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        For demonstration, use OTP: 123456
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {forgotPasswordStep === 'newPassword' && (
+                <>
+                  <FormField
+                    control={forgotPasswordForm.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>New Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={forgotPasswordForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+              
+              <DialogFooter>
+                <Button type="submit" disabled={isLoading} className="w-full">
+                  {isLoading ? "Processing..." : 
+                    forgotPasswordStep === 'email' ? "Send OTP" : 
+                    forgotPasswordStep === 'otp' ? "Verify OTP" : 
+                    "Reset Password"
+                  }
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

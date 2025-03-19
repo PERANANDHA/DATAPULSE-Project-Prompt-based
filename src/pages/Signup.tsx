@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -38,8 +37,17 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [existingUsers, setExistingUsers] = useState<{ email: string }[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Load stored users from localStorage
+  useEffect(() => {
+    const storedUsers = localStorage.getItem('registeredUsers');
+    if (storedUsers) {
+      setExistingUsers(JSON.parse(storedUsers));
+    }
+  }, []);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -58,11 +66,35 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Check if email already exists
+      if (existingUsers.some(user => user.email === values.email)) {
+        toast({
+          variant: "destructive",
+          title: "Email already in use",
+          description: "An account with this email address already exists. Please log in or use a different email.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       // In a real application, this would call an API
       console.log("Form values:", values);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Store user details in localStorage for demo purposes
+      const newUser = {
+        name: values.name,
+        email: values.email,
+        staffId: values.staffId,
+        phoneNumber: values.phoneNumber,
+        department: values.department,
+        password: values.password,
+      };
+      
+      const updatedUsers = [...existingUsers, newUser];
+      localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
       
       toast({
         title: "Account created!",

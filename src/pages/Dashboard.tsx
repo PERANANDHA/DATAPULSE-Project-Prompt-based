@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,35 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Upload, FileSpreadsheet, Download, LogOut, User, BarChart4, PieChart as PieChartIcon, Loader } from 'lucide-react';
+import { 
+  Upload, 
+  FileSpreadsheet, 
+  Download, 
+  LogOut, 
+  User, 
+  BarChart4, 
+  PieChart as PieChartIcon, 
+  Loader, 
+  FileText, 
+  FileImage, 
+  FileSpreadsheetIcon 
+} from 'lucide-react';
 import { 
   parseExcelFile, 
   analyzeResults, 
   downloadCSVReport,
+  downloadExcelReport,
+  downloadWordReport,
+  captureAndDownloadDashboard,
   type StudentRecord,
   type ResultAnalysis
 } from '@/utils/excelProcessor';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload');
@@ -36,6 +57,8 @@ const Dashboard = () => {
   const [resultsAvailable, setResultsAvailable] = useState(false);
   const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [resultAnalysis, setResultAnalysis] = useState<ResultAnalysis | null>(null);
+  const [activeSubjectTab, setActiveSubjectTab] = useState<string | null>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -83,6 +106,11 @@ const Dashboard = () => {
       const analysis = analyzeResults(records);
       setResultAnalysis(analysis);
       
+      // Set the first subject as active for subject-specific charts
+      if (analysis.subjectGradeDistribution && Object.keys(analysis.subjectGradeDistribution).length > 0) {
+        setActiveSubjectTab(Object.keys(analysis.subjectGradeDistribution)[0]);
+      }
+      
       setIsAnalyzing(false);
       setResultsAvailable(true);
       setActiveTab('results');
@@ -104,7 +132,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleDownloadReport = () => {
+  const handleDownloadReport = (format: 'csv' | 'excel' | 'word' | 'image') => {
     if (!resultAnalysis || !studentRecords.length) {
       toast({
         variant: "destructive",
@@ -114,13 +142,30 @@ const Dashboard = () => {
       return;
     }
     
-    // Download CSV report
-    downloadCSVReport(resultAnalysis, studentRecords);
-    
-    toast({
-      title: "Report downloaded",
-      description: "Your analysis report has been downloaded as CSV.",
-    });
+    try {
+      // Download report based on selected format
+      if (format === 'csv') {
+        downloadCSVReport(resultAnalysis, studentRecords);
+      } else if (format === 'excel') {
+        downloadExcelReport(resultAnalysis, studentRecords);
+      } else if (format === 'word') {
+        downloadWordReport(resultAnalysis, studentRecords);
+      } else if (format === 'image') {
+        captureAndDownloadDashboard('dashboard-content');
+      }
+      
+      toast({
+        title: "Report downloaded",
+        description: `Your analysis report has been downloaded as ${format.toUpperCase()}.`,
+      });
+    } catch (error) {
+      console.error("Download error:", error);
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: "There was a problem generating your report. Please try again.",
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -145,13 +190,19 @@ const Dashboard = () => {
         </div>
       );
     }
+    
+    // Get unique subjects for the subject-specific tabs
+    const uniqueSubjects = Object.keys(resultAnalysis.subjectGradeDistribution);
 
     return (
       <motion.div 
+        id="dashboard-content"
+        ref={dashboardRef}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
+        className="space-y-6"
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card>
@@ -187,7 +238,7 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Grade Distribution</CardTitle>
-              <CardDescription>Count of grades across classes</CardDescription>
+              <CardDescription>Count of grades across all subjects</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[200px]">
@@ -236,95 +287,162 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        {/* Subject-wise Grade Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Subject-wise Grade Distribution</CardTitle>
+            <CardDescription>Grade breakdown for each subject</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs 
+              value={activeSubjectTab || uniqueSubjects[0]} 
+              onValueChange={setActiveSubjectTab}
+              className="space-y-4"
+            >
+              <TabsList className="flex flex-wrap mb-4">
+                {uniqueSubjects.map(subject => (
+                  <TabsTrigger key={subject} value={subject}>
+                    {subject}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              
+              {uniqueSubjects.map(subject => (
+                <TabsContent key={subject} value={subject}>
+                  <div className="h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={resultAnalysis.subjectGradeDistribution[subject]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <RechartsTooltip />
+                        <Bar dataKey="count" name="Count">
+                          {resultAnalysis.subjectGradeDistribution[subject].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Subject-wise Performance</CardTitle>
+            <CardDescription>Pass/fail rate across different subjects</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={resultAnalysis.subjectPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="subject" />
+                  <YAxis />
+                  <RechartsTooltip />
+                  <Legend />
+                  <Bar dataKey="pass" stackId="a" fill="#22c55e" name="Pass %" />
+                  <Bar dataKey="fail" stackId="a" fill="#ef4444" name="Fail %" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Subject-wise Performance</CardTitle>
-              <CardDescription>Pass/fail rate across different subjects</CardDescription>
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Top Performers
+              </CardTitle>
+              <CardDescription>Students with highest SGPA</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={resultAnalysis.subjectPerformance}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="subject" />
-                    <YAxis />
-                    <RechartsTooltip />
-                    <Legend />
-                    <Bar dataKey="pass" stackId="a" fill="#22c55e" name="Pass %" />
-                    <Bar dataKey="fail" stackId="a" fill="#ef4444" name="Fail %" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="space-y-4">
+                {resultAnalysis.topPerformers.map((student, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
+                    <div>
+                      <p className="font-medium">Student</p>
+                      <p className="text-xs text-muted-foreground">ID: {student.id}</p>
+                    </div>
+                    <div className="flex items-center">
+                      <span className={`px-2 py-1 rounded-full text-xs mr-2 ${
+                        student.grade === "O" ? "bg-primary/10 text-primary" :
+                        student.grade === "A+" ? "bg-green-100 text-green-800" :
+                        "bg-blue-100 text-blue-800"
+                      }`}>
+                        {student.grade}
+                      </span>
+                      <span className="font-semibold">{student.sgpa}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Top Performers
-                </CardTitle>
-                <CardDescription>Students with highest CGPA</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {resultAnalysis.topPerformers.map((student, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
-                      <div>
-                        <p className="font-medium">Student</p>
-                        <p className="text-xs text-muted-foreground">ID: {student.id}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <span className={`px-2 py-1 rounded-full text-xs mr-2 ${
-                          student.grade === "O" ? "bg-primary/10 text-primary" :
-                          student.grade === "A+" ? "bg-green-100 text-green-800" :
-                          "bg-blue-100 text-blue-800"
-                        }`}>
-                          {student.grade}
-                        </span>
-                        <span className="font-semibold">{student.cgpa}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Needs Improvement
-                </CardTitle>
-                <CardDescription>Students requiring additional support</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {resultAnalysis.needsImprovement.map((student, index) => (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Needs Improvement
+              </CardTitle>
+              <CardDescription>Students with SGPA below 6.5</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {resultAnalysis.needsImprovement.length > 0 ? (
+                  resultAnalysis.needsImprovement.map((student, index) => (
                     <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
                       <div>
                         <p className="font-medium">Student</p>
                         <p className="text-xs text-muted-foreground">ID: {student.id}</p>
                       </div>
                       <div>
-                        <span className="font-semibold text-destructive">{student.cgpa}</span>
+                        <span className="font-semibold text-destructive">{student.sgpa}</span>
                         <p className="text-xs text-muted-foreground">{student.subjects}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center">No students with SGPA below 6.5</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <div className="flex justify-end">
-            <Button onClick={handleDownloadReport} className="flex items-center">
-              <Download className="h-4 w-4 mr-2" />
-              Download Full Report
-            </Button>
-          </div>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleDownloadReport('image')}>
+                <FileImage className="h-4 w-4 mr-2" />
+                <span>Download as Image</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
+                <FileText className="h-4 w-4 mr-2" />
+                <span>Download as Word</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
+                <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
+                <span>Download as Excel</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
+                <Download className="h-4 w-4 mr-2" />
+                <span>Download as CSV</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </motion.div>
     );
