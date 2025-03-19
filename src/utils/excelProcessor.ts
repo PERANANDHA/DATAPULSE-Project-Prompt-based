@@ -797,11 +797,11 @@ export const generateExcelReport = (analysis: ResultAnalysis, records: StudentRe
   });
   
   performanceData.push([]);
-  performanceData.push(["Needs Improvement (SGPA < 6.5)"]);
+  performanceData.push(["Needs Improvement (SGPA < 6.5 or with Arrears)"]);
   performanceData.push(["Registration Number", "SGPA", "Failed Subjects"]);
   
   analysis.needsImprovement.forEach(student => {
     performanceData.push([student.id, student.sgpa, student.subjects]);
   });
   
-  const performanceWorksheet = XLSX.utils.aoa_
+  const performanceWorksheet = XLSX.

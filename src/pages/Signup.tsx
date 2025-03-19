@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -79,6 +78,9 @@ const Signup = () => {
     const storedUsers = localStorage.getItem('registeredUsers');
     if (storedUsers) {
       setExistingUsers(JSON.parse(storedUsers));
+    } else {
+      // Initialize with empty array if no users exist
+      localStorage.setItem('registeredUsers', JSON.stringify([]));
     }
   }, []);
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -124,6 +123,13 @@ const Login = () => {
       if (!userExists) {
         console.log("Account not found:", values.email);
         setIsAccountNotFound(true);
+        
+        toast({
+          variant: "destructive",
+          title: "Login ID does not exist",
+          description: "This email is not registered. You will be redirected to sign up page.",
+        });
+        
         setRedirectToSignup(true);
         setIsLoading(false);
         return;
