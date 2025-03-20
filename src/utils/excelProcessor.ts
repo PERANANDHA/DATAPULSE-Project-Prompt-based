@@ -74,6 +74,11 @@ const getGradeColor = (grade: string): string => {
   return gradeColors[grade] || '#9ca3af'; // Default gray
 };
 
+// Helper function to format numbers to exactly 2 decimal places
+const formatTo2Decimals = (value: number): number => {
+  return Number(value.toFixed(2));
+};
+
 export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
   const studentRecords = records.filter(record => record.REGNO === studentId);
   let totalCredits = 0;
@@ -90,7 +95,7 @@ export const calculateSGPA = (records: StudentRecord[], studentId: string): numb
   });
 
   // Ensure exactly 2 decimal places with proper rounding
-  return totalCredits === 0 ? 0 : Number((weightedSum / totalCredits).toFixed(2));
+  return totalCredits === 0 ? 0 : formatTo2Decimals(weightedSum / totalCredits);
 };
 
 // Calculate CGPA from multiple semesters (files)
@@ -133,7 +138,7 @@ export const calculateCGPA = (
   });
   
   // Ensure exactly 2 decimal places with proper rounding
-  return totalCredits === 0 ? 0 : Number((totalWeightedSum / totalCredits).toFixed(2));
+  return totalCredits === 0 ? 0 : formatTo2Decimals(totalWeightedSum / totalCredits);
 };
 
 const hasArrears = (records: StudentRecord[], studentId: string): boolean => {
@@ -225,7 +230,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
       totalSGPA += calculateSGPA(fileRecords, studentId);
     });
     
-    const avgSGPA = fileStudentCount > 0 ? Number((totalSGPA / fileStudentCount).toFixed(2)) : 0;
+    const avgSGPA = fileStudentCount > 0 ? formatTo2Decimals(totalSGPA / fileStudentCount) : 0;
     
     fileWiseAnalysis[fileName] = {
       averageSGPA: avgSGPA,
@@ -246,9 +251,9 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
     cgpaAnalysis = {
       studentCGPAs,
-      averageCGPA: cgpaValues.length > 0 ? Number((cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length).toFixed(2)) : 0,
-      highestCGPA: cgpaValues.length > 0 ? Number(Math.max(...cgpaValues).toFixed(2)) : 0,
-      lowestCGPA: cgpaValues.length > 0 ? Number(Math.min(...cgpaValues).toFixed(2)) : 0,
+      averageCGPA: cgpaValues.length > 0 ? formatTo2Decimals(cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length) : 0,
+      highestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.max(...cgpaValues)) : 0,
+      lowestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.min(...cgpaValues)) : 0,
     };
   }
   
@@ -268,14 +273,17 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     });
   });
   
+  // Sort by registration number
+  studentSgpaDetails.sort((a, b) => a.id.localeCompare(b.id));
+  
   const averageCGPA = totalStudents > 0 ? 
-    Number((studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents).toFixed(2)) : 0;
+    formatTo2Decimals(studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents) : 0;
   
   const highestSGPA = studentSgpaDetails.length > 0 ? 
-    Number(Math.max(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2)) : 0;
+    formatTo2Decimals(Math.max(...studentSgpaDetails.map(student => student.sgpa))) : 0;
   
   const lowestSGPA = studentSgpaDetails.length > 0 ? 
-    Number(Math.min(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2)) : 0;
+    formatTo2Decimals(Math.min(...studentSgpaDetails.map(student => student.sgpa))) : 0;
   
   // Grade distribution - filter out any non-standard grades
   const gradeDistribution: { [grade: string]: number } = {};
@@ -313,14 +321,14 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   
   const subjectPerformanceData = Object.entries(subjectPerformanceMap).map(([subject, data]) => ({
     subject: subject,
-    pass: data.total > 0 ? (data.pass / data.total) * 100 : 0,
-    fail: data.total > 0 ? (data.fail / data.total) * 100 : 0,
+    pass: data.total > 0 ? formatTo2Decimals((data.pass / data.total) * 100) : 0,
+    fail: data.total > 0 ? formatTo2Decimals((data.fail / data.total) * 100) : 0,
   }));
   
-  // Top performers
+  // Top performers - Get top 6 instead of 5
   const topPerformers = studentSgpaDetails
     .sort((a, b) => b.sgpa - a.sgpa)
-    .slice(0, 5)
+    .slice(0, 6)
     .map(student => {
       const studentRecords = records.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
       const bestGrade = studentRecords.length > 0 ? 
@@ -346,8 +354,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   const failCount = records.filter(record => record.GR === 'U').length;
   const totalValidGrades = passCount + failCount;
   
-  const passPercentage = totalValidGrades > 0 ? (passCount / totalValidGrades) * 100 : 0;
-  const failPercentage = totalValidGrades > 0 ? (failCount / totalValidGrades) * 100 : 0;
+  const passPercentage = totalValidGrades > 0 ? formatTo2Decimals((passCount / totalValidGrades) * 100) : 0;
+  const failPercentage = totalValidGrades > 0 ? formatTo2Decimals((failCount / totalValidGrades) * 100) : 0;
   
   const passFailData = [
     { name: 'Pass', value: passPercentage, fill: passFailColors.pass },
@@ -475,19 +483,17 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
   const subjectPerformanceData = uniqueSubjects.map((subject, index) => {
     const subjectRecords = records.filter(record => record.SCODE === subject);
-    const validSubjectRecords = subjectRecords.filter(record => record.GR in gradePointMap);
-    const totalStudents = validSubjectRecords.length;
-    const passedStudents = validSubjectRecords.filter(record => record.GR !== 'U').length;
+    const totalStudents = subjectRecords.length;
+    const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
     const failedStudents = totalStudents - passedStudents;
-    const passPercentage = totalStudents > 0 ? (passedStudents / totalStudents) * 100 : 0;
+    const passPercentage = (passedStudents / totalStudents) * 100;
     
     // Find the highest grade
-    const grades = validSubjectRecords.map(record => record.GR);
-    const sortedGrades = grades.sort((a, b) => (gradePointMap[b] || 0) - (gradePointMap[a] || 0));
-    const highestGrade = sortedGrades.length > 0 ? sortedGrades[0] : '';
+    const grades = subjectRecords.map(record => record.GR);
+    const highestGrade = grades.sort((a, b) => gradePointMap[b] - gradePointMap[a])[0];
     
     // Count students with highest grade
-    const studentsWithHighestGrade = validSubjectRecords.filter(record => record.GR === highestGrade).length;
+    const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
     
     return [
       index + 1,
@@ -1010,82 +1016,59 @@ export const downloadChartAsPng = (elementId: string, fileName: string): void =>
  */
 export const downloadPdfReport = async (elementId: string): Promise<boolean> => {
   try {
-    // Create a new PDF document
-    const pdf = new JsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    // Get the element to be converted to PDF
+    // Use html2canvas to capture the element as an image
     const element = document.getElementById(elementId);
     if (!element) {
       console.error('Element not found:', elementId);
       return false;
     }
     
-    // Extract data from the element
-    const title = "Result Analysis Report";
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text(title, pdf.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+    // @ts-ignore - html2canvas is imported as an external script
+    const canvas = await html2canvas(element, {
+      scale: 1,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+      width: element.scrollWidth,
+      height: element.scrollHeight
+    });
     
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(10);
-    pdf.text(`Generated on ${new Date().toLocaleDateString()}`, pdf.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+    // Create a new PDF document matching the aspect ratio of the captured element
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new JsPDF({
+      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
     
-    // Use autoTable to create tables from data
-    // This part is very dependent on your actual UI structure
-    // This is a simplified approach
+    // Calculate dimensions to fit PDF page
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
     
-    pdf.setFontSize(12);
-    let yPos = 40;
+    // Add image to PDF, filling the page width
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     
-    // Performance Summary
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Performance Summary", 14, yPos);
-    yPos += 10;
-    
-    // Find the performance summary elements
-    const summaryItems = element.querySelectorAll('.flex.justify-between.items-center');
-    if (summaryItems && summaryItems.length > 0) {
-      const summaryData = Array.from(summaryItems).map(item => {
-        const label = item.querySelector('.text-sm')?.textContent || '';
-        const value = item.querySelector('.text-lg')?.textContent || '';
-        return [label, value];
-      });
+    // Add additional pages if content is too long
+    if (pdfHeight > pdf.internal.pageSize.getHeight()) {
+      let remainingHeight = pdfHeight;
+      let currentPosition = pdf.internal.pageSize.getHeight();
       
-      if (summaryData.length > 0) {
-        // @ts-ignore - jspdf-autotable types may not be properly recognized
-        pdf.autoTable({
-          startY: yPos,
-          head: [['Metric', 'Value']],
-          body: summaryData,
-          theme: 'grid',
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: [41, 128, 185] }
-        });
-        
-        // @ts-ignore - get the end Y position for the next section
-        yPos = pdf.autoTable.previous.finalY + 10;
+      while (remainingHeight > currentPosition) {
+        pdf.addPage();
+        pdf.addImage(
+          imgData, 
+          'PNG', 
+          0, 
+          -(currentPosition), 
+          pdfWidth, 
+          pdfHeight
+        );
+        remainingHeight -= pdf.internal.pageSize.getHeight();
+        currentPosition += pdf.internal.pageSize.getHeight();
       }
     }
-    
-    // Grade Distribution
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Grade Distribution", 14, yPos);
-    yPos += 10;
-    
-    // Find grade distribution data
-    // This is highly specific to your UI structure
-    // You'll need to adapt this to your actual DOM structure
-    
-    // Top Performers
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Top Performers", 14, yPos);
-    yPos += 10;
-    
-    // Add more sections as needed...
     
     // Save the PDF
     pdf.save('result-analysis-report.pdf');
@@ -1148,3 +1131,4 @@ export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentReco
   // Clean up
   document.body.removeChild(link);
 };
+

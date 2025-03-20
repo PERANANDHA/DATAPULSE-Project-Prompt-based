@@ -53,10 +53,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SubjectCredit {
   subjectCode: string;
   creditValue: number;
+}
+
+interface ProfileInfo {
+  name: string;
+  email: string;
+  role: string;
+  department: string;
+  college: string;
 }
 
 const Dashboard = () => {
@@ -72,16 +87,24 @@ const Dashboard = () => {
   const [uniqueSubjects, setUniqueSubjects] = useState<string[]>([]);
   const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
   const [creditsAssigned, setCreditsAssigned] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  const profileInfo: ProfileInfo = {
+    name: "Dr. S. Rajasekaran",
+    email: "rajasekaran.s@ksrct.ac.in",
+    role: "Associate Professor",
+    department: "Computer Science and Engineering",
+    college: "K. S. Rangasamy College of Technology"
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     
     if (!selectedFiles || selectedFiles.length === 0) return;
     
-    // Check if trying to upload more than 10 files
     if (files.length + selectedFiles.length > 10) {
       toast({
         variant: "destructive",
@@ -91,7 +114,6 @@ const Dashboard = () => {
       return;
     }
     
-    // Convert FileList to array and validate file types
     const newFiles = Array.from(selectedFiles).filter(file => {
       if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
         toast({
@@ -104,10 +126,8 @@ const Dashboard = () => {
       return true;
     });
     
-    // Add new files to existing files
     setFiles(prev => [...prev, ...newFiles]);
     
-    // Reset states when new files are selected
     setResultsAvailable(false);
     setStudentRecords([]);
     setResultAnalysis(null);
@@ -133,20 +153,16 @@ const Dashboard = () => {
     setIsUploading(true);
     
     try {
-      // Parse all Excel files
       let records: StudentRecord[];
       
       if (files.length === 1) {
-        // Single file upload
         records = await parseExcelFile(files[0]);
       } else {
-        // Multiple file upload
         records = await parseMultipleExcelFiles(files);
       }
       
       setStudentRecords(records);
       
-      // Extract unique subjects from the records
       const subjects = [...new Set(records.map(record => record.SCODE))];
       setUniqueSubjects(subjects);
       
@@ -172,7 +188,6 @@ const Dashboard = () => {
     setSubjectCredits(credits);
     setCreditsAssigned(true);
     
-    // Now analyze with the credit values
     analyzeData(credits);
   };
 
@@ -189,20 +204,17 @@ const Dashboard = () => {
     setIsAnalyzing(true);
     
     try {
-      // Assign the credit values to the records
       const recordsWithCredits = studentRecords.map(record => {
         const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
         return {
           ...record,
-          creditValue: creditInfo ? creditInfo.creditValue : 3 // Default to 3 if not found
+          creditValue: creditInfo ? creditInfo.creditValue : 3
         };
       });
       
-      // Analyze the data with credits
       const analysis = analyzeResults(recordsWithCredits);
       setResultAnalysis(analysis);
       
-      // Set the first subject as active for subject-specific charts
       if (analysis.subjectGradeDistribution && Object.keys(analysis.subjectGradeDistribution).length > 0) {
         setActiveSubjectTab(Object.keys(analysis.subjectGradeDistribution)[0]);
       }
@@ -240,7 +252,6 @@ const Dashboard = () => {
     setIsDownloading(true);
     
     try {
-      // Download report based on selected format
       if (format === 'csv') {
         downloadCSVReport(resultAnalysis, studentRecords);
       } else if (format === 'excel') {
@@ -269,13 +280,11 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => {
-    // In a real application, this would handle logout process
     toast({
       title: "Logging out",
       description: "You have been successfully logged out.",
     });
     
-    // Redirect to login page
     setTimeout(() => {
       navigate('/login');
     }, 1000);
@@ -291,7 +300,6 @@ const Dashboard = () => {
       );
     }
     
-    // Get unique subjects for the subject-specific tabs
     const uniqueSubjects = Object.keys(resultAnalysis.subjectGradeDistribution);
 
     return (
@@ -304,7 +312,6 @@ const Dashboard = () => {
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        {/* Show file information if multiple files were processed */}
         {resultAnalysis.fileCount && resultAnalysis.fileCount > 1 && resultAnalysis.filesProcessed && (
           <Card>
             <CardHeader className="pb-2">
@@ -324,7 +331,6 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {/* Existing dashboard content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card>
             <CardHeader className="pb-2">
@@ -343,7 +349,7 @@ const Dashboard = () => {
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, value }) => `${name}: ${Number(value).toFixed(2)}%`}
+                      label={({ name, value }) => `${name}: ${value.toFixed(2)}%`}
                     >
                       {resultAnalysis.passFailData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -389,15 +395,15 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Average CGPA</span>
-                  <span className="text-lg font-semibold">{Number(resultAnalysis.averageCGPA).toFixed(4)}</span>
+                  <span className="text-lg font-semibold">{resultAnalysis.averageCGPA.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Highest SGPA</span>
-                  <span className="text-lg font-semibold">{Number(resultAnalysis.highestSGPA).toFixed(4)}</span>
+                  <span className="text-lg font-semibold">{resultAnalysis.highestSGPA.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Lowest SGPA</span>
-                  <span className="text-lg font-semibold">{Number(resultAnalysis.lowestSGPA).toFixed(4)}</span>
+                  <span className="text-lg font-semibold">{resultAnalysis.lowestSGPA.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Total Students</span>
@@ -479,7 +485,7 @@ const Dashboard = () => {
                 <User className="h-5 w-5 mr-2" />
                 Top Performers
               </CardTitle>
-              <CardDescription>Students with highest SGPA</CardDescription>
+              <CardDescription>Students with highest SGPA (Top 6)</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -497,7 +503,7 @@ const Dashboard = () => {
                       }`}>
                         {student.grade}
                       </span>
-                      <span className="font-semibold">{Number(student.sgpa).toFixed(4)}</span>
+                      <span className="font-semibold">{student.sgpa.toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
@@ -522,8 +528,8 @@ const Dashboard = () => {
                         <p className="font-medium">Student</p>
                         <p className="text-xs text-muted-foreground">ID: {student.id}</p>
                       </div>
-                      <div>
-                        <span className="font-semibold text-destructive">{Number(student.sgpa).toFixed(4)}</span>
+                      <div className="text-right">
+                        <span className="font-semibold text-destructive">{student.sgpa.toFixed(2)}</span>
                         <p className="text-xs text-muted-foreground">{student.subjects}</p>
                       </div>
                     </div>
@@ -536,7 +542,6 @@ const Dashboard = () => {
           </Card>
         </div>
         
-        {/* Student-wise SGPA Analysis */}
         <Card>
           <CardHeader>
             <CardTitle>Student-wise SGPA Analysis</CardTitle>
@@ -563,7 +568,7 @@ const Dashboard = () => {
                       }`}
                     >
                       <td className="py-2 px-4">{student.id}</td>
-                      <td className="py-2 px-4 font-medium">{Number(student.sgpa).toFixed(4)}</td>
+                      <td className="py-2 px-4 font-medium">{student.sgpa.toFixed(2)}</td>
                       <td className="py-2 px-4">
                         {student.hasArrears ? (
                           <span className="text-red-500 text-sm">Has Arrears</span>
@@ -633,7 +638,10 @@ const Dashboard = () => {
                 <LogOut className="h-4 w-4 mr-2" />
                 Log out
               </Button>
-              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+              <div 
+                className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer"
+                onClick={() => setProfileOpen(true)}
+              >
                 <User className="h-4 w-4" />
               </div>
             </div>
@@ -759,7 +767,6 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
 
-                {/* Subject Credit Input Section */}
                 <SubjectCreditInput 
                   onCreditAssigned={handleCreditAssigned}
                   uploadedSubjects={uniqueSubjects}
@@ -775,42 +782,40 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* Dropdown menu for report options */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button disabled={isDownloading}>
-            {isDownloading ? (
-              <>
-                <Loader className="h-4 w-4 mr-2 animate-spin" />
-                Downloading...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
-              </>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
-            <File className="h-4 w-4 mr-2" />
-            <span>Download as PDF</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
-            <FileText className="h-4 w-4 mr-2" />
-            <span>Download as Word</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
-            <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
-            <span>Download as Excel</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
-            <Download className="h-4 w-4 mr-2" />
-            <span>Download as CSV</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Profile Information</DialogTitle>
+            <DialogDescription>
+              Your account details and information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4 py-2">
+            <div className="flex flex-col items-center mb-4">
+              <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-3">
+                <User className="h-10 w-10" />
+              </div>
+              <h3 className="text-lg font-medium">{profileInfo.name}</h3>
+              <p className="text-sm text-muted-foreground">{profileInfo.email}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between py-1 border-b">
+                <span className="text-sm font-medium">Role</span>
+                <span className="text-sm">{profileInfo.role}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b">
+                <span className="text-sm font-medium">Department</span>
+                <span className="text-sm">{profileInfo.department}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-sm font-medium">Institution</span>
+                <span className="text-sm">{profileInfo.college}</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
