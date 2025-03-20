@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Plus, Minus, AlertTriangle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 
 interface SubjectCredit {
   subjectCode: string;
@@ -28,6 +29,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
   const { toast } = useToast();
   const [bulkInput, setBulkInput] = useState<string>('');
   const [showBulkInput, setShowBulkInput] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
 
   // Initialize with existing subjects from the uploaded file
   useEffect(() => {
@@ -59,6 +61,9 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
         return newErrors;
       });
     }
+
+    // Update progress
+    updateProgress(updatedCredits);
   };
 
   const handleCreditValueChange = (index: number, value: string) => {
@@ -80,6 +85,24 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
         return newErrors;
       });
     }
+
+    // Update progress
+    updateProgress(updatedCredits);
+  };
+
+  const updateProgress = (credits: SubjectCredit[]) => {
+    const validCredits = credits.filter(credit => 
+      credit.subjectCode && 
+      uploadedSubjects.includes(credit.subjectCode) && 
+      credit.creditValue > 0
+    );
+    
+    const percentComplete = Math.min(
+      100, 
+      Math.round((validCredits.length / uploadedSubjects.length) * 100)
+    );
+    
+    setProgress(percentComplete);
   };
 
   const addSubjectCredit = () => {
@@ -98,6 +121,9 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       delete newErrors[`credit-${index}`];
       return newErrors;
     });
+
+    // Update progress
+    updateProgress(updatedCredits);
   };
 
   const toggleBulkInput = () => {
@@ -168,6 +194,10 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       setSubjectCredits(newCredits);
       setShowBulkInput(false);
       setErrors({});
+      
+      // Update progress
+      updateProgress(newCredits);
+      
       toast({
         title: "Bulk input processed",
         description: `Successfully processed ${newCredits.length} subject credits.`,
@@ -267,6 +297,14 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
           <>
             {!showBulkInput ? (
               <div className="space-y-4">
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Credit Assignment Progress</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+                
                 {subjectCredits.map((item, index) => (
                   <div key={index} className="flex items-start gap-2">
                     <div className="flex-1">
@@ -339,7 +377,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
                     </Button>
                   </div>
                   
-                  <Button onClick={handleSubmit} disabled={isProcessing}>
+                  <Button onClick={handleSubmit} disabled={isProcessing || progress < 100}>
                     Assign Credits
                   </Button>
                 </div>

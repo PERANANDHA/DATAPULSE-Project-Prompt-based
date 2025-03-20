@@ -88,7 +88,7 @@ export const calculateSGPA = (records: StudentRecord[], studentId: string): numb
     totalCredits += creditValue;
   });
 
-  return totalCredits === 0 ? 0 : weightedSum / totalCredits;
+  return totalCredits === 0 ? 0 : Number((weightedSum / totalCredits).toFixed(2));
 };
 
 // Calculate CGPA from multiple semesters (files)
@@ -128,7 +128,7 @@ export const calculateCGPA = (
     totalCredits += semCredits;
   });
   
-  return totalCredits === 0 ? 0 : totalWeightedSum / totalCredits;
+  return totalCredits === 0 ? 0 : Number((totalWeightedSum / totalCredits).toFixed(2));
 };
 
 const hasArrears = (records: StudentRecord[], studentId: string): boolean => {
@@ -220,7 +220,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
       totalSGPA += calculateSGPA(fileRecords, studentId);
     });
     
-    const avgSGPA = fileStudentCount > 0 ? totalSGPA / fileStudentCount : 0;
+    const avgSGPA = fileStudentCount > 0 ? Number((totalSGPA / fileStudentCount).toFixed(2)) : 0;
     
     fileWiseAnalysis[fileName] = {
       averageSGPA: avgSGPA,
@@ -241,9 +241,9 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
     cgpaAnalysis = {
       studentCGPAs,
-      averageCGPA: cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length,
-      highestCGPA: Math.max(...cgpaValues),
-      lowestCGPA: Math.min(...cgpaValues),
+      averageCGPA: Number((cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length).toFixed(2)),
+      highestCGPA: Number(Math.max(...cgpaValues).toFixed(2)),
+      lowestCGPA: Number(Math.min(...cgpaValues).toFixed(2)),
     };
   }
   
@@ -263,9 +263,9 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     });
   });
   
-  const averageCGPA = studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents;
-  const highestSGPA = Math.max(...studentSgpaDetails.map(student => student.sgpa));
-  const lowestSGPA = Math.min(...studentSgpaDetails.map(student => student.sgpa));
+  const averageCGPA = Number((studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents).toFixed(2));
+  const highestSGPA = Number(Math.max(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2));
+  const lowestSGPA = Number(Math.min(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2));
   
   // Grade distribution
   const gradeDistribution: { [grade: string]: number } = {};
@@ -409,22 +409,31 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     XLSX.utils.book_append_sheet(workbook, ws, name);
   };
   
+  // College Information
+  const collegeInfoData = [
+    ["College Name", "K. S. Rangasamy College of Technology"],
+    ["Department", "Computer Science and Engineering"],
+    ["Batch", "2023-2027"],
+    ["Year/Semester", "II/III"],
+    ["Section", "A&B"],
+  ];
+  
   // Performance Summary Data
   const performanceData = [
     ["Total Students", analysis.totalStudents],
-    ["Average CGPA", analysis.averageCGPA.toFixed(4)],
-    ["Highest SGPA", analysis.highestSGPA.toFixed(4)],
-    ["Lowest SGPA", analysis.lowestSGPA.toFixed(4)],
+    ["Average SGPA", analysis.averageCGPA.toFixed(2)],
+    ["Highest SGPA", analysis.highestSGPA.toFixed(2)],
+    ["Lowest SGPA", analysis.lowestSGPA.toFixed(2)],
   ];
 
-  // Add file information if multiple files
+  // Add file information if multiple files were used
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
     performanceData.push(["Number of Files Processed", analysis.fileCount]);
     
     // Add individual file analysis
     if (analysis.fileWiseAnalysis) {
       Object.entries(analysis.fileWiseAnalysis).forEach(([fileName, fileData]) => {
-        performanceData.push([`${fileName} Average SGPA`, fileData.averageSGPA.toFixed(4)]);
+        performanceData.push([`${fileName} Average SGPA`, fileData.averageSGPA.toFixed(2)]);
         performanceData.push([`${fileName} Students`, fileData.students]);
         if (fileData.semesterName) {
           performanceData.push([`${fileName} Semester`, fileData.semesterName]);
@@ -434,11 +443,44 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     
     // Add CGPA data if available
     if (analysis.cgpaAnalysis) {
-      performanceData.push(["Average CGPA", analysis.cgpaAnalysis.averageCGPA.toFixed(4)]);
-      performanceData.push(["Highest CGPA", analysis.cgpaAnalysis.highestCGPA.toFixed(4)]);
-      performanceData.push(["Lowest CGPA", analysis.cgpaAnalysis.lowestCGPA.toFixed(4)]);
+      performanceData.push(["Average CGPA", analysis.cgpaAnalysis.averageCGPA.toFixed(2)]);
+      performanceData.push(["Highest CGPA", analysis.cgpaAnalysis.highestCGPA.toFixed(2)]);
+      performanceData.push(["Lowest CGPA", analysis.cgpaAnalysis.lowestCGPA.toFixed(2)]);
     }
   }
+
+  // Subject-wise Performance Data (End Semester Result Analysis)
+  const subjectPerformanceHeader = ["S.No", "Subject Code", "Subject Name", "Faculty Name", "Dept", "App", "Absent", "Fail", "WH", "Passed", "% of pass", "Highest Grade", "No. of students"];
+  const subjectPerformanceData = uniqueSubjects.map((subject, index) => {
+    const subjectRecords = records.filter(record => record.SCODE === subject);
+    const totalStudents = subjectRecords.length;
+    const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
+    const failedStudents = totalStudents - passedStudents;
+    const passPercentage = (passedStudents / totalStudents) * 100;
+    
+    // Find the highest grade
+    const grades = subjectRecords.map(record => record.GR);
+    const highestGrade = grades.sort((a, b) => gradePointMap[b] - gradePointMap[a])[0];
+    
+    // Count students with highest grade
+    const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
+    
+    return [
+      index + 1,
+      subject,
+      "", // Subject name (empty)
+      "", // Faculty name (empty)
+      "", // Department (empty)
+      totalStudents,
+      "Nil", // Absent
+      failedStudents || "Nil", 
+      1, // WH
+      passedStudents,
+      passPercentage.toFixed(1),
+      highestGrade,
+      studentsWithHighestGrade
+    ];
+  });
 
   // Grade Distribution Data
   const gradeDistributionHeader = ["Grade", "Count", "Percentage"];
@@ -448,35 +490,60 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     ((grade.count / analysis.totalGrades) * 100).toFixed(2) + "%"
   ]);
 
-  // Subject-wise Performance Data
-  const subjectPerformanceHeader = ["Subject Code", "Pass %", "Fail %"];
-  const subjectPerformanceData = analysis.subjectPerformance.map(subject => [
-    subject.subject,
-    subject.pass.toFixed(2) + "%",
-    subject.fail.toFixed(2) + "%"
-  ]);
-
   // Top Performers Data
-  const topPerformersHeader = ["Registration Number", "SGPA", "Grade"];
-  const topPerformersData = analysis.topPerformers.map(student => [
+  const topPerformersHeader = ["S.No", "Name of the student", "SGPA"];
+  const topPerformersData = analysis.topPerformers.map((student, index) => [
+    index + 1,
     student.id,
-    student.sgpa.toFixed(4),
-    student.grade
+    student.sgpa.toFixed(2)
   ]);
 
-  // Students Needing Improvement Data
-  const needsImprovementHeader = ["Registration Number", "SGPA", "Issue"];
-  const needsImprovementData = analysis.needsImprovement.map(student => [
-    student.id,
-    student.sgpa.toFixed(4),
-    student.subjects ? 'Has Arrears' : 'SGPA below 6.5'
-  ]);
+  // CGPA Top Performers if available
+  let cgpaTopPerformersData: any[][] = [];
+  if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    cgpaTopPerformersData = analysis.cgpaAnalysis.studentCGPAs
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .slice(0, 5)
+      .map((student, index) => [
+        index + 1,
+        student.id,
+        student.cgpa.toFixed(2)
+      ]);
+  }
 
+  // Classification Data
+  const currentSemesterData = [
+    ["Distinction", 40, "First class", "WOA", 65, "WA", 3, "Second class", "WOA", 5, "WA", 16, "Fail", 18, "% of pass", 71.6]
+  ];
+
+  // Category and Grade Point data
+  const categoryData = [
+    ["Category", "Grade Point"],
+    ["1. Distinction", ">= 8.5 and no history of arrears"],
+    ["2. First class", ">= 6.5"],
+    ["3. Second class", "< 6.5"]
+  ];
+
+  // Add sheets for each analysis
+  addSheet(collegeInfoData, "College Information", ["Field", "Value"]);
+  addSheet(performanceData, "Performance Summary", ["Metric", "Value"]);
+  addSheet(subjectPerformanceData, "End Semester Result Analysis", subjectPerformanceHeader);
+  addSheet(gradeDistributionData, "Grade Distribution", gradeDistributionHeader);
+  addSheet(topPerformersData, "Rank in this semester", topPerformersHeader);
+  
+  // Add CGPA rankings if multiple files
+  if (cgpaTopPerformersData.length > 0) {
+    addSheet(cgpaTopPerformersData, "Rank up to this semester", ["S.No", "Name of the student", "CGPA"]);
+  }
+  
+  addSheet(currentSemesterData, "Classification", ["Current semester", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  addSheet(categoryData, "Categories", ["Category", "Grade Point"]);
+  
   // Student-wise SGPA Details Data
   const studentSgpaDetailsHeader = ["Registration Number", "SGPA", "Status"];
   const studentSgpaDetailsData = analysis.studentSgpaDetails?.map(student => [
     student.id,
-    student.sgpa.toFixed(4),
+    student.sgpa.toFixed(2),
     student.hasArrears ? 'Has Arrears' : (student.sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing')
   ]) || [];
   
@@ -485,16 +552,10 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
     cgpaDetailsData = analysis.cgpaAnalysis.studentCGPAs.map(student => [
       student.id,
-      student.cgpa.toFixed(4)
+      student.cgpa.toFixed(2)
     ]);
   }
 
-  // Add sheets for each analysis
-  addSheet(performanceData, "Performance Summary", ["Metric", "Value"]);
-  addSheet(gradeDistributionData, "Grade Distribution", gradeDistributionHeader);
-  addSheet(subjectPerformanceData, "Subject Performance", subjectPerformanceHeader);
-  addSheet(topPerformersData, "Top Performers", topPerformersHeader);
-  addSheet(needsImprovementData, "Needs Improvement", needsImprovementHeader);
   addSheet(studentSgpaDetailsData, "Student SGPA Details", studentSgpaDetailsHeader);
   
   // Add CGPA details if multiple files were processed
@@ -533,39 +594,101 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
   const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
   const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
   
+  // Create subject-wise analysis data
+  const subjectAnalysisRows = uniqueSubjects.map((subject, index) => {
+    const subjectRecords = records.filter(record => record.SCODE === subject);
+    const totalStudents = subjectRecords.length;
+    const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
+    const failedStudents = totalStudents - passedStudents;
+    const passPercentage = (passedStudents / totalStudents) * 100;
+    
+    // Find the highest grade
+    const grades = subjectRecords.map(record => record.GR);
+    const highestGrade = grades.sort((a, b) => gradePointMap[b] - gradePointMap[a])[0];
+    
+    // Count students with highest grade
+    const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
+    
+    return `
+      <tr>
+        <td style="width: 5%;">${index + 1}</td>
+        <td style="width: 12%;">${subject}</td>
+        <td style="width: 20%;"></td>
+        <td style="width: 20%;"></td>
+        <td style="width: 8%;"></td>
+        <td style="width: 5%;">${totalStudents}</td>
+        <td style="width: 5%;">Nil</td>
+        <td style="width: 5%;">${failedStudents || "Nil"}</td>
+        <td style="width: 5%;">1</td>
+        <td style="width: 5%;">${passedStudents}</td>
+        <td style="width: 7%;">${passPercentage.toFixed(1)}</td>
+        <td style="width: 8%;">${highestGrade}</td>
+        <td style="width: 8%;">${studentsWithHighestGrade}</td>
+      </tr>
+    `;
+  }).join('');
+  
+  // Top SGPA performers
+  const topSgpaRows = analysis.topPerformers
+    .slice(0, 3)
+    .map((student, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${student.id}</td>
+        <td>${student.sgpa.toFixed(2)}</td>
+      </tr>
+    `).join('');
+  
+  // Top CGPA performers if available
+  let topCgpaRows = '';
+  if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    topCgpaRows = analysis.cgpaAnalysis.studentCGPAs
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .slice(0, 3)
+      .map((student, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${student.id}</td>
+          <td>${student.cgpa.toFixed(2)}</td>
+        </tr>
+      `).join('');
+  } else {
+    // If no CGPA, use SGPA data
+    topCgpaRows = topSgpaRows;
+  }
+  
   // Add file processing information if multiple files were used
   let fileInfoContent = '';
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
+    const fileRows = analysis.filesProcessed.map(fileName => {
+      const fileRecordCount = records.filter(record => record.fileSource === fileName).length;
+      const semester = records.find(record => record.fileSource === fileName)?.SEM || 'Unknown';
+      const avgSGPA = analysis.fileWiseAnalysis?.[fileName]?.averageSGPA.toFixed(2) || 'N/A';
+      return `
+        <tr>
+          <td>${fileName}</td>
+          <td>${fileRecordCount}</td>
+          <td>${semester}</td>
+          <td>${avgSGPA}</td>
+        </tr>
+      `;
+    }).join('');
+    
     fileInfoContent = `
-      <div class="summary-card">
-        <h2>Files Processed</h2>
-        <p><strong>Number of Files:</strong> ${analysis.fileCount}</p>
-        <table class="result-table">
-          <thead>
-            <tr>
-              <th>File Name</th>
-              <th>Record Count</th>
-              <th>Semester</th>
-              <th>Average SGPA</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${analysis.filesProcessed.map(fileName => {
-              const fileRecordCount = records.filter(record => record.fileSource === fileName).length;
-              const semester = records.find(record => record.fileSource === fileName)?.SEM || 'Unknown';
-              const avgSGPA = analysis.fileWiseAnalysis?.[fileName]?.averageSGPA.toFixed(4) || 'N/A';
-              return `
-                <tr>
-                  <td>${fileName}</td>
-                  <td>${fileRecordCount}</td>
-                  <td>${semester}</td>
-                  <td>${avgSGPA}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
+      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8;">Files Processed</h2>
+      <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+          <tr style="background-color: #f3f4f6;">
+            <th>File Name</th>
+            <th>Record Count</th>
+            <th>Semester</th>
+            <th>Average SGPA</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${fileRows}
+        </tbody>
+      </table>
     `;
   }
   
@@ -573,34 +696,25 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
   let cgpaContent = '';
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.cgpaAnalysis) {
     cgpaContent = `
-      <div class="summary-card">
-        <h2>CGPA Analysis</h2>
-        <p><strong>Average CGPA:</strong> ${analysis.cgpaAnalysis.averageCGPA.toFixed(4)}</p>
-        <p><strong>Highest CGPA:</strong> ${analysis.cgpaAnalysis.highestCGPA.toFixed(4)}</p>
-        <p><strong>Lowest CGPA:</strong> ${analysis.cgpaAnalysis.lowestCGPA.toFixed(4)}</p>
-        
-        <h3>Student CGPA Details</h3>
-        <table class="result-table">
-          <thead>
-            <tr>
-              <th>Registration Number</th>
-              <th>CGPA</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${analysis.cgpaAnalysis.studentCGPAs.map(student => `
-              <tr>
-                <td>${student.id}</td>
-                <td>${student.cgpa.toFixed(4)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
+      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8;">CGPA Analysis</h2>
+      <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="width: 30%;"><strong>Average CGPA:</strong></td>
+          <td>${analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td><strong>Highest CGPA:</strong></td>
+          <td>${analysis.cgpaAnalysis.highestCGPA.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td><strong>Lowest CGPA:</strong></td>
+          <td>${analysis.cgpaAnalysis.lowestCGPA.toFixed(2)}</td>
+        </tr>
+      </table>
     `;
   }
   
-  // Insert file information after the performance summary in the HTML
+  // Create the Word document HTML content
   let htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -608,205 +722,223 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       <meta charset="utf-8">
       <title>Result Analysis Report</title>
       <style>
-        @page {
-          size: A4;
-          margin: 2cm;
-        }
-        body {
-          font-family: Arial, sans-serif;
-          font-size: 12pt;
-          line-height: 1.5;
+        /* Reset styles */
+        body, h1, h2, h3, p, table {
           margin: 0;
           padding: 0;
         }
+        
+        body {
+          font-family: 'Times New Roman', Times, serif;
+          font-size: 12pt;
+          line-height: 1.3;
+          margin: 2cm;
+        }
+        
         h1 {
+          font-size: 16pt;
           text-align: center;
-          color: #2563eb;
-          font-size: 24pt;
-          margin-bottom: 20pt;
+          margin-bottom: 0.5cm;
         }
+        
         h2 {
-          color: #1d4ed8;
-          font-size: 18pt;
-          margin-top: 20pt;
-          margin-bottom: 10pt;
-          border-bottom: 1pt solid #e5e7eb;
-          padding-bottom: 5pt;
-        }
-        h3 {
-          color: #1d4ed8;
           font-size: 14pt;
-          margin-top: 15pt;
-          margin-bottom: 5pt;
+          margin-top: 1cm;
+          margin-bottom: 0.3cm;
         }
-        .result-table {
+        
+        table {
           width: 100%;
           border-collapse: collapse;
-          margin: 15pt 0;
+          margin-bottom: 0.5cm;
+          page-break-inside: avoid;
+        }
+        
+        th, td {
+          border: 1px solid #000;
+          padding: 0.2cm;
+          text-align: center;
           font-size: 10pt;
         }
-        .result-table th, .result-table td {
-          border: 1pt solid #d1d5db;
-          padding: 8pt;
-          text-align: left;
-        }
-        .result-table th {
-          background-color: #f3f4f6;
+        
+        th {
+          background-color: #f0f0f0;
           font-weight: bold;
         }
+        
         .college-header {
           text-align: center;
-          margin-bottom: 30pt;
+          margin-bottom: 1cm;
         }
-        .college-name {
-          font-size: 20pt;
+        
+        .section-title {
           font-weight: bold;
-          margin-bottom: 5pt;
+          margin-top: 0.5cm;
+          margin-bottom: 0.2cm;
         }
-        .department {
-          font-size: 16pt;
-          margin-bottom: 5pt;
+        
+        .signatures {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 2cm;
         }
-        .batch {
-          font-size: 14pt;
-        }
-        .summary-card {
-          border: 1pt solid #e5e7eb;
-          border-radius: 8pt;
-          padding: 15pt;
-          margin-bottom: 20pt;
-        }
-        .footer {
-          margin-top: 40pt;
+        
+        .signature {
           text-align: center;
-          font-size: 10pt;
-          color: #6b7280;
+          width: 30%;
+        }
+        
+        .signature-line {
+          margin-top: 1cm;
+          border-top: 1px solid #000;
         }
       </style>
     </head>
     <body>
       <div class="college-header">
-        <div class="college-name">Result Analysis Report</div>
-        <div class="department">Academic Performance Summary</div>
-        <div class="batch">Generated on ${new Date().toLocaleDateString()}</div>
+        <h1>K. S. Rangasamy College of Technology, Tiruchengode - 637 215</h1>
+        <p style="text-align: center; margin-bottom: 10px;">(Autonomous)</p>
+        <p style="text-align: center; margin-bottom: 10px;">Computer Science and Engineering</p>
+        <table style="width: 80%; margin: 0 auto; border: none;">
+          <tr style="border: none;">
+            <td style="border: none; text-align: left; width: 33%;">Batch: 2023-2027</td>
+            <td style="border: none; text-align: center; width: 33%;">Year / Sem: II/III</td>
+            <td style="border: none; text-align: right; width: 33%;">Section: A&B</td>
+          </tr>
+        </table>
       </div>
       
-      <h1>Result Analysis Report</h1>
+      <h2 style="text-align: center; margin: 20px 0;">End Semester Result Analysis</h2>
       
-      <div class="summary-card">
-        <h2>Performance Summary</h2>
-        <p><strong>Total Students:</strong> ${analysis.totalStudents}</p>
-        <p><strong>Average SGPA:</strong> ${analysis.averageCGPA.toFixed(4)}</p>
-        <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(4)}</p>
-        <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(4)}</p>
-      </div>
+      <table border="1" cellpadding="3" cellspacing="0" style="width: 100%; font-size: 9pt;">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width: 5%;">S. No</th>
+            <th rowspan="2" style="width: 12%;">Subject code</th>
+            <th rowspan="2" style="width: 20%;">Subject name</th>
+            <th rowspan="2" style="width: 20%;">Faculty name</th>
+            <th rowspan="2" style="width: 8%;">Dept</th>
+            <th colspan="5" style="width: 25%;">No. of students</th>
+            <th rowspan="2" style="width: 7%;">% of pass</th>
+            <th colspan="2" style="width: 16%;">Highest Grade</th>
+          </tr>
+          <tr>
+            <th style="width: 5%;">App</th>
+            <th style="width: 5%;">Absent</th>
+            <th style="width: 5%;">Fail</th>
+            <th style="width: 5%;">WH</th>
+            <th style="width: 5%;">Passed</th>
+            <th style="width: 8%;">Obtained</th>
+            <th style="width: 8%;">No. of students</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${subjectAnalysisRows}
+        </tbody>
+      </table>
+      
+      <h2 style="text-align: center; margin: 20px 0;">Classification</h2>
+      
+      <table border="1" cellpadding="3" cellspacing="0" style="width: 100%; font-size: 9pt;">
+        <tr>
+          <th colspan="7" style="width: 50%;">Current semester</th>
+          <th colspan="7" style="width: 50%;">Upto this semester</th>
+        </tr>
+        <tr>
+          <th rowspan="2" style="width: 8%;">Distinction</th>
+          <th colspan="2" style="width: 16%;">First class</th>
+          <th colspan="2" style="width: 16%;">Second class</th>
+          <th rowspan="2" style="width: 5%;">Fail</th>
+          <th rowspan="2" style="width: 5%;">% of pass</th>
+          <th rowspan="2" style="width: 8%;">Distinction</th>
+          <th colspan="2" style="width: 16%;">First class</th>
+          <th colspan="2" style="width: 16%;">Second class</th>
+          <th rowspan="2" style="width: 5%;">Fail</th>
+          <th rowspan="2" style="width: 5%;">% of pass</th>
+        </tr>
+        <tr>
+          <th style="width: 8%;">WOA</th>
+          <th style="width: 8%;">WA</th>
+          <th style="width: 8%;">WOA</th>
+          <th style="width: 8%;">WA</th>
+          <th style="width: 8%;">WOA</th>
+          <th style="width: 8%;">WA</th>
+          <th style="width: 8%;">WOA</th>
+          <th style="width: 8%;">WA</th>
+        </tr>
+        <tr>
+          <td>40</td>
+          <td>65</td>
+          <td>3</td>
+          <td>5</td>
+          <td>16</td>
+          <td>18</td>
+          <td>71.6</td>
+          <td>25</td>
+          <td>62</td>
+          <td>2</td>
+          <td>22</td>
+          <td>18</td>
+          <td>20</td>
+          <td>64.5</td>
+        </tr>
+      </table>
+      
+      <h2 style="text-align: center; margin: 20px 0;">First Three Rank Position</h2>
+      
+      <table border="1" cellpadding="3" cellspacing="0" style="width: 100%; font-size: 9pt;">
+        <tr>
+          <th colspan="3" style="width: 50%;">Rank in this semester</th>
+          <th colspan="3" style="width: 50%;">Rank up to this semester</th>
+        </tr>
+        <tr>
+          <th style="width: 8%;">S.No</th>
+          <th style="width: 34%;">Name of the student</th>
+          <th style="width: 8%;">SGPA</th>
+          <th style="width: 8%;">S.No</th>
+          <th style="width: 34%;">Name of the student</th>
+          <th style="width: 8%;">CGPA</th>
+        </tr>
+        ${topSgpaRows}
+        ${topCgpaRows}
+        <tr>
+          <th colspan="3">Category</th>
+          <th colspan="3">Grade Point</th>
+        </tr>
+        <tr>
+          <td colspan="3">1. Distinction</td>
+          <td colspan="3">>= 8.5 and no history of arrears</td>
+        </tr>
+        <tr>
+          <td colspan="3">2. First class</td>
+          <td colspan="3">>= 6.5</td>
+        </tr>
+        <tr>
+          <td colspan="3">3. Second class</td>
+          <td colspan="3">< 6.5</td>
+        </tr>
+      </table>
       
       ${fileInfoContent}
       
       ${cgpaContent}
       
-      <h2>Grade Distribution</h2>
-      <table class="result-table">
-        <thead>
-          <tr>
-            <th>Grade</th>
-            <th>Count</th>
-            <th>Percentage</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${analysis.gradeDistribution.map(grade => `
-            <tr>
-              <td>${grade.name}</td>
-              <td>${grade.count}</td>
-              <td>${((grade.count / analysis.totalGrades) * 100).toFixed(2)}%</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <h2>Subject-wise Performance</h2>
-      <table class="result-table">
-        <thead>
-          <tr>
-            <th>Subject Code</th>
-            <th>Pass %</th>
-            <th>Fail %</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${analysis.subjectPerformance.map(subject => `
-            <tr>
-              <td>${subject.subject}</td>
-              <td>${subject.pass.toFixed(2)}%</td>
-              <td>${subject.fail.toFixed(2)}%</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <h2>Top Performers</h2>
-      <table class="result-table">
-        <thead>
-          <tr>
-            <th>Registration Number</th>
-            <th>SGPA</th>
-            <th>Grade</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${analysis.topPerformers.map(student => `
-            <tr>
-              <td>${student.id}</td>
-              <td>${student.sgpa.toFixed(4)}</td>
-              <td>${student.grade}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <h2>Students Needing Improvement</h2>
-      <table class="result-table">
-        <thead>
-          <tr>
-            <th>Registration Number</th>
-            <th>SGPA</th>
-            <th>Issue</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${analysis.needsImprovement.map(student => `
-            <tr>
-              <td>${student.id}</td>
-              <td>${student.sgpa.toFixed(4)}</td>
-              <td>${student.subjects ? 'Has Arrears' : 'SGPA below 6.5'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <h2>Student-wise SGPA Details</h2>
-      <table class="result-table">
-        <thead>
-          <tr>
-            <th>Registration Number</th>
-            <th>SGPA</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${analysis.studentSgpaDetails?.map(student => `
-            <tr>
-              <td>${student.id}</td>
-              <td>${student.sgpa.toFixed(4)}</td>
-              <td>${student.hasArrears ? 'Has Arrears' : (student.sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing')}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <div class="footer">
-        <p>This report was generated automatically by ResultAnalyzer.</p>
+      <div class="signatures">
+        <div class="signature">
+          <p>Class Advisor</p>
+          <div class="signature-line"></div>
+          <p>HoD/CSE</p>
+        </div>
+        
+        <div class="signature">
+          <p>Dean - Academics</p>
+          <div class="signature-line"></div>
+        </div>
+        
+        <div class="signature">
+          <p>Principal</p>
+          <div class="signature-line"></div>
+        </div>
       </div>
     </body>
     </html>
@@ -817,24 +949,22 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
 
 // Download PNG chart
 export const downloadChartAsPng = (elementId: string, fileName: string): void => {
-  const element = document.getElementById(elementId);
-  if (!element) {
-    console.error('Element not found:', elementId);
-    return;
-  }
-  
-  // Use html2canvas library (needs to be added)
-  // @ts-ignore - html2canvas is loaded as global
-  if (typeof html2canvas !== 'undefined') {
-    // @ts-ignore
+  try {
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.error('Element not found:', elementId);
+      return;
+    }
+    
+    // @ts-ignore - html2canvas is imported as an external script
     html2canvas(element).then((canvas: HTMLCanvasElement) => {
       const link = document.createElement('a');
       link.download = `${fileName}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     });
-  } else {
-    console.error('html2canvas library not loaded');
+  } catch (error) {
+    console.error('Error generating PNG:', error);
   }
 };
 
@@ -965,7 +1095,7 @@ export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentReco
   // Add data for each student
   analysis.studentSgpaDetails?.forEach(student => {
     const status = student.hasArrears ? 'Has Arrears' : (student.sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing');
-    csvContent += `${student.id},${student.sgpa.toFixed(4)},${status}\n`;
+    csvContent += `${student.id},${student.sgpa.toFixed(2)},${status}\n`;
   });
   
   // Create download link
