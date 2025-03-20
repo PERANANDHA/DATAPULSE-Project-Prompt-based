@@ -1,8 +1,10 @@
+
 import * as XLSX from 'xlsx';
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-interface StudentRecord {
+// Export interfaces for use in other components
+export interface StudentRecord {
   CNo: string;
   SEM: string;
   REGNO: string;
@@ -11,7 +13,7 @@ interface StudentRecord {
   creditValue?: number;
 }
 
-interface ResultAnalysis {
+export interface ResultAnalysis {
   totalStudents: number;
   averageCGPA: number;
   highestSGPA: number;
@@ -240,6 +242,24 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     passFailData,
     subjectGradeDistribution,
   };
+};
+
+// Function to generate Excel data for reports
+export const downloadExcelReport = (analysis: ResultAnalysis, records: StudentRecord[]): void => {
+  const blob = generateExcelData(analysis, records);
+  
+  // Create download link
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'result-analysis-report.xlsx';
+  
+  // Trigger download
+  document.body.appendChild(link);
+  link.click();
+  
+  // Clean up
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 };
 
 const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): Blob => {
