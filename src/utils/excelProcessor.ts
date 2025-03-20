@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -81,11 +80,13 @@ export const calculateSGPA = (records: StudentRecord[], studentId: string): numb
   let weightedSum = 0;
 
   studentRecords.forEach(record => {
-    const gradePoint = gradePointMap[record.GR];
-    const creditValue = record.creditValue || 0;
+    if (record.GR in gradePointMap) {
+      const gradePoint = gradePointMap[record.GR];
+      const creditValue = record.creditValue || 0;
 
-    weightedSum += gradePoint * creditValue;
-    totalCredits += creditValue;
+      weightedSum += gradePoint * creditValue;
+      totalCredits += creditValue;
+    }
   });
 
   return totalCredits === 0 ? 0 : Number((weightedSum / totalCredits).toFixed(2));
@@ -116,11 +117,13 @@ export const calculateCGPA = (
     let semWeightedSum = 0;
     
     studentSemRecords.forEach(record => {
-      const gradePoint = gradePointMap[record.GR];
-      const creditValue = record.creditValue || 0;
-      
-      semWeightedSum += gradePoint * creditValue;
-      semCredits += creditValue;
+      if (record.GR in gradePointMap) {
+        const gradePoint = gradePointMap[record.GR];
+        const creditValue = record.creditValue || 0;
+        
+        semWeightedSum += gradePoint * creditValue;
+        semCredits += creditValue;
+      }
     });
     
     // Add to overall totals
@@ -241,9 +244,9 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
     cgpaAnalysis = {
       studentCGPAs,
-      averageCGPA: Number((cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length).toFixed(2)),
-      highestCGPA: Number(Math.max(...cgpaValues).toFixed(2)),
-      lowestCGPA: Number(Math.min(...cgpaValues).toFixed(2)),
+      averageCGPA: cgpaValues.length > 0 ? Number((cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length).toFixed(2)) : 0,
+      highestCGPA: cgpaValues.length > 0 ? Number(Math.max(...cgpaValues).toFixed(2)) : 0,
+      lowestCGPA: cgpaValues.length > 0 ? Number(Math.min(...cgpaValues).toFixed(2)) : 0,
     };
   }
   
@@ -263,14 +266,21 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     });
   });
   
-  const averageCGPA = Number((studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents).toFixed(2));
-  const highestSGPA = Number(Math.max(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2));
-  const lowestSGPA = Number(Math.min(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2));
+  const averageCGPA = totalStudents > 0 ? 
+    Number((studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents).toFixed(2)) : 0;
   
-  // Grade distribution
+  const highestSGPA = studentSgpaDetails.length > 0 ? 
+    Number(Math.max(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2)) : 0;
+  
+  const lowestSGPA = studentSgpaDetails.length > 0 ? 
+    Number(Math.min(...studentSgpaDetails.map(student => student.sgpa)).toFixed(2)) : 0;
+  
+  // Grade distribution - filter out any non-standard grades
   const gradeDistribution: { [grade: string]: number } = {};
   records.forEach(record => {
-    gradeDistribution[record.GR] = (gradeDistribution[record.GR] || 0) + 1;
+    if (record.GR in gradePointMap) {
+      gradeDistribution[record.GR] = (gradeDistribution[record.GR] || 0) + 1;
+    }
   });
   
   const gradeDistributionData = Object.entries(gradeDistribution).map(([grade, count]) => ({
@@ -279,11 +289,14 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     fill: getGradeColor(grade),
   }));
   
-  const totalGrades = records.length;
+  const totalGrades = records.filter(record => record.GR in gradePointMap).length;
   
   // Subject-wise performance
   const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number } } = {};
   records.forEach(record => {
+    // Skip records with invalid grades
+    if (!(record.GR in gradePointMap)) return;
+    
     const subject = record.SCODE;
     if (!subjectPerformanceMap[subject]) {
       subjectPerformanceMap[subject] = { pass: 0, fail: 0, total: 0 };
@@ -298,8 +311,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   
   const subjectPerformanceData = Object.entries(subjectPerformanceMap).map(([subject, data]) => ({
     subject: subject,
-    pass: (data.pass / data.total) * 100,
-    fail: (data.fail / data.total) * 100,
+    pass: data.total > 0 ? (data.pass / data.total) * 100 : 0,
+    fail: data.total > 0 ? (data.fail / data.total) * 100 : 0,
   }));
   
   // Top performers
@@ -307,8 +320,9 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     .sort((a, b) => b.sgpa - a.sgpa)
     .slice(0, 5)
     .map(student => {
-      const studentRecords = records.filter(record => record.REGNO === student.id);
-      const bestGrade = studentRecords.sort((a, b) => gradePointMap[b.GR] - gradePointMap[a.GR])[0].GR;
+      const studentRecords = records.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
+      const bestGrade = studentRecords.length > 0 ? 
+        studentRecords.sort((a, b) => (gradePointMap[b.GR] || 0) - (gradePointMap[a.GR] || 0))[0].GR : 'A';
       return {
         id: student.id,
         sgpa: student.sgpa,
@@ -326,10 +340,12 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     }));
   
   // Pass/Fail data
-  const passCount = records.filter(record => record.GR !== 'U').length;
-  const failCount = totalGrades - passCount;
-  const passPercentage = (passCount / totalGrades) * 100;
-  const failPercentage = (failCount / totalGrades) * 100;
+  const passCount = records.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
+  const failCount = records.filter(record => record.GR === 'U').length;
+  const totalValidGrades = passCount + failCount;
+  
+  const passPercentage = totalValidGrades > 0 ? (passCount / totalValidGrades) * 100 : 0;
+  const failPercentage = totalValidGrades > 0 ? (failCount / totalValidGrades) * 100 : 0;
   
   const passFailData = [
     { name: 'Pass', value: passPercentage, fill: passFailColors.pass },
@@ -345,7 +361,10 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     const gradeCounts: { [grade: string]: number } = {};
 
     subjectRecords.forEach(record => {
-      gradeCounts[record.GR] = (gradeCounts[record.GR] || 0) + 1;
+      // Only count valid grades
+      if (record.GR in gradePointMap) {
+        gradeCounts[record.GR] = (gradeCounts[record.GR] || 0) + 1;
+      }
     });
 
     subjectGradeDistribution[subject] = Object.entries(gradeCounts).map(([grade, count]) => ({
@@ -451,19 +470,22 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
 
   // Subject-wise Performance Data (End Semester Result Analysis)
   const subjectPerformanceHeader = ["S.No", "Subject Code", "Subject Name", "Faculty Name", "Dept", "App", "Absent", "Fail", "WH", "Passed", "% of pass", "Highest Grade", "No. of students"];
+  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
   const subjectPerformanceData = uniqueSubjects.map((subject, index) => {
     const subjectRecords = records.filter(record => record.SCODE === subject);
-    const totalStudents = subjectRecords.length;
-    const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
+    const validSubjectRecords = subjectRecords.filter(record => record.GR in gradePointMap);
+    const totalStudents = validSubjectRecords.length;
+    const passedStudents = validSubjectRecords.filter(record => record.GR !== 'U').length;
     const failedStudents = totalStudents - passedStudents;
-    const passPercentage = (passedStudents / totalStudents) * 100;
+    const passPercentage = totalStudents > 0 ? (passedStudents / totalStudents) * 100 : 0;
     
     // Find the highest grade
-    const grades = subjectRecords.map(record => record.GR);
-    const highestGrade = grades.sort((a, b) => gradePointMap[b] - gradePointMap[a])[0];
+    const grades = validSubjectRecords.map(record => record.GR);
+    const sortedGrades = grades.sort((a, b) => (gradePointMap[b] || 0) - (gradePointMap[a] || 0));
+    const highestGrade = sortedGrades.length > 0 ? sortedGrades[0] : '';
     
     // Count students with highest grade
-    const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
+    const studentsWithHighestGrade = validSubjectRecords.filter(record => record.GR === highestGrade).length;
     
     return [
       index + 1,
@@ -487,7 +509,7 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   const gradeDistributionData = analysis.gradeDistribution.map(grade => [
     grade.name,
     grade.count,
-    ((grade.count / analysis.totalGrades) * 100).toFixed(2) + "%"
+    analysis.totalGrades > 0 ? ((grade.count / analysis.totalGrades) * 100).toFixed(2) + "%" : "0%"
   ]);
 
   // Top Performers Data
