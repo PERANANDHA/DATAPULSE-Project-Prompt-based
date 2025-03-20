@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Plus, Minus, AlertTriangle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface SubjectCredit {
   subjectCode: string;
@@ -25,6 +26,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
   const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
+  const [bulkInput, setBulkInput] = useState<string>('');
+  const [showBulkInput, setShowBulkInput] = useState<boolean>(false);
 
   // Initialize with existing subjects from the uploaded file
   useEffect(() => {
@@ -97,6 +100,87 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     });
   };
 
+  const toggleBulkInput = () => {
+    setShowBulkInput(!showBulkInput);
+    if (!showBulkInput) {
+      // Pre-populate the bulk input with existing credits
+      const existingCredits = subjectCredits
+        .filter(item => item.subjectCode && item.creditValue > 0)
+        .map(item => `${item.subjectCode}:${item.creditValue}`)
+        .join('\n');
+      setBulkInput(existingCredits);
+    }
+  };
+
+  const processBulkInput = () => {
+    try {
+      const lines = bulkInput.split('\n').filter(line => line.trim());
+      const newCredits: SubjectCredit[] = [];
+      const newErrors: {[key: string]: string} = {};
+      let hasError = false;
+      
+      lines.forEach((line, index) => {
+        const [code, value] = line.split(':').map(s => s.trim());
+        const creditValue = parseFloat(value);
+        
+        if (!code) {
+          newErrors[`bulk-${index}`] = "Subject code is required";
+          hasError = true;
+        } else if (!uploadedSubjects.includes(code)) {
+          newErrors[`bulk-${index}`] = `Subject code '${code}' not found in uploaded file`;
+          hasError = true;
+        }
+        
+        if (isNaN(creditValue) || creditValue <= 0) {
+          newErrors[`bulk-${index}`] = `Credit for '${code}' must be a positive number`;
+          hasError = true;
+        }
+        
+        if (code && !isNaN(creditValue) && creditValue > 0) {
+          newCredits.push({ subjectCode: code, creditValue });
+        }
+      });
+      
+      if (hasError) {
+        setErrors(newErrors);
+        toast({
+          variant: "destructive",
+          title: "Bulk input error",
+          description: "Please check your input format. Each line should be 'SubjectCode:CreditValue'",
+        });
+        return;
+      }
+      
+      // Check for duplicate subject codes
+      const uniqueCodes = new Set();
+      for (const item of newCredits) {
+        if (uniqueCodes.has(item.subjectCode)) {
+          toast({
+            variant: "destructive",
+            title: "Duplicate Subject Codes",
+            description: "Each subject code should only appear once.",
+          });
+          return;
+        }
+        uniqueCodes.add(item.subjectCode);
+      }
+      
+      setSubjectCredits(newCredits);
+      setShowBulkInput(false);
+      setErrors({});
+      toast({
+        title: "Bulk input processed",
+        description: `Successfully processed ${newCredits.length} subject credits.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Invalid input format",
+        description: "Each line should follow the format 'SubjectCode:CreditValue'",
+      });
+    }
+  };
+
   const handleSubmit = () => {
     // Validate all entries
     let newErrors: {[key: string]: string} = {};
@@ -148,7 +232,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     
     if (missingSubjects.length > 0) {
       toast({
-        // Fix: Changed "warning" to "default" as only "default" and "destructive" are allowed
         variant: "default",
         title: "Missing Subject Credits",
         description: `The following subjects don't have credits assigned: ${missingSubjects.join(', ')}`,
@@ -169,7 +252,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       <CardHeader>
         <CardTitle className="text-lg">Assign Credits to Subjects</CardTitle>
         <CardDescription>
-          Enter the credit value for each subject in the uploaded file for accurate SGPA calculation
+          Enter the subject code and credit value for each subject in the uploaded file for accurate SGPA calculation
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -182,63 +265,111 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
           </div>
         ) : (
           <>
-            <div className="space-y-4">
-              {subjectCredits.map((item, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Subject Code"
-                      value={item.subjectCode}
-                      onChange={(e) => handleSubjectCodeChange(index, e.target.value)}
-                      list="subject-list"
-                      className={errors[`subject-${index}`] ? "border-red-500" : ""}
-                    />
-                    {errors[`subject-${index}`] && (
-                      <p className="text-xs text-red-500 mt-1">{errors[`subject-${index}`]}</p>
-                    )}
+            {!showBulkInput ? (
+              <div className="space-y-4">
+                {subjectCredits.map((item, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <label htmlFor={`subject-${index}`} className="text-sm font-medium mb-1 block">
+                        Subject Code
+                      </label>
+                      <Input
+                        id={`subject-${index}`}
+                        placeholder="Enter Subject Code"
+                        value={item.subjectCode}
+                        onChange={(e) => handleSubjectCodeChange(index, e.target.value)}
+                        list="subject-list"
+                        className={errors[`subject-${index}`] ? "border-red-500" : ""}
+                      />
+                      {errors[`subject-${index}`] && (
+                        <p className="text-xs text-red-500 mt-1">{errors[`subject-${index}`]}</p>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label htmlFor={`credit-${index}`} className="text-sm font-medium mb-1 block">
+                        Credit Value
+                      </label>
+                      <Input
+                        id={`credit-${index}`}
+                        type="number"
+                        placeholder="Enter Credit Value"
+                        value={item.creditValue === 0 ? "" : item.creditValue}
+                        onChange={(e) => handleCreditValueChange(index, e.target.value)}
+                        min="0.5"
+                        step="0.5"
+                        className={errors[`credit-${index}`] ? "border-red-500" : ""}
+                      />
+                      {errors[`credit-${index}`] && (
+                        <p className="text-xs text-red-500 mt-1">{errors[`credit-${index}`]}</p>
+                      )}
+                    </div>
+                    <div className="pt-6">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSubjectCredit(index)}
+                        disabled={subjectCredits.length <= 1}
+                        className="flex-shrink-0"
+                        aria-label="Remove subject"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <Input
-                      type="number"
-                      placeholder="Credit Value"
-                      value={item.creditValue === 0 ? "" : item.creditValue}
-                      onChange={(e) => handleCreditValueChange(index, e.target.value)}
-                      min="0.5"
-                      step="0.5"
-                      className={errors[`credit-${index}`] ? "border-red-500" : ""}
-                    />
-                    {errors[`credit-${index}`] && (
-                      <p className="text-xs text-red-500 mt-1">{errors[`credit-${index}`]}</p>
-                    )}
+                ))}
+                
+                <div className="flex flex-wrap justify-between gap-2">
+                  <div className="space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addSubjectCredit}
+                      className="flex items-center"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Subject
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={toggleBulkInput}
+                      className="flex items-center"
+                    >
+                      Bulk Edit
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeSubjectCredit(index)}
-                    disabled={subjectCredits.length <= 1}
-                    className="flex-shrink-0"
-                  >
-                    <Minus className="h-4 w-4" />
+                  
+                  <Button onClick={handleSubmit} disabled={isProcessing}>
+                    Assign Credits
                   </Button>
                 </div>
-              ))}
-              
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={addSubjectCredit}
-                  className="flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Subject
-                </Button>
-                
-                <Button onClick={handleSubmit} disabled={isProcessing}>
-                  Assign Credits
-                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="bulk-input" className="text-sm font-medium mb-1 block">
+                    Bulk Subject Credit Assignment
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Enter one subject code and credit value per line in the format "SubjectCode:CreditValue"
+                  </p>
+                  <Textarea
+                    id="bulk-input"
+                    value={bulkInput}
+                    onChange={(e) => setBulkInput(e.target.value)}
+                    placeholder="CS101:4&#10;MA102:3&#10;PH103:3"
+                    className="min-h-[200px] font-mono text-sm"
+                  />
+                  {Object.entries(errors).filter(([key]) => key.startsWith('bulk-')).map(([key, value]) => (
+                    <p key={key} className="text-xs text-red-500 mt-1">{value}</p>
+                  ))}
+                </div>
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={toggleBulkInput}>Cancel</Button>
+                  <Button onClick={processBulkInput}>Process Bulk Input</Button>
+                </div>
+              </div>
+            )}
             
             <datalist id="subject-list">
               {uploadedSubjects.map(code => (

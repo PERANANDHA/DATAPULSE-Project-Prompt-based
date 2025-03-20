@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -28,6 +29,19 @@ export interface ResultAnalysis {
   subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] };
   fileCount?: number; // Number of files processed
   filesProcessed?: string[]; // Names of files processed
+  fileWiseAnalysis?: { 
+    [fileName: string]: {
+      averageSGPA: number;
+      students: number;
+      semesterName?: string;
+    } 
+  }; // Analysis per file
+  cgpaAnalysis?: {
+    studentCGPAs: { id: string; cgpa: number }[];
+    averageCGPA: number;
+    highestCGPA: number;
+    lowestCGPA: number;
+  }; // CGPA analysis when multiple files
 }
 
 const gradePointMap: { [grade: string]: number } = {
@@ -61,7 +75,7 @@ const getGradeColor = (grade: string): string => {
   return gradeColors[grade] || '#9ca3af'; // Default gray
 };
 
-const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
+export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
   const studentRecords = records.filter(record => record.REGNO === studentId);
   let totalCredits = 0;
   let weightedSum = 0;
@@ -75,6 +89,46 @@ const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
   });
 
   return totalCredits === 0 ? 0 : weightedSum / totalCredits;
+};
+
+// Calculate CGPA from multiple semesters (files)
+export const calculateCGPA = (
+  records: StudentRecord[], 
+  studentId: string, 
+  fileGroups: { [fileName: string]: StudentRecord[] }
+): number => {
+  const allSemesters = Object.keys(fileGroups);
+  if (allSemesters.length <= 1) {
+    // If only one semester, CGPA is the same as SGPA
+    return calculateSGPA(records, studentId);
+  }
+  
+  let totalCredits = 0;
+  let totalWeightedSum = 0;
+  
+  // For each semester (file)
+  allSemesters.forEach(semester => {
+    const semesterRecords = fileGroups[semester];
+    const studentSemRecords = semesterRecords.filter(record => record.REGNO === studentId);
+    
+    // Calculate this semester's contribution
+    let semCredits = 0;
+    let semWeightedSum = 0;
+    
+    studentSemRecords.forEach(record => {
+      const gradePoint = gradePointMap[record.GR];
+      const creditValue = record.creditValue || 0;
+      
+      semWeightedSum += gradePoint * creditValue;
+      semCredits += creditValue;
+    });
+    
+    // Add to overall totals
+    totalWeightedSum += semWeightedSum;
+    totalCredits += semCredits;
+  });
+  
+  return totalCredits === 0 ? 0 : totalWeightedSum / totalCredits;
 };
 
 const hasArrears = (records: StudentRecord[], studentId: string): boolean => {
@@ -122,7 +176,7 @@ export const parseExcelFile = async (file: File): Promise<StudentRecord[]> => {
   });
 };
 
-// New function to parse multiple Excel files
+// Parse multiple Excel files
 export const parseMultipleExcelFiles = async (files: File[]): Promise<StudentRecord[]> => {
   try {
     // Process each file and get their records
@@ -142,6 +196,56 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   // Get unique files processed
   const filesProcessed = [...new Set(records.map(record => record.fileSource || 'Unknown'))];
   const fileCount = filesProcessed.length;
+  
+  // Group records by file source
+  const fileGroups: { [fileName: string]: StudentRecord[] } = {};
+  filesProcessed.forEach(fileName => {
+    fileGroups[fileName] = records.filter(record => record.fileSource === fileName);
+  });
+  
+  // Per-file analysis
+  const fileWiseAnalysis: { [fileName: string]: { averageSGPA: number; students: number; semesterName?: string } } = {};
+  
+  filesProcessed.forEach(fileName => {
+    const fileRecords = fileGroups[fileName];
+    const fileStudentIds = [...new Set(fileRecords.map(record => record.REGNO))];
+    const fileStudentCount = fileStudentIds.length;
+    
+    // Get the semester name if available (assuming all records in a file have the same semester)
+    const semName = fileRecords[0]?.SEM || '';
+    
+    // Calculate average SGPA for this file
+    let totalSGPA = 0;
+    fileStudentIds.forEach(studentId => {
+      totalSGPA += calculateSGPA(fileRecords, studentId);
+    });
+    
+    const avgSGPA = fileStudentCount > 0 ? totalSGPA / fileStudentCount : 0;
+    
+    fileWiseAnalysis[fileName] = {
+      averageSGPA: avgSGPA,
+      students: fileStudentCount,
+      semesterName: semName || undefined
+    };
+  });
+  
+  // Calculate CGPA if multiple files
+  let cgpaAnalysis;
+  if (fileCount > 1) {
+    const studentIds = [...new Set(records.map(record => record.REGNO))];
+    const studentCGPAs = studentIds.map(id => ({
+      id,
+      cgpa: calculateCGPA(records, id, fileGroups)
+    }));
+    
+    const cgpaValues = studentCGPAs.map(s => s.cgpa);
+    cgpaAnalysis = {
+      studentCGPAs,
+      averageCGPA: cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length,
+      highestCGPA: Math.max(...cgpaValues),
+      lowestCGPA: Math.min(...cgpaValues),
+    };
+  }
   
   const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
   
@@ -266,6 +370,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     subjectGradeDistribution,
     fileCount,
     filesProcessed,
+    fileWiseAnalysis,
+    cgpaAnalysis
   };
 };
 
@@ -289,9 +395,22 @@ export const downloadExcelReport = (analysis: ResultAnalysis, records: StudentRe
 
 // Add file information to Excel report
 const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): Blob => {
+  // Create a new workbook
+  const workbook = XLSX.utils.book_new();
+
+  // Helper function to add a sheet to the workbook
+  const addSheet = (data: any[][], name: string, header: string[]) => {
+    const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+    
+    // Set column widths
+    const cols = header.map(() => ({ wch: 20 })); // Set width for each column
+    ws['!cols'] = cols;
+    
+    XLSX.utils.book_append_sheet(workbook, ws, name);
+  };
+  
   // Performance Summary Data
   const performanceData = [
-    ["Metric", "Value"],
     ["Total Students", analysis.totalStudents],
     ["Average CGPA", analysis.averageCGPA.toFixed(4)],
     ["Highest SGPA", analysis.highestSGPA.toFixed(4)],
@@ -301,7 +420,24 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   // Add file information if multiple files
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
     performanceData.push(["Number of Files Processed", analysis.fileCount]);
-    performanceData.push(["Files Processed", analysis.filesProcessed.join(", ")]);
+    
+    // Add individual file analysis
+    if (analysis.fileWiseAnalysis) {
+      Object.entries(analysis.fileWiseAnalysis).forEach(([fileName, fileData]) => {
+        performanceData.push([`${fileName} Average SGPA`, fileData.averageSGPA.toFixed(4)]);
+        performanceData.push([`${fileName} Students`, fileData.students]);
+        if (fileData.semesterName) {
+          performanceData.push([`${fileName} Semester`, fileData.semesterName]);
+        }
+      });
+    }
+    
+    // Add CGPA data if available
+    if (analysis.cgpaAnalysis) {
+      performanceData.push(["Average CGPA", analysis.cgpaAnalysis.averageCGPA.toFixed(4)]);
+      performanceData.push(["Highest CGPA", analysis.cgpaAnalysis.highestCGPA.toFixed(4)]);
+      performanceData.push(["Lowest CGPA", analysis.cgpaAnalysis.lowestCGPA.toFixed(4)]);
+    }
   }
 
   // Grade Distribution Data
@@ -343,16 +479,17 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     student.sgpa.toFixed(4),
     student.hasArrears ? 'Has Arrears' : (student.sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing')
   ]) || [];
+  
+  // CGPA details if available
+  let cgpaDetailsData: any[][] = [];
+  if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    cgpaDetailsData = analysis.cgpaAnalysis.studentCGPAs.map(student => [
+      student.id,
+      student.cgpa.toFixed(4)
+    ]);
+  }
 
-  // Create a new workbook
-  const workbook = XLSX.utils.book_new();
-
-  // Helper function to add a sheet to the workbook
-  const addSheet = (data: any[][], name: string, header: string[]) => {
-    const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
-    XLSX.utils.book_append_sheet(workbook, ws, name);
-  };
-
+  // Add sheets for each analysis
   addSheet(performanceData, "Performance Summary", ["Metric", "Value"]);
   addSheet(gradeDistributionData, "Grade Distribution", gradeDistributionHeader);
   addSheet(subjectPerformanceData, "Subject Performance", subjectPerformanceHeader);
@@ -360,12 +497,18 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   addSheet(needsImprovementData, "Needs Improvement", needsImprovementHeader);
   addSheet(studentSgpaDetailsData, "Student SGPA Details", studentSgpaDetailsHeader);
   
+  // Add CGPA details if multiple files were processed
+  if (cgpaDetailsData.length > 0) {
+    addSheet(cgpaDetailsData, "Student CGPA Details", ["Registration Number", "CGPA"]);
+  }
+  
   // Add file details to the workbook if multiple files were processed
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
-    const fileDetailsHeader = ["File Name", "Record Count"];
+    const fileDetailsHeader = ["File Name", "Record Count", "Semester"];
     const fileDetailsData = analysis.filesProcessed.map(fileName => {
       const fileRecordCount = records.filter(record => record.fileSource === fileName).length;
-      return [fileName, fileRecordCount];
+      const semester = records.find(record => record.fileSource === fileName)?.SEM || 'Unknown';
+      return [fileName, fileRecordCount, semester];
     });
     addSheet(fileDetailsData, "File Details", fileDetailsHeader);
   }
@@ -384,7 +527,7 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };
 
-// Update Word report to include file information
+// Generate Word report with improved formatting
 export const generateWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): string => {
   // Get unique students and subjects
   const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
@@ -397,23 +540,60 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       <div class="summary-card">
         <h2>Files Processed</h2>
         <p><strong>Number of Files:</strong> ${analysis.fileCount}</p>
-        <table>
+        <table class="result-table">
           <thead>
             <tr>
               <th>File Name</th>
               <th>Record Count</th>
+              <th>Semester</th>
+              <th>Average SGPA</th>
             </tr>
           </thead>
           <tbody>
             ${analysis.filesProcessed.map(fileName => {
               const fileRecordCount = records.filter(record => record.fileSource === fileName).length;
+              const semester = records.find(record => record.fileSource === fileName)?.SEM || 'Unknown';
+              const avgSGPA = analysis.fileWiseAnalysis?.[fileName]?.averageSGPA.toFixed(4) || 'N/A';
               return `
                 <tr>
                   <td>${fileName}</td>
                   <td>${fileRecordCount}</td>
+                  <td>${semester}</td>
+                  <td>${avgSGPA}</td>
                 </tr>
               `;
             }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+  
+  // CGPA analysis section if multiple files
+  let cgpaContent = '';
+  if (analysis.fileCount && analysis.fileCount > 1 && analysis.cgpaAnalysis) {
+    cgpaContent = `
+      <div class="summary-card">
+        <h2>CGPA Analysis</h2>
+        <p><strong>Average CGPA:</strong> ${analysis.cgpaAnalysis.averageCGPA.toFixed(4)}</p>
+        <p><strong>Highest CGPA:</strong> ${analysis.cgpaAnalysis.highestCGPA.toFixed(4)}</p>
+        <p><strong>Lowest CGPA:</strong> ${analysis.cgpaAnalysis.lowestCGPA.toFixed(4)}</p>
+        
+        <h3>Student CGPA Details</h3>
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>Registration Number</th>
+              <th>CGPA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${analysis.cgpaAnalysis.studentCGPAs.map(student => `
+              <tr>
+                <td>${student.id}</td>
+                <td>${student.cgpa.toFixed(4)}</td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -428,67 +608,78 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       <meta charset="utf-8">
       <title>Result Analysis Report</title>
       <style>
+        @page {
+          size: A4;
+          margin: 2cm;
+        }
         body {
           font-family: Arial, sans-serif;
-          margin: 40px;
+          font-size: 12pt;
           line-height: 1.5;
+          margin: 0;
+          padding: 0;
         }
         h1 {
           text-align: center;
           color: #2563eb;
-          font-size: 24px;
-          margin-bottom: 20px;
+          font-size: 24pt;
+          margin-bottom: 20pt;
         }
         h2 {
           color: #1d4ed8;
-          font-size: 18px;
-          margin-top: 30px;
-          border-bottom: 1px solid #e5e7eb;
-          padding-bottom: 5px;
+          font-size: 18pt;
+          margin-top: 20pt;
+          margin-bottom: 10pt;
+          border-bottom: 1pt solid #e5e7eb;
+          padding-bottom: 5pt;
         }
-        table {
+        h3 {
+          color: #1d4ed8;
+          font-size: 14pt;
+          margin-top: 15pt;
+          margin-bottom: 5pt;
+        }
+        .result-table {
           width: 100%;
           border-collapse: collapse;
-          margin: 15px 0;
+          margin: 15pt 0;
+          font-size: 10pt;
         }
-        th, td {
-          border: 1px solid #d1d5db;
-          padding: 8px;
+        .result-table th, .result-table td {
+          border: 1pt solid #d1d5db;
+          padding: 8pt;
           text-align: left;
         }
-        th {
+        .result-table th {
           background-color: #f3f4f6;
+          font-weight: bold;
         }
         .college-header {
           text-align: center;
-          margin-bottom: 30px;
+          margin-bottom: 30pt;
         }
         .college-name {
-          font-size: 20px;
+          font-size: 20pt;
           font-weight: bold;
-          margin-bottom: 5px;
+          margin-bottom: 5pt;
         }
         .department {
-          font-size: 16px;
-          margin-bottom: 5px;
+          font-size: 16pt;
+          margin-bottom: 5pt;
         }
         .batch {
-          font-size: 14px;
+          font-size: 14pt;
         }
         .summary-card {
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          padding: 15px;
-          margin-bottom: 20px;
-        }
-        .chart-container {
-          margin: 20px 0;
-          text-align: center;
+          border: 1pt solid #e5e7eb;
+          border-radius: 8pt;
+          padding: 15pt;
+          margin-bottom: 20pt;
         }
         .footer {
-          margin-top: 40px;
+          margin-top: 40pt;
           text-align: center;
-          font-size: 12px;
+          font-size: 10pt;
           color: #6b7280;
         }
       </style>
@@ -505,15 +696,17 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       <div class="summary-card">
         <h2>Performance Summary</h2>
         <p><strong>Total Students:</strong> ${analysis.totalStudents}</p>
-        <p><strong>Average CGPA:</strong> ${analysis.averageCGPA.toFixed(4)}</p>
+        <p><strong>Average SGPA:</strong> ${analysis.averageCGPA.toFixed(4)}</p>
         <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(4)}</p>
         <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(4)}</p>
       </div>
       
       ${fileInfoContent}
       
+      ${cgpaContent}
+      
       <h2>Grade Distribution</h2>
-      <table>
+      <table class="result-table">
         <thead>
           <tr>
             <th>Grade</th>
@@ -533,7 +726,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       </table>
       
       <h2>Subject-wise Performance</h2>
-      <table>
+      <table class="result-table">
         <thead>
           <tr>
             <th>Subject Code</th>
@@ -553,7 +746,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       </table>
       
       <h2>Top Performers</h2>
-      <table>
+      <table class="result-table">
         <thead>
           <tr>
             <th>Registration Number</th>
@@ -573,7 +766,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       </table>
       
       <h2>Students Needing Improvement</h2>
-      <table>
+      <table class="result-table">
         <thead>
           <tr>
             <th>Registration Number</th>
@@ -593,7 +786,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       </table>
       
       <h2>Student-wise SGPA Details</h2>
-      <table>
+      <table class="result-table">
         <thead>
           <tr>
             <th>Registration Number</th>
@@ -620,6 +813,29 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
   `;
   
   return htmlContent;
+};
+
+// Download PNG chart
+export const downloadChartAsPng = (elementId: string, fileName: string): void => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    console.error('Element not found:', elementId);
+    return;
+  }
+  
+  // Use html2canvas library (needs to be added)
+  // @ts-ignore - html2canvas is loaded as global
+  if (typeof html2canvas !== 'undefined') {
+    // @ts-ignore
+    html2canvas(element).then((canvas: HTMLCanvasElement) => {
+      const link = document.createElement('a');
+      link.download = `${fileName}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  } else {
+    console.error('html2canvas library not loaded');
+  }
 };
 
 /**
