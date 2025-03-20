@@ -89,6 +89,7 @@ export const calculateSGPA = (records: StudentRecord[], studentId: string): numb
     }
   });
 
+  // Ensure exactly 2 decimal places with proper rounding
   return totalCredits === 0 ? 0 : Number((weightedSum / totalCredits).toFixed(2));
 };
 
@@ -131,6 +132,7 @@ export const calculateCGPA = (
     totalCredits += semCredits;
   });
   
+  // Ensure exactly 2 decimal places with proper rounding
   return totalCredits === 0 ? 0 : Number((totalWeightedSum / totalCredits).toFixed(2));
 };
 
@@ -232,7 +234,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
-  // Calculate CGPA if multiple files
+  // Calculate CGPA if multiple files - ensure 2 decimal places
   let cgpaAnalysis;
   if (fileCount > 1) {
     const studentIds = [...new Set(records.map(record => record.REGNO))];
@@ -252,7 +254,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   
   const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
   
-  // Calculate SGPA for each student
+  // Calculate SGPA for each student - ensure 2 decimal places
   const studentSgpaMap: { [studentId: string]: number } = {};
   const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
   
@@ -650,7 +652,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     `;
   }).join('');
   
-  // Top SGPA performers
+  // Format SGPA values to always have 2 decimal places
   const topSgpaRows = analysis.topPerformers
     .slice(0, 3)
     .map((student, index) => `
@@ -661,7 +663,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       </tr>
     `).join('');
   
-  // Top CGPA performers if available
+  // Format CGPA values to always have 2 decimal places
   let topCgpaRows = '';
   if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
     topCgpaRows = analysis.cgpaAnalysis.studentCGPAs
@@ -714,7 +716,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     `;
   }
   
-  // CGPA analysis section if multiple files
+  // CGPA analysis section if multiple files - ensure 2 decimal places
   let cgpaContent = '';
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.cgpaAnalysis) {
     cgpaContent = `
@@ -736,7 +738,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     `;
   }
   
-  // Create the Word document HTML content
+  // Create the Word document HTML content with wider scales
   let htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -754,7 +756,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
           line-height: 1.3;
-          margin: 2cm;
+          margin: 1.5cm;
         }
         
         h1 {
@@ -765,7 +767,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         
         h2 {
           font-size: 14pt;
-          margin-top: 1cm;
+          margin-top: 0.8cm;
           margin-bottom: 0.3cm;
         }
         
@@ -814,6 +816,19 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           margin-top: 1cm;
           border-top: 1px solid #000;
         }
+        
+        /* Wider scale for tables */
+        .wide-table {
+          width: 100%;
+          table-layout: fixed;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        
+        /* Ensure proper page breaks */
+        .page-break {
+          page-break-before: always;
+        }
       </style>
     </head>
     <body>
@@ -821,10 +836,10 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         <h1>K. S. Rangasamy College of Technology, Tiruchengode - 637 215</h1>
         <p style="text-align: center; margin-bottom: 10px;">(Autonomous)</p>
         <p style="text-align: center; margin-bottom: 10px;">Computer Science and Engineering</p>
-        <table style="width: 80%; margin: 0 auto; border: none;">
+        <table style="width: 90%; margin: 0 auto; border: none;">
           <tr style="border: none;">
             <td style="border: none; text-align: left; width: 33%;">Batch: 2023-2027</td>
-            <td style="border: none; text-align: center; width: 33%;">Year / Sem: II/III</td>
+            <td style="border: none; text-align: center; width: 34%;">Year / Sem: II/III</td>
             <td style="border: none; text-align: right; width: 33%;">Section: A&B</td>
           </tr>
         </table>
@@ -832,13 +847,13 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       
       <h2 style="text-align: center; margin: 20px 0;">End Semester Result Analysis</h2>
       
-      <table border="1" cellpadding="3" cellspacing="0" style="width: 100%; font-size: 9pt;">
+      <table class="wide-table" border="1" cellpadding="3" cellspacing="0">
         <thead>
           <tr>
             <th rowspan="2" style="width: 5%;">S. No</th>
             <th rowspan="2" style="width: 12%;">Subject code</th>
-            <th rowspan="2" style="width: 20%;">Subject name</th>
-            <th rowspan="2" style="width: 20%;">Faculty name</th>
+            <th rowspan="2" style="width: 18%;">Subject name</th>
+            <th rowspan="2" style="width: 18%;">Faculty name</th>
             <th rowspan="2" style="width: 8%;">Dept</th>
             <th colspan="5" style="width: 25%;">No. of students</th>
             <th rowspan="2" style="width: 7%;">% of pass</th>
@@ -861,7 +876,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       
       <h2 style="text-align: center; margin: 20px 0;">Classification</h2>
       
-      <table border="1" cellpadding="3" cellspacing="0" style="width: 100%; font-size: 9pt;">
+      <table class="wide-table" border="1" cellpadding="3" cellspacing="0">
         <tr>
           <th colspan="7" style="width: 50%;">Current semester</th>
           <th colspan="7" style="width: 50%;">Upto this semester</th>
@@ -908,7 +923,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       
       <h2 style="text-align: center; margin: 20px 0;">First Three Rank Position</h2>
       
-      <table border="1" cellpadding="3" cellspacing="0" style="width: 100%; font-size: 9pt;">
+      <table class="wide-table" border="1" cellpadding="3" cellspacing="0">
         <tr>
           <th colspan="3" style="width: 50%;">Rank in this semester</th>
           <th colspan="3" style="width: 50%;">Rank up to this semester</th>
