@@ -566,7 +566,7 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     addSheet(cgpaTopPerformersData, "Rank up to this semester", ["S.No", "Name of the student", "CGPA"]);
   }
   
-  addSheet(currentSemesterData, "Classification", ["Current semester", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  addSheet(currentSemesterData, "Classification", ["Current semester", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
   addSheet(categoryData, "Categories", ["Category", "Grade Point"]);
   
   // Student-wise SGPA Details Data
@@ -705,8 +705,8 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     }).join('');
     
     fileInfoContent = `
-      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8;">Files Processed</h2>
-      <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8; text-align: center;">Files Processed</h2>
+      <table border="1" cellpadding="5" cellspacing="0" style="width: 90%; margin: 0 auto; border-collapse: collapse; margin-bottom: 20px;">
         <thead>
           <tr style="background-color: #f3f4f6;">
             <th>File Name</th>
@@ -726,8 +726,8 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
   let cgpaContent = '';
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.cgpaAnalysis) {
     cgpaContent = `
-      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8;">CGPA Analysis</h2>
-      <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8; text-align: center;">CGPA Analysis</h2>
+      <table border="1" cellpadding="5" cellspacing="0" style="width: 90%; margin: 0 auto; border-collapse: collapse; margin-bottom: 20px;">
         <tr>
           <td style="width: 30%;"><strong>Average CGPA:</strong></td>
           <td>${analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</td>
@@ -744,7 +744,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     `;
   }
   
-  // Create the Word document HTML content with wider scales
+  // Create the Word document HTML content with wider scales and center alignment
   let htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -762,7 +762,8 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
           line-height: 1.3;
-          margin: 1.5cm;
+          margin: 2cm;
+          text-align: center;
         }
         
         h1 {
@@ -775,13 +776,16 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           font-size: 14pt;
           margin-top: 0.8cm;
           margin-bottom: 0.3cm;
+          text-align: center;
         }
         
         table {
-          width: 100%;
+          width: 90%;
           border-collapse: collapse;
           margin-bottom: 0.5cm;
           page-break-inside: avoid;
+          margin-left: auto;
+          margin-right: auto;
         }
         
         th, td {
@@ -805,12 +809,16 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           font-weight: bold;
           margin-top: 0.5cm;
           margin-bottom: 0.2cm;
+          text-align: center;
         }
         
         .signatures {
           display: flex;
           justify-content: space-between;
           margin-top: 2cm;
+          width: 90%;
+          margin-left: auto;
+          margin-right: auto;
         }
         
         .signature {
@@ -825,7 +833,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         
         /* Wider scale for tables */
         .wide-table {
-          width: 100%;
+          width: 90%;
           table-layout: fixed;
           margin-left: auto;
           margin-right: auto;
@@ -1012,7 +1020,7 @@ export const downloadChartAsPng = (elementId: string, fileName: string): void =>
 };
 
 /**
- * Download PDF Report
+ * Download PDF Report - Improved to better capture the full page
  */
 export const downloadPdfReport = async (elementId: string): Promise<boolean> => {
   try {
@@ -1023,51 +1031,86 @@ export const downloadPdfReport = async (elementId: string): Promise<boolean> => 
       return false;
     }
     
+    // Create a clone of the element to avoid modifying the original
+    const clonedElement = element.cloneNode(true) as HTMLElement;
+    
+    // Apply styles to the clone for better rendering
+    clonedElement.style.width = element.scrollWidth + 'px';
+    clonedElement.style.backgroundColor = '#ffffff';
+    clonedElement.style.position = 'absolute';
+    clonedElement.style.top = '-9999px';
+    clonedElement.style.left = '-9999px';
+    document.body.appendChild(clonedElement);
+    
+    // Set a slightly higher scale for better quality
     // @ts-ignore - html2canvas is imported as an external script
-    const canvas = await html2canvas(element, {
-      scale: 1,
+    const canvas = await html2canvas(clonedElement, {
+      scale: 1.5,
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
       logging: false,
-      width: element.scrollWidth,
-      height: element.scrollHeight
+      width: clonedElement.scrollWidth,
+      height: clonedElement.scrollHeight,
+      x: 0,
+      y: 0,
+      windowWidth: document.documentElement.offsetWidth,
+      windowHeight: document.documentElement.offsetHeight
     });
+    
+    // Clean up the DOM
+    document.body.removeChild(clonedElement);
     
     // Create a new PDF document matching the aspect ratio of the captured element
     const imgData = canvas.toDataURL('image/png');
     const pdf = new JsPDF({
-      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+      orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     });
     
     // Calculate dimensions to fit PDF page
-    const imgProps = pdf.getImageProperties(imgData);
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
     
-    // Add image to PDF, filling the page width
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    // Calculate scaling factor to fit in PDF while maintaining aspect ratio
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const scaledWidth = imgWidth * ratio;
+    const scaledHeight = imgHeight * ratio;
     
-    // Add additional pages if content is too long
-    if (pdfHeight > pdf.internal.pageSize.getHeight()) {
-      let remainingHeight = pdfHeight;
-      let currentPosition = pdf.internal.pageSize.getHeight();
-      
-      while (remainingHeight > currentPosition) {
+    // Calculate how many pages we need
+    const totalPages = Math.ceil(imgHeight * ratio / pdfHeight);
+    
+    // Add each portion of the image to a new page
+    let remainingHeight = imgHeight;
+    let currentY = 0;
+    
+    for (let page = 0; page < totalPages; page++) {
+      // Add a new page after the first one
+      if (page > 0) {
         pdf.addPage();
-        pdf.addImage(
-          imgData, 
-          'PNG', 
-          0, 
-          -(currentPosition), 
-          pdfWidth, 
-          pdfHeight
-        );
-        remainingHeight -= pdf.internal.pageSize.getHeight();
-        currentPosition += pdf.internal.pageSize.getHeight();
       }
+      
+      // Calculate the height for this page (remaining or full page)
+      const segmentHeight = Math.min(pdfHeight / ratio, remainingHeight);
+      
+      // Add this segment of the image to the PDF
+      pdf.addImage(
+        imgData,
+        'PNG',
+        0,
+        -currentY * ratio,
+        pdfWidth,
+        imgHeight * ratio,
+        undefined,
+        'FAST'
+      );
+      
+      // Update for next page
+      currentY += pdfHeight / ratio;
+      remainingHeight -= segmentHeight;
     }
     
     // Save the PDF
@@ -1131,4 +1174,3 @@ export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentReco
   // Clean up
   document.body.removeChild(link);
 };
-
