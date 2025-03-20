@@ -31,10 +31,13 @@ import {
   FileText, 
   FileImage, 
   FileSpreadsheetIcon,
-  File
+  File,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { 
-  parseExcelFile, 
+  parseExcelFile,
+  parseMultipleExcelFiles,
   analyzeResults, 
   downloadCSVReport,
   downloadExcelReport,
@@ -49,6 +52,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 interface SubjectCredit {
   subjectCode: string;
@@ -57,7 +61,7 @@ interface SubjectCredit {
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upload');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [resultsAvailable, setResultsAvailable] = useState(false);
@@ -73,10 +77,37 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0] || null;
-    setFile(selectedFile);
+    const selectedFiles = e.target.files;
     
-    // Reset states when a new file is selected
+    if (!selectedFiles || selectedFiles.length === 0) return;
+    
+    // Check if trying to upload more than 10 files
+    if (files.length + selectedFiles.length > 10) {
+      toast({
+        variant: "destructive",
+        title: "Too many files",
+        description: "You can upload a maximum of 10 Excel files at once.",
+      });
+      return;
+    }
+    
+    // Convert FileList to array and validate file types
+    const newFiles = Array.from(selectedFiles).filter(file => {
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+        toast({
+          variant: "destructive",
+          title: "Invalid file",
+          description: `${file.name} is not a valid Excel file (.xlsx or .xls).`,
+        });
+        return false;
+      }
+      return true;
+    });
+    
+    // Add new files to existing files
+    setFiles(prev => [...prev, ...newFiles]);
+    
+    // Reset states when new files are selected
     setResultsAvailable(false);
     setStudentRecords([]);
     setResultAnalysis(null);
@@ -85,22 +116,16 @@ const Dashboard = () => {
     setCreditsAssigned(false);
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      toast({
-        variant: "destructive",
-        title: "No file selected",
-        description: "Please select an Excel file to upload.",
-      });
-      return;
-    }
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
-    // Check if file is Excel
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+  const handleUpload = async () => {
+    if (files.length === 0) {
       toast({
         variant: "destructive",
-        title: "Invalid file",
-        description: "Please select a valid Excel file (.xlsx or .xls).",
+        title: "No files selected",
+        description: "Please select at least one Excel file to upload.",
       });
       return;
     }
@@ -108,8 +133,17 @@ const Dashboard = () => {
     setIsUploading(true);
     
     try {
-      // Parse the Excel file
-      const records = await parseExcelFile(file);
+      // Parse all Excel files
+      let records: StudentRecord[];
+      
+      if (files.length === 1) {
+        // Single file upload
+        records = await parseExcelFile(files[0]);
+      } else {
+        // Multiple file upload
+        records = await parseMultipleExcelFiles(files);
+      }
+      
       setStudentRecords(records);
       
       // Extract unique subjects from the records
@@ -117,8 +151,8 @@ const Dashboard = () => {
       setUniqueSubjects(subjects);
       
       toast({
-        title: "File uploaded successfully!",
-        description: `Parsed ${records.length} records from Excel file.`,
+        title: "Files uploaded successfully!",
+        description: `Parsed ${records.length} records from ${files.length} Excel file(s).`,
       });
       
       setIsUploading(false);
@@ -128,7 +162,7 @@ const Dashboard = () => {
       toast({
         variant: "destructive",
         title: "Processing failed",
-        description: error instanceof Error ? error.message : "There was a problem processing your file. Please try again.",
+        description: error instanceof Error ? error.message : "There was a problem processing your files. Please try again.",
       });
       setIsUploading(false);
     }
@@ -252,7 +286,7 @@ const Dashboard = () => {
       return (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader className="h-12 w-12 text-primary animate-spin mb-4" />
-          <p className="text-muted-foreground">No data available. Please upload an Excel file.</p>
+          <p className="text-muted-foreground">No data available. Please upload Excel file(s).</p>
         </div>
       );
     }
@@ -270,6 +304,27 @@ const Dashboard = () => {
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
+        {/* Show file information if multiple files were processed */}
+        {resultAnalysis.fileCount && resultAnalysis.fileCount > 1 && resultAnalysis.filesProcessed && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Files Processed</CardTitle>
+              <CardDescription>Combined analysis from {resultAnalysis.fileCount} files</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {resultAnalysis.filesProcessed.map((fileName, index) => (
+                  <Badge key={index} variant="outline" className="px-2 py-1">
+                    <FileSpreadsheet className="h-3 w-3 mr-1" />
+                    {fileName}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Existing dashboard content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card>
             <CardHeader className="pb-2">
@@ -353,7 +408,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Subject-wise Grade Distribution */}
         <Card>
           <CardHeader>
             <CardTitle>Subject-wise Grade Distribution</CardTitle>
@@ -613,11 +667,11 @@ const Dashboard = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileSpreadsheet className="h-5 w-5" />
-                      Upload Excel File
+                      Upload Excel Files
                     </CardTitle>
                     <CardDescription>
-                      Upload your Excel file containing student results data for analysis.
-                      The file should contain columns: CNo (Department Code), SEM (Semester),
+                      Upload up to 10 Excel files containing student results data for analysis.
+                      Each file should contain columns: CNo (Department Code), SEM (Semester),
                       REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
                     </CardDescription>
                   </CardHeader>
@@ -633,25 +687,73 @@ const Dashboard = () => {
                           accept=".xlsx,.xls"
                           className="hidden"
                           onChange={handleFileChange}
+                          multiple
                         />
                         <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-4" />
-                        <p className="text-sm font-medium">Drag and drop your file here or click to browse</p>
-                        <p className="text-xs text-muted-foreground mt-1">Supports .xlsx and .xls files</p>
+                        <p className="text-sm font-medium">Drag and drop your files here or click to browse</p>
+                        <p className="text-xs text-muted-foreground mt-1">Supports multiple .xlsx and .xls files (max 10)</p>
                         
-                        {file && (
+                        {files.length > 0 && (
                           <div className="mt-4 p-2 bg-secondary rounded-md w-full max-w-md">
-                            <p className="text-sm font-medium truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</p>
+                            <div className="flex justify-between items-center mb-2">
+                              <p className="text-sm font-medium">{files.length} file(s) selected</p>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFiles([]);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="max-h-40 overflow-y-auto">
+                              {files.map((file, index) => (
+                                <div key={index} className="flex justify-between items-center py-1">
+                                  <div className="flex items-center">
+                                    <FileSpreadsheet className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    <span className="text-xs truncate max-w-[150px]">{file.name}</span>
+                                  </div>
+                                  <div className="flex items-center">
+                                    <span className="text-xs text-muted-foreground mr-2">
+                                      {(file.size / 1024).toFixed(2)} KB
+                                    </span>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-6 w-6" 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFile(index);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
                       
                       <Button 
                         onClick={handleUpload} 
-                        disabled={!file || isUploading || isAnalyzing}
+                        disabled={files.length === 0 || isUploading || isAnalyzing}
                         className="w-full max-w-md"
                       >
-                        {isUploading ? "Uploading..." : "Upload File"}
+                        {isUploading ? (
+                          <>
+                            <Loader className="h-4 w-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload {files.length > 1 ? 'Files' : 'File'}
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>

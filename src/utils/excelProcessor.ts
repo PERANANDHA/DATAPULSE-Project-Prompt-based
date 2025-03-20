@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -11,6 +10,7 @@ export interface StudentRecord {
   SCODE: string;
   GR: string;
   creditValue?: number;
+  fileSource?: string; // To track which file the record came from
 }
 
 export interface ResultAnalysis {
@@ -26,6 +26,8 @@ export interface ResultAnalysis {
   studentSgpaDetails?: { id: string; sgpa: number; hasArrears: boolean }[];
   passFailData: { name: string; value: number; fill: string }[];
   subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] };
+  fileCount?: number; // Number of files processed
+  filesProcessed?: string[]; // Names of files processed
 }
 
 const gradePointMap: { [grade: string]: number } = {
@@ -103,6 +105,7 @@ export const parseExcelFile = async (file: File): Promise<StudentRecord[]> => {
             REGNO: String(row['REGNO'] || ''),
             SCODE: String(row['SCODE'] || ''),
             GR: String(row['GR'] || ''),
+            fileSource: file.name, // Add the source file name
           }));
 
         resolve(records);
@@ -119,7 +122,27 @@ export const parseExcelFile = async (file: File): Promise<StudentRecord[]> => {
   });
 };
 
+// New function to parse multiple Excel files
+export const parseMultipleExcelFiles = async (files: File[]): Promise<StudentRecord[]> => {
+  try {
+    // Process each file and get their records
+    const recordPromises = files.map(file => parseExcelFile(file));
+    const recordArrays = await Promise.all(recordPromises);
+    
+    // Combine all records into a single array
+    const combinedRecords = recordArrays.flat();
+    
+    return combinedRecords;
+  } catch (error) {
+    throw new Error(`Error processing multiple files: ${error}`);
+  }
+};
+
 export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
+  // Get unique files processed
+  const filesProcessed = [...new Set(records.map(record => record.fileSource || 'Unknown'))];
+  const fileCount = filesProcessed.length;
+  
   const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
   
   // Calculate SGPA for each student
@@ -241,6 +264,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     studentSgpaDetails,
     passFailData,
     subjectGradeDistribution,
+    fileCount,
+    filesProcessed,
   };
 };
 
@@ -262,6 +287,7 @@ export const downloadExcelReport = (analysis: ResultAnalysis, records: StudentRe
   URL.revokeObjectURL(link.href);
 };
 
+// Add file information to Excel report
 const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): Blob => {
   // Performance Summary Data
   const performanceData = [
@@ -271,6 +297,12 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     ["Highest SGPA", analysis.highestSGPA.toFixed(4)],
     ["Lowest SGPA", analysis.lowestSGPA.toFixed(4)],
   ];
+
+  // Add file information if multiple files
+  if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
+    performanceData.push(["Number of Files Processed", analysis.fileCount]);
+    performanceData.push(["Files Processed", analysis.filesProcessed.join(", ")]);
+  }
 
   // Grade Distribution Data
   const gradeDistributionHeader = ["Grade", "Count", "Percentage"];
@@ -327,6 +359,16 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   addSheet(topPerformersData, "Top Performers", topPerformersHeader);
   addSheet(needsImprovementData, "Needs Improvement", needsImprovementHeader);
   addSheet(studentSgpaDetailsData, "Student SGPA Details", studentSgpaDetailsHeader);
+  
+  // Add file details to the workbook if multiple files were processed
+  if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
+    const fileDetailsHeader = ["File Name", "Record Count"];
+    const fileDetailsData = analysis.filesProcessed.map(fileName => {
+      const fileRecordCount = records.filter(record => record.fileSource === fileName).length;
+      return [fileName, fileRecordCount];
+    });
+    addSheet(fileDetailsData, "File Details", fileDetailsHeader);
+  }
 
   // Convert the workbook to a binary string and create a Blob
   const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
@@ -342,15 +384,43 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };
 
-/**
- * Generate a downloadable report in Word format using HTML
- */
+// Update Word report to include file information
 export const generateWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): string => {
   // Get unique students and subjects
   const uniqueStudents = [...new Set(records.map(record => record.REGNO))];
   const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
   
-  // Create HTML content with styling
+  // Add file processing information if multiple files were used
+  let fileInfoContent = '';
+  if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
+    fileInfoContent = `
+      <div class="summary-card">
+        <h2>Files Processed</h2>
+        <p><strong>Number of Files:</strong> ${analysis.fileCount}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>File Name</th>
+              <th>Record Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${analysis.filesProcessed.map(fileName => {
+              const fileRecordCount = records.filter(record => record.fileSource === fileName).length;
+              return `
+                <tr>
+                  <td>${fileName}</td>
+                  <td>${fileRecordCount}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+  
+  // Insert file information after the performance summary in the HTML
   let htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -439,6 +509,8 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(4)}</p>
         <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(4)}</p>
       </div>
+      
+      ${fileInfoContent}
       
       <h2>Grade Distribution</h2>
       <table>
