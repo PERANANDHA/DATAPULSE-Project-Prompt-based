@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -31,8 +30,8 @@ import {
   Loader, 
   FileText, 
   FileImage, 
-  FileSpreadsheetIcon, 
-  FilePdf 
+  FileSpreadsheetIcon,
+  File
 } from 'lucide-react';
 import { 
   parseExcelFile, 
@@ -547,7 +546,7 @@ const Dashboard = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
-                <FilePdf className="h-4 w-4 mr-2" />
+                <File className="h-4 w-4 mr-2" />
                 <span>Download as PDF</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
@@ -673,6 +672,43 @@ const Dashboard = () => {
           </Tabs>
         </div>
       </main>
+
+      {/* Dropdown menu for report options */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button disabled={isDownloading}>
+            {isDownloading ? (
+              <>
+                <Loader className="h-4 w-4 mr-2 animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
+              </>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
+            <File className="h-4 w-4 mr-2" />
+            <span>Download as PDF</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
+            <FileText className="h-4 w-4 mr-2" />
+            <span>Download as Word</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
+            <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
+            <span>Download as Excel</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
+            <Download className="h-4 w-4 mr-2" />
+            <span>Download as CSV</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

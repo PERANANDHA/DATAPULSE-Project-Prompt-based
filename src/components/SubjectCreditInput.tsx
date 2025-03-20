@@ -148,7 +148,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     
     if (missingSubjects.length > 0) {
       toast({
-        variant: "warning",
+        // Fix: Changed "warning" to "default" as only "default" and "destructive" are allowed
+        variant: "default",
         title: "Missing Subject Credits",
         description: `The following subjects don't have credits assigned: ${missingSubjects.join(', ')}`,
       });
