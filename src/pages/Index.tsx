@@ -54,15 +54,35 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="py-6 px-4 sm:px-6 lg:px-8 border-b border-border">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Orange and Blue Background Design */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-30 z-0"></div>
+      
+      {/* Decorative Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-white/10 backdrop-blur-sm"></div>
+        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-400 opacity-20 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-400 opacity-20 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
+      </div>
+      
+      {/* College Logo in Left Upper Corner */}
+      <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
+        <img 
+          src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
+          alt="K.S. Rangasamy College of Technology" 
+          className="h-16 md:h-20"
+        />
+      </div>
+
+      <header className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="container-centered flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="text-xl font-medium">ResultAnalyzer</h1>
+            <h1 className="text-xl font-medium text-white">ResultAnalyzer</h1>
           </div>
           <div className="flex items-center space-x-4">
             <Link to="/login">
-              <Button variant="outline" size="sm">Log in</Button>
+              <Button variant="outline" size="sm" className="bg-white/80 hover:bg-white text-foreground">Log in</Button>
             </Link>
             <Link to="/signup">
               <Button size="sm">Sign up</Button>
@@ -71,7 +91,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="flex-grow">
+      <main className="flex-grow relative z-10">
         <section className="py-16 md:py-24">
           <div className="container-centered">
             <motion.div 
@@ -81,18 +101,18 @@ const Index = () => {
               variants={staggerContainer}
             >
               <motion.div variants={fadeInUp}>
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary mb-4">
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-white/20 text-white mb-4">
                   For Class Advisors
                 </span>
               </motion.div>
               <motion.h2 
-                className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-6"
+                className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-6 text-white"
                 variants={fadeInUp}
               >
-                Transform student data into <span className="text-primary">actionable insights</span>
+                Transform student data into <span className="text-white/90">actionable insights</span>
               </motion.h2>
               <motion.p 
-                className="text-lg text-muted-foreground mb-8"
+                className="text-lg text-white/80 mb-8"
                 variants={fadeInUp}
               >
                 A powerful platform designed for educational professionals to analyze, track, and improve student performance with just a few clicks.
@@ -101,7 +121,7 @@ const Index = () => {
                 <Link to="/signup">
                   <Button 
                     size="lg" 
-                    className="rounded-full px-8 group"
+                    className="rounded-full px-8 group bg-white text-primary hover:bg-white/90"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                   >
@@ -116,7 +136,7 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="py-16 bg-secondary/50">
+        <section className="py-16 bg-white/90 backdrop-blur-sm">
           <div className="container-centered">
             <motion.div 
               className="text-center mb-16"
@@ -152,7 +172,7 @@ const Index = () => {
 
         <section className="py-16 md:py-24">
           <div className="container-centered">
-            <div className="bg-card p-8 md:p-12 rounded-xl shadow-sm text-center">
+            <div className="bg-white/90 backdrop-blur-sm p-8 md:p-12 rounded-xl shadow-lg text-center border border-white/20">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -172,7 +192,7 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="py-8 border-t border-border">
+      <footer className="py-8 relative z-10 bg-white/90 backdrop-blur-sm">
         <div className="container-centered">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground text-sm">
