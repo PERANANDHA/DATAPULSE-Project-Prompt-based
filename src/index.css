@@ -34,6 +34,10 @@
     --ring: 210 100% 50%;
 
     --radius: 0.75rem;
+    
+    /* College brand colors */
+    --ksrct-blue: 210 100% 50%;
+    --ksrct-orange: 30 100% 60%;
   }
 
   .dark {
@@ -76,6 +80,7 @@
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
   /* Glass effect */
@@ -88,6 +93,13 @@
 
   .glass-card {
     @apply glass rounded-lg shadow-sm;
+  }
+  
+  /* Login page background patterns */
+  .login-pattern {
+    background-image: 
+      radial-gradient(circle at 35% 25%, rgba(249, 115, 22, 0.3) 0%, transparent 45%),
+      radial-gradient(circle at 65% 75%, rgba(14, 165, 233, 0.3) 0%, transparent 45%);
   }
 
   /* Transition classes */
@@ -149,5 +161,14 @@
   
   .input-field {
     @apply block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+  
+  /* College brand specific styles */
+  .ksrct-gradient {
+    @apply bg-gradient-to-r from-[#F97316] via-[#0EA5E9] to-[#33C3F0];
+  }
+  
+  .ksrct-glass-card {
+    @apply bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border border-white/20;
   }
 }

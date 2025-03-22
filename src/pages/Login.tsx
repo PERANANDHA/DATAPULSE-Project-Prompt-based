@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -279,22 +280,42 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Orange and Blue Background Design */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-80 z-0"></div>
+      
+      {/* Decorative Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-white/10 backdrop-blur-sm"></div>
+        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-400 opacity-20 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-400 opacity-20 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
+      </div>
+      
+      {/* College Logo in Left Upper Corner */}
+      <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
+        <img 
+          src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
+          alt="K.S. Rangasamy College of Technology" 
+          className="h-16 md:h-20"
+        />
+      </div>
+
+      <div className="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10">
         <motion.div 
           className="w-full max-w-md"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-6">
-            <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+          <div className="mb-6 flex justify-between items-center">
+            <Link to="/" className="inline-flex items-center text-sm text-white hover:text-white/80">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to home
             </Link>
           </div>
           
-          <div className="bg-card shadow-sm rounded-lg p-6 sm:p-8">
+          <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg p-6 sm:p-8 border border-white/20">
             <div className="text-center mb-6">
               <h1 className="text-2xl font-semibold mb-2">Welcome back</h1>
               <p className="text-muted-foreground text-sm">Enter your credentials to access your account</p>
@@ -512,7 +533,7 @@ const Login = () => {
         </DialogContent>
       </Dialog>
       
-      {/* OTP Verification Dialog - Show when needed */}
+      {/* OTP Verification Dialog */}
       <Dialog open={showOtpVerification} onOpenChange={(open) => {
         if (!open) resetForgotPassword();
       }}>
