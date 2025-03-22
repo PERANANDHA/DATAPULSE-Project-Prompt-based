@@ -744,7 +744,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     `;
   }
   
-  // Create the Word document HTML content with wider scales and center alignment
+  // Create the Word document HTML content with improved table structure and alignment
   let htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -758,12 +758,17 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           padding: 0;
         }
         
+        @page {
+          margin: 2cm;
+        }
+        
         body {
           font-family: 'Times New Roman', Times, serif;
           font-size: 12pt;
           line-height: 1.3;
-          margin: 2cm;
           text-align: center;
+          width: 100%;
+          max-width: 100%;
         }
         
         h1 {
@@ -779,13 +784,18 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           text-align: center;
         }
         
+        p {
+          text-align: center;
+        }
+        
         table {
-          width: 90%;
+          width: 100%;
           border-collapse: collapse;
           margin-bottom: 0.5cm;
           page-break-inside: avoid;
           margin-left: auto;
           margin-right: auto;
+          text-align: center;
         }
         
         th, td {
@@ -803,6 +813,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         .college-header {
           text-align: center;
           margin-bottom: 1cm;
+          width: 100%;
         }
         
         .section-title {
@@ -816,9 +827,8 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           display: flex;
           justify-content: space-between;
           margin-top: 2cm;
-          width: 90%;
-          margin-left: auto;
-          margin-right: auto;
+          width: 100%;
+          text-align: center;
         }
         
         .signature {
@@ -829,19 +839,32 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         .signature-line {
           margin-top: 1cm;
           border-top: 1px solid #000;
+          width: 100%;
         }
         
-        /* Wider scale for tables */
+        /* Wider table styling */
         .wide-table {
-          width: 90%;
+          width: 100% !important;
           table-layout: fixed;
-          margin-left: auto;
-          margin-right: auto;
+          margin-left: auto !important;
+          margin-right: auto !important;
+        }
+        
+        /* Center alignment for all tables */
+        table.center {
+          margin-left: auto !important;
+          margin-right: auto !important;
+          text-align: center !important;
         }
         
         /* Ensure proper page breaks */
         .page-break {
           page-break-before: always;
+        }
+        
+        /* Override any external styling that might affect alignment */
+        table, tr, td, th {
+          text-align: center !important;
         }
       </style>
     </head>
@@ -850,7 +873,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         <h1>K. S. Rangasamy College of Technology, Tiruchengode - 637 215</h1>
         <p style="text-align: center; margin-bottom: 10px;">(Autonomous)</p>
         <p style="text-align: center; margin-bottom: 10px;">Computer Science and Engineering</p>
-        <table style="width: 90%; margin: 0 auto; border: none;">
+        <table style="width: 90%; margin: 0 auto; border: none;" class="center">
           <tr style="border: none;">
             <td style="border: none; text-align: left; width: 33%;">Batch: 2023-2027</td>
             <td style="border: none; text-align: center; width: 34%;">Year / Sem: II/III</td>
@@ -861,7 +884,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       
       <h2 style="text-align: center; margin: 20px 0;">End Semester Result Analysis</h2>
       
-      <table class="wide-table" border="1" cellpadding="3" cellspacing="0">
+      <table class="wide-table center" border="1" cellpadding="3" cellspacing="0" style="width: 100%; margin: 0 auto;">
         <thead>
           <tr>
             <th rowspan="2" style="width: 5%;">S. No</th>
@@ -890,7 +913,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       
       <h2 style="text-align: center; margin: 20px 0;">Classification</h2>
       
-      <table class="wide-table" border="1" cellpadding="3" cellspacing="0">
+      <table class="wide-table center" border="1" cellpadding="3" cellspacing="0" style="width: 100%; margin: 0 auto;">
         <tr>
           <th colspan="7" style="width: 50%;">Current semester</th>
           <th colspan="7" style="width: 50%;">Upto this semester</th>
@@ -937,7 +960,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       
       <h2 style="text-align: center; margin: 20px 0;">First Three Rank Position</h2>
       
-      <table class="wide-table" border="1" cellpadding="3" cellspacing="0">
+      <table class="wide-table center" border="1" cellpadding="3" cellspacing="0" style="width: 100%; margin: 0 auto;">
         <tr>
           <th colspan="3" style="width: 50%;">Rank in this semester</th>
           <th colspan="3" style="width: 50%;">Rank up to this semester</th>
@@ -1174,3 +1197,4 @@ export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentReco
   // Clean up
   document.body.removeChild(link);
 };
+
