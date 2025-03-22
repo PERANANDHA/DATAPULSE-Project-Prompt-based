@@ -76,10 +76,7 @@ const Index = () => {
       </div>
 
       <header className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="container-centered flex justify-between items-center">
-          <div className="flex items-center">
-            <h1 className="text-xl font-medium text-white">ResultAnalyzer</h1>
-          </div>
+        <div className="container-centered flex justify-end items-center">
           <div className="flex items-center space-x-4">
             <Link to="/login">
               <Button variant="outline" size="sm" className="bg-white/80 hover:bg-white text-foreground">Log in</Button>
@@ -102,17 +99,17 @@ const Index = () => {
             >
               <motion.div variants={fadeInUp}>
                 <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-white/20 text-white mb-4">
-                  For Class Advisors
+                  <span className="text-white font-bold">For Class Advisors</span>
                 </span>
               </motion.div>
               <motion.h2 
                 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-6 text-white"
                 variants={fadeInUp}
               >
-                Transform student data into <span className="text-white/90">actionable insights</span>
+                Transform student data into <span className="text-white font-bold">actionable insights</span>
               </motion.h2>
               <motion.p 
-                className="text-lg text-white/80 mb-8"
+                className="text-lg text-white font-medium mb-8"
                 variants={fadeInUp}
               >
                 A powerful platform designed for educational professionals to analyze, track, and improve student performance with just a few clicks.
