@@ -55,15 +55,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Improved Background with Better Contrast */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-40 z-0"></div>
+      {/* Improved Background with Better Contrast - Less faded color */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-70 z-0"></div>
       
       {/* Decorative Elements */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-black/30 backdrop-blur-sm"></div>
-        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-500 opacity-20 blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-500 opacity-20 blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm"></div>
+        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-500 opacity-30 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-500 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
       {/* College Logo in Left Upper Corner with improved visibility */}
@@ -98,18 +98,19 @@ const Index = () => {
               variants={staggerContainer}
             >
               <motion.div variants={fadeInUp}>
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-black/30 text-white mb-4 backdrop-blur-sm shadow-sm">
-                  <span className="text-white font-bold">For Class Advisors</span>
+                <span className="inline-block px-4 py-2 rounded-full text-sm font-bold bg-black/50 text-white mb-6 backdrop-blur-sm shadow-lg border border-white/10">
+                  <span className="text-[#FFD700] font-bold">For Class Advisors</span>
                 </span>
               </motion.div>
               <motion.h2 
-                className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-6 text-white drop-shadow-md"
+                className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8 text-white drop-shadow-lg"
                 variants={fadeInUp}
               >
-                <span className="bg-black/30 px-2 py-1 rounded inline-block mb-2">Transform student data into</span> <span className="text-white font-bold bg-black/30 px-2 py-1 rounded">actionable insights</span>
+                <span className="bg-black/50 px-4 py-2 rounded-lg inline-block mb-3 border border-white/10 text-[#F97316]">Transform student data into</span><br /> 
+                <span className="text-white font-bold bg-black/50 px-4 py-2 rounded-lg border border-white/10">actionable insights</span>
               </motion.h2>
               <motion.p 
-                className="text-lg text-white font-medium mb-8 bg-black/20 p-3 rounded-lg backdrop-blur-sm inline-block"
+                className="text-xl text-white font-medium mb-10 bg-black/40 p-4 rounded-lg backdrop-blur-sm inline-block border border-white/10 shadow-xl"
                 variants={fadeInUp}
               >
                 A powerful platform designed for educational professionals to analyze, track, and improve student performance with just a few clicks.
@@ -118,13 +119,13 @@ const Index = () => {
                 <Link to="/signup">
                   <Button 
                     size="lg" 
-                    className="rounded-full px-8 group bg-white text-primary hover:bg-white/90 shadow-lg font-medium"
+                    className="rounded-full px-8 group bg-gradient-to-r from-[#F97316] to-[#FF9500] text-white hover:from-[#FF9500] hover:to-[#F97316] shadow-lg font-bold border border-white/10"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                   >
                     Get Started
                     <ArrowRight 
-                      className={`ml-2 h-4 w-4 transition-transform duration-300 ${isHovered ? 'transform translate-x-1' : ''}`} 
+                      className={`ml-2 h-5 w-5 transition-transform duration-300 ${isHovered ? 'transform translate-x-1' : ''}`} 
                     />
                   </Button>
                 </Link>
@@ -133,7 +134,7 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="py-16 bg-white/90 backdrop-blur-sm">
+        <section className="py-16 bg-white/95 backdrop-blur-sm">
           <div className="container-centered">
             <motion.div 
               className="text-center mb-16"
@@ -142,8 +143,8 @@ const Index = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="text-3xl font-semibold mb-4">Features Designed for Educators</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
+              <h2 className="text-3xl font-bold mb-4 text-[#0EA5E9]">Features Designed for Educators</h2>
+              <p className="text-gray-700 max-w-2xl mx-auto font-medium">
                 Our platform provides powerful tools to help you understand student performance and make data-driven decisions.
               </p>
             </motion.div>
@@ -152,15 +153,15 @@ const Index = () => {
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
-                  className="bg-card p-6 rounded-lg shadow-sm card-hover"
+                  className="bg-gradient-to-br from-white to-blue-50 p-6 rounded-lg shadow-md card-hover border border-blue-100"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <div className="mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-medium mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm">{feature.description}</p>
+                  <div className="mb-4 text-[#F97316]">{feature.icon}</div>
+                  <h3 className="text-xl font-bold mb-2 text-[#0EA5E9]">{feature.title}</h3>
+                  <p className="text-gray-700">{feature.description}</p>
                 </motion.div>
               ))}
             </div>
@@ -169,19 +170,19 @@ const Index = () => {
 
         <section className="py-16 md:py-24">
           <div className="container-centered">
-            <div className="bg-white/90 backdrop-blur-sm p-8 md:p-12 rounded-xl shadow-lg text-center border border-white/20">
+            <div className="bg-white/95 backdrop-blur-sm p-8 md:p-12 rounded-xl shadow-lg text-center border border-white/30">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <h2 className="text-3xl font-semibold mb-4">Ready to Optimize Your Analysis Process?</h2>
-                <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-                  Join other educators who are using ResultAnalyzer to save time and gain deeper insights into student performance.
+                <h2 className="text-3xl font-bold mb-4 text-[#0EA5E9]">Ready to Optimize Your Analysis Process?</h2>
+                <p className="text-gray-700 mb-8 max-w-2xl mx-auto">
+                  Join other educators who are using our platform to save time and gain deeper insights into student performance.
                 </p>
                 <Link to="/signup">
-                  <Button size="lg">Create Your Account</Button>
+                  <Button size="lg" className="bg-gradient-to-r from-[#F97316] to-[#FF9500] text-white hover:from-[#FF9500] hover:to-[#F97316] font-bold">Create Your Account</Button>
                 </Link>
               </motion.div>
             </div>
@@ -189,16 +190,16 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="py-8 relative z-10 bg-white/90 backdrop-blur-sm">
+      <footer className="py-8 relative z-10 bg-white/95 backdrop-blur-sm">
         <div className="container-centered">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-muted-foreground text-sm">
-              © {new Date().getFullYear()} ResultAnalyzer. All rights reserved.
+            <p className="text-gray-700 text-sm">
+              © {new Date().getFullYear()} Result Analyzer. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="text-muted-foreground hover:text-foreground text-sm">Privacy</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground text-sm">Terms</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground text-sm">Contact</a>
+              <a href="#" className="text-[#0EA5E9] hover:text-[#F97316] transition-colors text-sm">Privacy</a>
+              <a href="#" className="text-[#0EA5E9] hover:text-[#F97316] transition-colors text-sm">Terms</a>
+              <a href="#" className="text-[#0EA5E9] hover:text-[#F97316] transition-colors text-sm">Contact</a>
             </div>
           </div>
         </div>

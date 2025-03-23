@@ -196,15 +196,15 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Orange and Blue Background Design */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-80 z-0"></div>
+      {/* Orange and Blue Background Design - Less faded */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-60 z-0"></div>
       
       {/* Decorative Elements */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-white/10 backdrop-blur-sm"></div>
-        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-400 opacity-20 blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-400 opacity-20 blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-10 blur-2xl"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-black/15 backdrop-blur-sm"></div>
+        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-400 opacity-30 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
       {/* College Logo in Left Upper Corner */}
@@ -223,17 +223,16 @@ const Signup = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-6 flex justify-between items-center">
-            <Link to="/" className="inline-flex items-center text-sm text-white hover:text-white/80">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+          <div className="mb-6 flex justify-end">
+            <Link to="/" className="inline-flex items-center text-sm text-white hover:text-white/80 bg-black/40 px-3 py-1.5 rounded-md backdrop-blur-sm shadow-md">
               Back to home
             </Link>
           </div>
           
-          <div className="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg p-6 sm:p-8 border border-white/20">
+          <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-lg p-6 sm:p-8 border border-white/30">
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-semibold mb-2">Create your account</h1>
-              <p className="text-muted-foreground text-sm">Enter your details to get started</p>
+              <h1 className="text-2xl font-bold mb-2 text-[#0EA5E9]">Create your account</h1>
+              <p className="text-gray-700 text-sm">Enter your details to get started</p>
             </div>
             
             <Form {...form}>
@@ -243,9 +242,9 @@ const Signup = () => {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel className="font-medium">Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
+                        <Input placeholder="John Doe" {...field} className="border-gray-300" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -257,9 +256,9 @@ const Signup = () => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="font-medium">Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="your.email@example.com" {...field} />
+                        <Input type="email" placeholder="your.email@example.com" {...field} className="border-gray-300" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -272,9 +271,9 @@ const Signup = () => {
                     name="staffId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Staff ID</FormLabel>
+                        <FormLabel className="font-medium">Staff ID</FormLabel>
                         <FormControl>
-                          <Input placeholder="ST12345" {...field} />
+                          <Input placeholder="ST12345" {...field} className="border-gray-300" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -286,12 +285,13 @@ const Signup = () => {
                     name="phoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel className="font-medium">Phone Number</FormLabel>
                         <FormControl>
                           <Input 
                             type="tel" 
                             placeholder="+1 (555) 123-4567" 
                             {...field} 
+                            className="border-gray-300"
                           />
                         </FormControl>
                         <FormMessage />
@@ -305,9 +305,9 @@ const Signup = () => {
                   name="department"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Department</FormLabel>
+                      <FormLabel className="font-medium">Department</FormLabel>
                       <FormControl>
-                        <Input placeholder="Computer Science" {...field} />
+                        <Input placeholder="Computer Science" {...field} className="border-gray-300" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -319,7 +319,7 @@ const Signup = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="font-medium">Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input 
@@ -330,10 +330,11 @@ const Signup = () => {
                               handlePasswordChange(e);
                               field.onChange(e);
                             }}
+                            className="border-gray-300"
                           />
                           <button 
                             type="button"
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                             onClick={togglePasswordVisibility}
                           >
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -351,7 +352,7 @@ const Signup = () => {
                               <Check className="h-3 w-3 mr-2 text-green-500" /> : 
                               <X className="h-3 w-3 mr-2 text-red-500" />
                             }
-                            <span className={`text-xs ${hasMinLength ? "text-green-500" : "text-muted-foreground"}`}>
+                            <span className={`text-xs ${hasMinLength ? "text-green-500" : "text-gray-500"}`}>
                               At least 8 characters
                             </span>
                           </div>
@@ -360,7 +361,7 @@ const Signup = () => {
                               <Check className="h-3 w-3 mr-2 text-green-500" /> : 
                               <X className="h-3 w-3 mr-2 text-red-500" />
                             }
-                            <span className={`text-xs ${hasUpperCase ? "text-green-500" : "text-muted-foreground"}`}>
+                            <span className={`text-xs ${hasUpperCase ? "text-green-500" : "text-gray-500"}`}>
                               At least one uppercase letter
                             </span>
                           </div>
@@ -369,7 +370,7 @@ const Signup = () => {
                               <Check className="h-3 w-3 mr-2 text-green-500" /> : 
                               <X className="h-3 w-3 mr-2 text-red-500" />
                             }
-                            <span className={`text-xs ${hasLowerCase ? "text-green-500" : "text-muted-foreground"}`}>
+                            <span className={`text-xs ${hasLowerCase ? "text-green-500" : "text-gray-500"}`}>
                               At least one lowercase letter
                             </span>
                           </div>
@@ -378,7 +379,7 @@ const Signup = () => {
                               <Check className="h-3 w-3 mr-2 text-green-500" /> : 
                               <X className="h-3 w-3 mr-2 text-red-500" />
                             }
-                            <span className={`text-xs ${hasNumber ? "text-green-500" : "text-muted-foreground"}`}>
+                            <span className={`text-xs ${hasNumber ? "text-green-500" : "text-gray-500"}`}>
                               At least one number
                             </span>
                           </div>
@@ -387,7 +388,7 @@ const Signup = () => {
                               <Check className="h-3 w-3 mr-2 text-green-500" /> : 
                               <X className="h-3 w-3 mr-2 text-red-500" />
                             }
-                            <span className={`text-xs ${hasSpecialChar ? "text-green-500" : "text-muted-foreground"}`}>
+                            <span className={`text-xs ${hasSpecialChar ? "text-green-500" : "text-gray-500"}`}>
                               At least one special character
                             </span>
                           </div>
@@ -402,17 +403,18 @@ const Signup = () => {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
+                      <FormLabel className="font-medium">Confirm Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input 
                             type={showConfirmPassword ? "text" : "password"} 
                             placeholder="••••••••" 
-                            {...field} 
+                            {...field}
+                            className="border-gray-300" 
                           />
                           <button 
                             type="button"
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                             onClick={toggleConfirmPasswordVisibility}
                           >
                             {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -428,30 +430,35 @@ const Signup = () => {
                   control={form.control}
                   name="robotCheck"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md border-gray-300">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={field.onChange}
+                          className="text-[#F97316] focus:ring-[#F97316]"
                         />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>I am not a robot</FormLabel>
+                        <FormLabel className="font-medium">I am not a robot</FormLabel>
                         <FormMessage />
                       </div>
                     </FormItem>
                   )}
                 />
                 
-                <Button type="submit" className="w-full mt-6" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full mt-6 bg-gradient-to-r from-[#F97316] to-[#FF9500] hover:from-[#FF9500] hover:to-[#F97316] text-white font-bold" 
+                  disabled={isLoading}
+                >
                   {isLoading ? "Creating account..." : "Create account"}
                 </Button>
               </form>
             </Form>
             
             <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">Already have an account? </span>
-              <Link to="/login" className="text-primary hover:underline">
+              <span className="text-gray-700">Already have an account? </span>
+              <Link to="/login" className="text-[#F97316] hover:text-[#0EA5E9] font-medium">
                 Log in
               </Link>
             </div>
