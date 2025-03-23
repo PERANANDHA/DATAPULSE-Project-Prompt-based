@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -100,11 +99,11 @@ const Index = () => {
                 </span>
               </motion.div>
               <motion.h2 
-                className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-8"
+                className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-8 text-white"
                 variants={fadeInUp}
               >
-                <span className="bg-gradient-to-r from-blue-600 to-blue-400 text-white inline-block mb-3">Transform student data into</span><br /> 
-                <span className="bg-gradient-to-r from-indigo-600 to-purple-500 text-white">actionable insights</span>
+                <span className="inline-block mb-3">Transform student data into</span><br /> 
+                <span>actionable insights</span>
               </motion.h2>
               <motion.p 
                 className="text-xl text-white font-medium mb-10 max-w-2xl mx-auto leading-relaxed"
