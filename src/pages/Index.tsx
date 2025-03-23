@@ -79,7 +79,7 @@ const Index = () => {
         <div className="container-centered flex justify-end items-center">
           <div className="flex items-center space-x-4">
             <Link to="/login">
-              <Button variant="outline" size="sm" className="bg-white hover:bg-white/90 text-foreground font-medium">Log in</Button>
+              <Button variant="outline" size="sm" className="bg-[#F97316] hover:bg-[#F97316]/90 text-white font-medium border-transparent">Log in</Button>
             </Link>
             <Link to="/signup">
               <Button size="sm" className="font-medium">Sign up</Button>
@@ -106,7 +106,7 @@ const Index = () => {
                 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-6 text-white drop-shadow-md"
                 variants={fadeInUp}
               >
-                Transform student data into <span className="text-white font-bold bg-black/30 px-2 py-1 rounded">actionable insights</span>
+                <span className="bg-black/30 px-2 py-1 rounded inline-block mb-2">Transform student data into</span> <span className="text-white font-bold bg-black/30 px-2 py-1 rounded">actionable insights</span>
               </motion.h2>
               <motion.p 
                 className="text-lg text-white font-medium mb-8 bg-black/20 p-3 rounded-lg backdrop-blur-sm inline-block"

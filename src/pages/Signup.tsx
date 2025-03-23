@@ -218,7 +218,7 @@ const Signup = () => {
 
       <div className="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10">
         <motion.div 
-          className="w-full max-w-md"
+          className="w-full max-w-md transform translate-x-4 translate-y-4" /* Offset the form box similar to the logo */
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
