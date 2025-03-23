@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -55,10 +54,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Improved Background with Better Contrast - Less faded color */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-70 z-0"></div>
       
-      {/* Decorative Elements */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm"></div>
         <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-500 opacity-30 blur-3xl"></div>
@@ -66,7 +63,6 @@ const Index = () => {
         <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
-      {/* College Logo in Left Upper Corner with improved visibility */}
       <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
         <img 
           src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
@@ -98,19 +94,19 @@ const Index = () => {
               variants={staggerContainer}
             >
               <motion.div variants={fadeInUp}>
-                <span className="inline-block px-4 py-2 rounded-full text-sm font-bold bg-black/50 text-white mb-6 backdrop-blur-sm shadow-lg border border-white/10">
-                  <span className="text-[#FFD700] font-bold">For Class Advisors</span>
+                <span className="inline-block px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-400 text-white mb-6 shadow-lg">
+                  For Class Advisors
                 </span>
               </motion.div>
               <motion.h2 
-                className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8 text-white drop-shadow-lg"
+                className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-8 text-gray-900"
                 variants={fadeInUp}
               >
-                <span className="bg-black/50 px-4 py-2 rounded-lg inline-block mb-3 border border-white/10 text-[#F97316]">Transform student data into</span><br /> 
-                <span className="text-white font-bold bg-black/50 px-4 py-2 rounded-lg border border-white/10">actionable insights</span>
+                <span className="bg-gradient-to-r from-blue-600 to-blue-400 text-transparent bg-clip-text inline-block mb-3">Transform student data into</span><br /> 
+                <span className="bg-gradient-to-r from-indigo-600 to-purple-500 text-transparent bg-clip-text">actionable insights</span>
               </motion.h2>
               <motion.p 
-                className="text-xl text-white font-medium mb-10 bg-black/40 p-4 rounded-lg backdrop-blur-sm inline-block border border-white/10 shadow-xl"
+                className="text-xl text-gray-700 font-medium mb-10 max-w-2xl mx-auto leading-relaxed"
                 variants={fadeInUp}
               >
                 A powerful platform designed for educational professionals to analyze, track, and improve student performance with just a few clicks.
@@ -119,7 +115,7 @@ const Index = () => {
                 <Link to="/signup">
                   <Button 
                     size="lg" 
-                    className="rounded-full px-8 group bg-gradient-to-r from-[#F97316] to-[#FF9500] text-white hover:from-[#FF9500] hover:to-[#F97316] shadow-lg font-bold border border-white/10"
+                    className="rounded-full px-8 group bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500 shadow-lg font-bold"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                   >
