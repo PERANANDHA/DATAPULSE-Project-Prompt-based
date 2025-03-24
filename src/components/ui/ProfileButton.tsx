@@ -21,7 +21,7 @@ const ProfileButton: React.FC = () => {
         variant="ghost" 
         size="icon" 
         onClick={openProfile}
-        className="rounded-full hover:bg-gray-200"
+        className="rounded-full hover:bg-blue-100 text-blue-600"
         aria-label="User Profile"
       >
         <User className="h-5 w-5" />
