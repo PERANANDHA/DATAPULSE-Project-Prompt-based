@@ -11,5 +11,6 @@ export * from './excel/analyzer';
 export * from './excel/reportGenerators/csvReportGenerator';
 export * from './excel/reportGenerators/excelReportGenerator';
 export * from './excel/reportGenerators/wordReportGenerator';
+export * from './excel/reportGenerators/pdfReportGenerator';
 
 // This file now serves as a facade that re-exports everything from the refactored modules
