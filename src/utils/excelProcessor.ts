@@ -4,7 +4,7 @@ import 'jspdf-autotable';
 
 // Export interfaces for use in other components
 export interface StudentRecord {
-  CNo: string;
+  CNo: string; // We'll keep this for backward compatibility, but won't focus on it
   SEM: string;
   REGNO: string;
   SCODE: string;
@@ -28,14 +28,6 @@ export interface ResultAnalysis {
   subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] };
   fileCount?: number; // Number of files processed
   filesProcessed?: string[]; // Names of files processed
-  departmentCode?: string; // The department code that was filtered
-  departmentComparison?: {
-    [deptCode: string]: {
-      totalStudents: number;
-      averageSGPA: number;
-      passRate: number;
-    }
-  }; // Comparison data between departments
   fileWiseAnalysis?: { 
     [fileName: string]: {
       averageSGPA: number;
@@ -87,14 +79,9 @@ const formatTo2Decimals = (value: number): number => {
   return Number(value.toFixed(2));
 };
 
-// Helper function to get unique department codes from the records
+// Helper function to get unique department codes from the records - Keeping for backward compatibility but not used
 export const getUniqueDepartmentCodes = (records: StudentRecord[]): string[] => {
   return [...new Set(records.map(record => record.CNo))].filter(code => code);
-};
-
-// Filter records by department code
-export const filterRecordsByDepartment = (records: StudentRecord[], departmentCode: string): StudentRecord[] => {
-  return records.filter(record => record.CNo === departmentCode);
 };
 
 export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
@@ -220,57 +207,15 @@ export const parseMultipleExcelFiles = async (files: File[]): Promise<StudentRec
   }
 };
 
-// Generate department performance comparison data
-export const generateDepartmentComparison = (allRecords: StudentRecord[]): { [deptCode: string]: any } => {
-  const deptCodes = getUniqueDepartmentCodes(allRecords);
-  const comparison: { [deptCode: string]: any } = {};
-  
-  deptCodes.forEach(deptCode => {
-    const deptRecords = filterRecordsByDepartment(allRecords, deptCode);
-    const totalStudents = [...new Set(deptRecords.map(record => record.REGNO))].length;
-    
-    if (totalStudents === 0) return;
-    
-    // Calculate average SGPA for this department
-    let totalSGPA = 0;
-    const studentIds = [...new Set(deptRecords.map(record => record.REGNO))];
-    
-    studentIds.forEach(studentId => {
-      totalSGPA += calculateSGPA(deptRecords, studentId);
-    });
-    
-    const avgSGPA = totalStudents > 0 ? formatTo2Decimals(totalSGPA / totalStudents) : 0;
-    
-    // Calculate pass rate
-    const passCount = deptRecords.filter(record => record.GR !== 'U').length;
-    const totalGrades = deptRecords.length;
-    const passRate = totalGrades > 0 ? formatTo2Decimals((passCount / totalGrades) * 100) : 0;
-    
-    comparison[deptCode] = {
-      totalStudents,
-      averageSGPA: avgSGPA,
-      passRate,
-    };
-  });
-  
-  return comparison;
-};
-
-export const analyzeResults = (records: StudentRecord[], departmentCode?: string): ResultAnalysis => {
-  // Filter records by department code if provided
-  const filteredRecords = departmentCode ? filterRecordsByDepartment(records, departmentCode) : records;
-  
-  // Generate comparison data between departments
-  const departmentComparison = generateDepartmentComparison(records);
-  
+export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   // Get unique files processed
-  const filesProcessed = [...new Set(filteredRecords.map(record => record.fileSource || 'Unknown'))];
+  const filesProcessed = [...new Set(records.map(record => record.fileSource || 'Unknown'))];
   const fileCount = filesProcessed.length;
   
   // Group records by file source
   const fileGroups: { [fileName: string]: StudentRecord[] } = {};
   filesProcessed.forEach(fileName => {
-    fileGroups[fileName] = filteredRecords.filter(record => record.fileSource === fileName);
+    fileGroups[fileName] = records.filter(record => record.fileSource === fileName);
   });
   
   // Per-file analysis
@@ -302,10 +247,10 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
   // Calculate CGPA if multiple files
   let cgpaAnalysis;
   if (fileCount > 1) {
-    const studentIds = [...new Set(filteredRecords.map(record => record.REGNO))];
+    const studentIds = [...new Set(records.map(record => record.REGNO))];
     const studentCGPAs = studentIds.map(id => ({
       id,
-      cgpa: calculateCGPA(filteredRecords, id, fileGroups)
+      cgpa: calculateCGPA(records, id, fileGroups)
     }));
     
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
@@ -317,19 +262,19 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
     };
   }
   
-  const totalStudents = [...new Set(filteredRecords.map(record => record.REGNO))].length;
+  const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
   
   // Calculate SGPA for each student
   const studentSgpaMap: { [studentId: string]: number } = {};
   const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
   
-  [...new Set(filteredRecords.map(record => record.REGNO))].forEach(studentId => {
-    const sgpa = calculateSGPA(filteredRecords, studentId);
+  [...new Set(records.map(record => record.REGNO))].forEach(studentId => {
+    const sgpa = calculateSGPA(records, studentId);
     studentSgpaMap[studentId] = sgpa;
     studentSgpaDetails.push({
       id: studentId,
       sgpa: sgpa,
-      hasArrears: hasArrears(filteredRecords, studentId)
+      hasArrears: hasArrears(records, studentId)
     });
   });
   
@@ -347,7 +292,7 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
   
   // Grade distribution - filter out any non-standard grades
   const gradeDistribution: { [grade: string]: number } = {};
-  filteredRecords.forEach(record => {
+  records.forEach(record => {
     if (record.GR in gradePointMap) {
       gradeDistribution[record.GR] = (gradeDistribution[record.GR] || 0) + 1;
     }
@@ -359,11 +304,11 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
     fill: getGradeColor(grade),
   }));
   
-  const totalGrades = filteredRecords.filter(record => record.GR in gradePointMap).length;
+  const totalGrades = records.filter(record => record.GR in gradePointMap).length;
   
   // Subject-wise performance
   const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number } } = {};
-  filteredRecords.forEach(record => {
+  records.forEach(record => {
     // Skip records with invalid grades
     if (!(record.GR in gradePointMap)) return;
     
@@ -390,7 +335,7 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
     .sort((a, b) => b.sgpa - a.sgpa)
     .slice(0, 6)
     .map(student => {
-      const studentRecords = filteredRecords.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
+      const studentRecords = records.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
       const bestGrade = studentRecords.length > 0 ? 
         studentRecords.sort((a, b) => (gradePointMap[b.GR] || 0) - (gradePointMap[a.GR] || 0))[0].GR : 'A';
       return {
@@ -406,12 +351,12 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
     .map(student => ({
       id: student.id,
       sgpa: student.sgpa,
-      subjects: hasArrears(filteredRecords, student.id) ? getSubjectsWithArrears(filteredRecords, student.id) : '',
+      subjects: hasArrears(records, student.id) ? getSubjectsWithArrears(records, student.id) : '',
     }));
   
   // Pass/Fail data
-  const passCount = filteredRecords.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
-  const failCount = filteredRecords.filter(record => record.GR === 'U').length;
+  const passCount = records.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
+  const failCount = records.filter(record => record.GR === 'U').length;
   const totalValidGrades = passCount + failCount;
   
   const passPercentage = totalValidGrades > 0 ? formatTo2Decimals((passCount / totalValidGrades) * 100) : 0;
@@ -424,10 +369,10 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
 
   // Subject-wise grade distribution
   const subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] } = {};
-  const uniqueSubjects = [...new Set(filteredRecords.map(record => record.SCODE))];
+  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
 
   uniqueSubjects.forEach(subject => {
-    const subjectRecords = filteredRecords.filter(record => record.SCODE === subject);
+    const subjectRecords = records.filter(record => record.SCODE === subject);
     const gradeCounts: { [grade: string]: number } = {};
 
     subjectRecords.forEach(record => {
@@ -460,9 +405,7 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
     fileCount,
     filesProcessed,
     fileWiseAnalysis,
-    cgpaAnalysis,
-    departmentCode,
-    departmentComparison
+    cgpaAnalysis
   };
 };
 
@@ -535,7 +478,7 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   // College Information
   const collegeInfoData = [
     ["College Name", "K. S. Rangasamy College of Technology"],
-    ["Department", analysis.departmentCode || "Computer Science and Engineering"],
+    ["Department", "Computer Science and Engineering"],
     ["Batch", "2023-2027"],
     ["Year/Semester", "II/III"],
     ["Section", "A&B"],
@@ -548,16 +491,6 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     ["Highest SGPA", analysis.highestSGPA.toFixed(2)],
     ["Lowest SGPA", analysis.lowestSGPA.toFixed(2)],
   ];
-
-  // Add department comparison if available
-  if (analysis.departmentComparison) {
-    performanceData.push(["Department Comparison", ""]);
-    Object.entries(analysis.departmentComparison).forEach(([deptCode, data]) => {
-      performanceData.push([`${deptCode} - Total Students`, data.totalStudents]);
-      performanceData.push([`${deptCode} - Average SGPA`, data.averageSGPA.toFixed(2)]);
-      performanceData.push([`${deptCode} - Pass Rate (%)`, data.passRate.toFixed(2)]);
-    });
-  }
 
   // Add file information if multiple files were used
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
@@ -607,7 +540,7 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
       subject,
       subjectName, // Subject name 
       "", // Faculty name (empty)
-      analysis.departmentCode || "", // Department 
+      "CSE", // Department - now hardcoded to CSE since we no longer track department
       totalStudents,
       "Nil", // Absent
       failedStudents || "Nil", 
@@ -700,19 +633,6 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     addSheet(cgpaDetailsData, "Student CGPA Details", ["Registration Number", "CGPA"]);
   }
   
-  // Add department comparison data
-  if (analysis.departmentComparison) {
-    const deptCompHeader = ["Department Code", "Total Students", "Average SGPA", "Pass Rate (%)"];
-    const deptCompData = Object.entries(analysis.departmentComparison).map(([deptCode, data]) => [
-      deptCode,
-      data.totalStudents,
-      data.averageSGPA.toFixed(2),
-      data.passRate.toFixed(2)
-    ]);
-    
-    addSheet(deptCompData, "Department Comparison", deptCompHeader);
-  }
-  
   // Add file details to the workbook if multiple files were processed
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
     const fileDetailsHeader = ["File Name", "Record Count", "Semester"];
@@ -768,7 +688,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
         <td style="width: 12%;">${subject}</td>
         <td style="width: 20%;">${subjectName}</td>
         <td style="width: 20%;"></td>
-        <td style="width: 8%;">${analysis.departmentCode || ""}</td>
+        <td style="width: 8%;">CSE</td>
         <td style="width: 5%;">${totalStudents}</td>
         <td style="width: 5%;">Nil</td>
         <td style="width: 5%;">${failedStudents || "Nil"}</td>
@@ -780,32 +700,6 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
       </tr>
     `;
   }).join('');
-  
-  // Department comparison rows
-  let departmentComparisonContent = '';
-  if (analysis.departmentComparison) {
-    const deptRows = Object.entries(analysis.departmentComparison).map(([deptCode, data]) => `
-      <tr>
-        <td>${deptCode}</td>
-        <td>${data.totalStudents}</td>
-        <td>${data.averageSGPA.toFixed(2)}</td>
-        <td>${data.passRate.toFixed(2)}%</td>
-      </tr>
-    `).join('');
-    
-    departmentComparisonContent = `
-      <h3 style="margin-top: 20px; margin-bottom: 10px;">Department Comparison</h3>
-      <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse;">
-        <tr style="background-color: #f2f2f2;">
-          <th>Department Code</th>
-          <th>Total Students</th>
-          <th>Average SGPA</th>
-          <th>Pass Rate</th>
-        </tr>
-        ${deptRows}
-      </table>
-    `;
-  }
   
   // File wise analysis content
   let fileWiseContent = '';
@@ -933,7 +827,7 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           <h2>College Information</h2>
           <table border="1" cellpadding="5" cellspacing="0">
             <tr><td><strong>College Name</strong></td><td>K. S. Rangasamy College of Technology</td></tr>
-            <tr><td><strong>Department</strong></td><td>${analysis.departmentCode || "Computer Science and Engineering"}</td></tr>
+            <tr><td><strong>Department</strong></td><td>Computer Science and Engineering</td></tr>
             <tr><td><strong>Total Students</strong></td><td>${analysis.totalStudents}</td></tr>
             <tr><td><strong>Files Processed</strong></td><td>${analysis.fileCount || 1}</td></tr>
           </table>
@@ -947,8 +841,6 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
           <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>
         </div>
       </div>
-      
-      ${departmentComparisonContent}
       
       ${fileWiseContent}
       

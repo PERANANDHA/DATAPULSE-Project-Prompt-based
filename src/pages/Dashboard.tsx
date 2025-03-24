@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import SubjectCreditInput from '@/components/SubjectCreditInput';
-import DepartmentCodeInput from '@/components/DepartmentCodeInput';
 import {
   BarChart,
   Bar,
@@ -35,8 +34,7 @@ import {
   FileSpreadsheetIcon,
   File,
   Plus,
-  Trash2,
-  Building
+  Trash2
 } from 'lucide-react';
 import { 
   parseExcelFile,
@@ -46,7 +44,6 @@ import {
   downloadExcelReport,
   downloadWordReport,
   downloadPdfReport,
-  getUniqueDepartmentCodes,
   type StudentRecord,
   type ResultAnalysis
 } from '@/utils/excelProcessor';
@@ -100,8 +97,6 @@ const Dashboard = () => {
   const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
   const [creditsAssigned, setCreditsAssigned] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
-  const [departmentCodes, setDepartmentCodes] = useState<string[]>([]);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -148,7 +143,6 @@ const Dashboard = () => {
     setUniqueSubjects([]);
     setSubjectCredits([]);
     setCreditsAssigned(false);
-    setSelectedDepartment("");
   };
 
   const removeFile = (index: number) => {
@@ -178,16 +172,8 @@ const Dashboard = () => {
       
       setStudentRecords(records);
       
-      // Get unique department codes
-      const deptCodes = getUniqueDepartmentCodes(records);
-      setDepartmentCodes(deptCodes);
-      
-      // Get unique subjects (filtered by department if selected)
-      const filteredRecords = selectedDepartment 
-        ? records.filter(record => record.CNo === selectedDepartment)
-        : records;
-      
-      const subjects = [...new Set(filteredRecords.map(record => record.SCODE))];
+      // Get unique subjects
+      const subjects = [...new Set(records.map(record => record.SCODE))];
       setUniqueSubjects(subjects);
       
       toast({
@@ -205,26 +191,6 @@ const Dashboard = () => {
         description: error instanceof Error ? error.message : "There was a problem processing your files. Please try again.",
       });
       setIsUploading(false);
-    }
-  };
-
-  const handleDepartmentSelected = (deptCode: string) => {
-    setSelectedDepartment(deptCode);
-    
-    // Update unique subjects based on department selection
-    if (studentRecords.length > 0) {
-      const filteredRecords = deptCode 
-        ? studentRecords.filter(record => record.CNo === deptCode)
-        : studentRecords;
-      
-      const subjects = [...new Set(filteredRecords.map(record => record.SCODE))];
-      setUniqueSubjects(subjects);
-      
-      // Reset credits if they were already assigned
-      if (creditsAssigned) {
-        setCreditsAssigned(false);
-        setSubjectCredits([]);
-      }
     }
   };
 
@@ -256,7 +222,8 @@ const Dashboard = () => {
         };
       });
       
-      const analysis = analyzeResults(recordsWithCredits, selectedDepartment);
+      // Now we're analyzing without any department filtering
+      const analysis = analyzeResults(recordsWithCredits);
       setResultAnalysis(analysis);
       
       if (analysis.subjectGradeDistribution && Object.keys(analysis.subjectGradeDistribution).length > 0) {
@@ -269,9 +236,7 @@ const Dashboard = () => {
       
       toast({
         title: "Analysis complete!",
-        description: selectedDepartment
-          ? `Analysis complete for department ${selectedDepartment}.`
-          : "Your results are now available for review.",
+        description: "Your results are now available for review."
       });
       
     } catch (error) {
@@ -298,17 +263,12 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
     setIsDownloading(true);
     
     try {
-      // Filter records by department if selected
-      const filteredRecords = selectedDepartment
-        ? studentRecords.filter(record => record.CNo === selectedDepartment) 
-        : studentRecords;
-        
       if (format === 'csv') {
-        downloadCSVReport(resultAnalysis, filteredRecords);
+        downloadCSVReport(resultAnalysis, studentRecords);
       } else if (format === 'excel') {
-        downloadExcelReport(resultAnalysis, filteredRecords);
+        downloadExcelReport(resultAnalysis, studentRecords);
       } else if (format === 'word') {
-        downloadWordReport(resultAnalysis, filteredRecords);
+        downloadWordReport(resultAnalysis, studentRecords);
       } else if (format === 'pdf') {
         // Call with element ID instead of analysis
         await downloadPdfReport('dashboard-content');
@@ -363,21 +323,6 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        {resultAnalysis.departmentCode && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Building className="h-5 w-5 mr-2" />
-                Department Analysis
-              </CardTitle>
-              <CardDescription>Analysis for department code: {resultAnalysis.departmentCode}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Badge className="bg-primary">{resultAnalysis.departmentCode}</Badge>
-            </CardContent>
-          </Card>
-        )}
-
         {resultAnalysis.fileCount && resultAnalysis.fileCount > 1 && resultAnalysis.filesProcessed && (
           <Card>
             <CardHeader className="pb-2">
@@ -392,47 +337,6 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
                     {fileName}
                   </Badge>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        
-        {resultAnalysis.departmentComparison && departmentCodes.length > 1 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Building className="h-5 w-5 mr-2" />
-                Department Comparison
-              </CardTitle>
-              <CardDescription>Performance metrics across different departments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Total Students</TableHead>
-                      <TableHead>Average SGPA</TableHead>
-                      <TableHead>Pass Rate (%)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.entries(resultAnalysis.departmentComparison).map(([deptCode, data]) => (
-                      <TableRow key={deptCode} className={deptCode === resultAnalysis.departmentCode ? "bg-muted/50" : ""}>
-                        <TableCell className="font-medium">
-                          {deptCode}
-                          {deptCode === resultAnalysis.departmentCode && (
-                            <Badge className="ml-2 bg-primary">Selected</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{data.totalStudents}</TableCell>
-                        <TableCell>{data.averageSGPA.toFixed(2)}</TableCell>
-                        <TableCell>{data.passRate.toFixed(2)}%</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
               </div>
             </CardContent>
           </Card>
@@ -778,7 +682,7 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
 
             <TabsContent value="upload" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-1">
+                <Card className="lg:col-span-2">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileSpreadsheet className="h-5 w-5" />
@@ -786,7 +690,7 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
                     </CardTitle>
                     <CardDescription>
                       Upload up to 10 Excel files containing student results data for analysis.
-                      Each file should contain columns: CNo (Department Code), SEM (Semester),
+                      Each file should contain columns: SEM (Semester),
                       REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
                     </CardDescription>
                   </CardHeader>
@@ -873,14 +777,6 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
                     </div>
                   </CardContent>
                 </Card>
-
-                <DepartmentCodeInput 
-                  studentRecords={studentRecords}
-                  selectedDepartment={selectedDepartment}
-                  setSelectedDepartment={setSelectedDepartment}
-                  onDepartmentSelected={handleDepartmentSelected}
-                  isProcessing={isAnalyzing || isUploading}
-                />
 
                 <SubjectCreditInput 
                   onCreditAssigned={handleCreditAssigned}
