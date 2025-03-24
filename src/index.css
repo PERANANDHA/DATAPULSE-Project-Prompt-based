@@ -159,6 +159,39 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground;
   }
+  
+  /* Responsive table styles */
+  .table-container {
+    @apply w-full overflow-x-auto;
+  }
+  
+  /* Responsive charts */
+  .chart-container {
+    @apply w-full h-full min-h-[200px];
+  }
+  
+  /* Mobile-specific adjustments */
+  @media (max-width: 640px) {
+    .mobile-stack {
+      @apply flex-col;
+    }
+    
+    .mobile-full-width {
+      @apply w-full;
+    }
+    
+    .mobile-scrollable {
+      @apply overflow-x-auto pb-2;
+    }
+    
+    .mobile-hide {
+      @apply hidden;
+    }
+    
+    .mobile-compact-padding {
+      @apply p-2;
+    }
+  }
 }
 
 @layer components {
@@ -189,5 +222,23 @@
   
   .ksrct-glass-card {
     @apply bg-white/90 backdrop-blur-sm shadow-lg rounded-lg border border-white/20;
+  }
+  
+  /* Responsive grid layouts */
+  .responsive-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+  }
+  
+  .responsive-grid-2 {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6;
+  }
+  
+  /* Card with equal height in grid */
+  .equal-height-card {
+    @apply h-full flex flex-col;
+  }
+  
+  .card-content-flex {
+    @apply flex-grow;
   }
 }
