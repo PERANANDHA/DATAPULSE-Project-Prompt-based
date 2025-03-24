@@ -129,15 +129,18 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
               <th>Average Grade</th>
             </tr>`;
     
-    // Add subject data if available
-    if (analysis.subjectPassPercentages) {
-      Object.entries(analysis.subjectPassPercentages).forEach(([subjectCode, percentage]) => {
-        const avgGrade = analysis.subjectAverageGrades?.[subjectCode] || 'N/A';
+    // Add subject data using the subjectPerformance array
+    if (analysis.subjectPerformance) {
+      analysis.subjectPerformance.forEach(subject => {
+        // Get the average grade display from grade distribution if available
+        const subjectCode = subject.subject;
+        const avgGradeDisplay = getAverageGradeDisplay(analysis, subjectCode);
+        
         htmlContent += `
           <tr>
             <td>${subjectCode}</td>
-            <td>${percentage.toFixed(2)}%</td>
-            <td>${avgGrade}</td>
+            <td>${subject.pass.toFixed(2)}%</td>
+            <td>${avgGradeDisplay}</td>
           </tr>`;
       });
     }
@@ -171,3 +174,27 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     console.error('Error generating Word report:', error);
   }
 };
+
+// Helper function to get a display string for the average grade of a subject
+function getAverageGradeDisplay(analysis: ResultAnalysis, subjectCode: string): string {
+  // Check if we have grade distribution data for this subject
+  if (analysis.subjectGradeDistribution && analysis.subjectGradeDistribution[subjectCode]) {
+    const grades = analysis.subjectGradeDistribution[subjectCode];
+    if (grades.length === 0) return 'N/A';
+    
+    // Find the most common grade
+    let maxCount = 0;
+    let commonGrade = '';
+    
+    grades.forEach(grade => {
+      if (grade.count > maxCount) {
+        maxCount = grade.count;
+        commonGrade = grade.name;
+      }
+    });
+    
+    return commonGrade || 'N/A';
+  }
+  
+  return 'N/A';
+}
