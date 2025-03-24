@@ -12,10 +12,10 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         <meta charset="UTF-8">
         <title>Result Analysis Report</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
+          body { font-family: Arial, sans-serif; margin: 15px; }
           h1 { text-align: center; color: #0056b3; font-size: 20px; margin-bottom: 20px; }
           h2 { color: #0056b3; font-size: 16px; margin-top: 25px; margin-bottom: 10px; }
-          table { border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 15px; }
+          table { border-collapse: collapse; width: 95%; margin-top: 15px; margin-bottom: 15px; margin-left: 0; }
           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
           th { background-color: #f2f2f2; font-weight: bold; }
           .chart-container { margin-top: 30px; }
