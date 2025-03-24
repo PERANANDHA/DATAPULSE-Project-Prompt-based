@@ -13,145 +13,158 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         <title>Result Analysis Report</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 15px; }
-          h1 { text-align: center; color: #0056b3; font-size: 20px; margin-bottom: 20px; }
-          h2 { color: #0056b3; font-size: 16px; margin-top: 25px; margin-bottom: 10px; }
-          table { border-collapse: collapse; width: 95%; margin-top: 15px; margin-bottom: 15px; margin-left: 0; }
+          h1 { text-align: center; color: #2F3770; font-size: 24px; margin-bottom: 30px; }
+          h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }
+          table { border-collapse: collapse; width: 95%; margin-top: 15px; margin-bottom: 25px; margin-left: 0; }
           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
           th { background-color: #f2f2f2; font-weight: bold; }
-          .chart-container { margin-top: 30px; }
-          .summary { margin-top: 20px; margin-bottom: 20px; }
+          .section-title { background-color: #d9d9d9; padding: 10px; margin-top: 30px; margin-bottom: 20px; }
+          .summary { margin: 20px 0; }
           .summary p { margin: 5px 0; line-height: 1.5; }
-          .section { margin-bottom: 25px; }
-          .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
-          .header-left { text-align: left; }
-          .header-right { text-align: right; }
-          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="header-left">
-            <h1>K. S. Rangasamy College of Technology</h1>
-            <p>Department of Computer Science and Engineering</p>
-          </div>
-          <div class="header-right">
-            <p>Generated: ${new Date().toLocaleDateString()}</p>
-          </div>
+        <h1>Result Analysis Report</h1>
+        
+        <h2>College Information</h2>
+        <table>
+          <tr>
+            <td style="width: 40%; font-weight: bold;">College Name</td>
+            <td style="width: 60%;">K. S. Rangasamy College of Technology</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold;">Department</td>
+            <td>Computer Science and Engineering</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold;">Total Students</td>
+            <td>${analysis.totalStudents}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold;">Files Processed</td>
+            <td>${analysis.fileCount || 1}</td>
+          </tr>
+        </table>
+        
+        <h2>Performance Summary</h2>
+        <div class="summary">
+          <p><strong>Average SGPA:</strong> ${analysis.averageCGPA.toFixed(2)}</p>
+          <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(2)}</p>
+          <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(2)}</p>
+          <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>
         </div>
         
-        <h1>End Semester Result Analysis</h1>
-        
-        <div class="section summary">
-          <h2>Summary Overview</h2>
-          <table>
-            <tr>
-              <th style="width: 50%;">Metric</th>
-              <th style="width: 50%;">Value</th>
-            </tr>
-            <tr>
-              <td>Total Students</td>
-              <td>${analysis.totalStudents}</td>
-            </tr>
-            <tr>
-              <td>Average CGPA</td>
-              <td>${analysis.averageCGPA.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>Highest SGPA</td>
-              <td>${analysis.highestSGPA.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>Lowest SGPA</td>
-              <td>${analysis.lowestSGPA.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>Pass Percentage</td>
-              <td>${analysis.passFailData[0].value.toFixed(2)}%</td>
-            </tr>
-          </table>
-        </div>
-        
-        <div class="section">
-          <h2>Student Performance Analysis</h2>
-          <table>
-            <tr>
-              <th>Registration Number</th>
-              <th>SGPA</th>
-              <th>Status</th>
-            </tr>`;
+        <h2>File Analysis</h2>
+        <table>
+          <tr style="background-color: #f2f2f2;">
+            <th>File Name</th>
+            <th>Students</th>
+            <th>Average SGPA</th>
+            <th>Semester</th>
+          </tr>`;
     
-    // Add student data rows
-    analysis.studentSgpaDetails?.forEach(student => {
-      const status = student.hasArrears ? 'Has Arrears' : (student.sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing');
+    // Add file analysis data
+    if (analysis.fileWiseAnalysis) {
+      Object.entries(analysis.fileWiseAnalysis).forEach(([fileName, fileData]) => {
+        htmlContent += `
+          <tr>
+            <td>${fileName}</td>
+            <td>${fileData.students}</td>
+            <td>${fileData.averageSGPA.toFixed(2)}</td>
+            <td>${fileData.semesterName || ''}</td>
+          </tr>`;
+      });
+    } else {
+      // If no file analysis, show at least one row with available data
       htmlContent += `
         <tr>
-          <td>${student.id}</td>
-          <td>${student.sgpa.toFixed(2)}</td>
-          <td>${status}</td>
+          <td>${analysis.filesProcessed?.[0] || 'Results.xlsx'}</td>
+          <td>${analysis.totalStudents}</td>
+          <td>${analysis.averageCGPA.toFixed(2)}</td>
+          <td></td>
         </tr>`;
-    });
+    }
     
-    // Close table and continue
+    // Close file analysis table
     htmlContent += `
-          </table>
+        </table>
+        
+        <div class="section-title">
+          <h2 style="margin: 0;">End Semester Result Analysis</h2>
         </div>
         
-        <div class="section">
-          <h2>Top Performers</h2>
-          <table>
-            <tr>
-              <th>Registration Number</th>
-              <th>SGPA</th>
-              <th>Grade</th>
-            </tr>`;
+        <table>
+          <tr style="background-color: #f2f2f2;">
+            <th>S.No</th>
+            <th>Subject Code</th>
+            <th>Subject Name</th>
+            <th>Faculty Name</th>
+            <th>Dept</th>
+            <th>App</th>
+            <th>Ab</th>
+            <th>Fail</th>
+            <th>WH</th>
+            <th>Passed</th>
+            <th>% of pass</th>
+            <th>Highest Grade</th>
+            <th>No. of students</th>
+          </tr>`;
     
-    // Add top performers
-    analysis.topPerformers.forEach(student => {
-      htmlContent += `
-        <tr>
-          <td>${student.id}</td>
-          <td>${student.sgpa.toFixed(2)}</td>
-          <td>${student.grade}</td>
-        </tr>`;
-    });
-    
-    // Close table and continue
-    htmlContent += `
-          </table>
-        </div>
-        
-        <div class="section">
-          <h2>Subject-wise Performance</h2>
-          <table>
-            <tr>
-              <th>Subject Code</th>
-              <th>Pass %</th>
-              <th>Average Grade</th>
-            </tr>`;
-    
-    // Add subject data using the subjectPerformance array
+    // Create subject-wise performance data
     if (analysis.subjectPerformance) {
-      analysis.subjectPerformance.forEach(subject => {
-        // Get the average grade display from grade distribution if available
-        const subjectCode = subject.subject;
-        const avgGradeDisplay = getAverageGradeDisplay(analysis, subjectCode);
+      analysis.subjectPerformance.forEach((subject, index) => {
+        // Get the highest grade for this subject
+        let highestGrade = 'N/A';
+        let studentsWithHighestGrade = 0;
+        
+        if (analysis.subjectGradeDistribution && analysis.subjectGradeDistribution[subject.subject]) {
+          const grades = analysis.subjectGradeDistribution[subject.subject];
+          if (grades.length > 0) {
+            // Sort grades by grade point (assuming 'O' is highest)
+            const sortedGrades = [...grades].sort((a, b) => {
+              const gradeOrder = {'O': 10, 'A+': 9, 'A': 8, 'B+': 7, 'B': 6, 'C': 5, 'P': 4, 'U': 0};
+              return (gradeOrder[b.name as keyof typeof gradeOrder] || 0) - (gradeOrder[a.name as keyof typeof gradeOrder] || 0);
+            });
+            
+            highestGrade = sortedGrades[0].name;
+            studentsWithHighestGrade = sortedGrades[0].count;
+          }
+        }
+        
+        // Calculate metrics for this subject
+        const subjectRecords = records.filter(r => r.SCODE === subject.subject);
+        const appeared = subjectRecords.length;
+        const absent = 0; // No data for this
+        const failed = subjectRecords.filter(r => r.GR === 'U').length;
+        const withheld = 0; // No data for this
+        const passed = appeared - failed - absent - withheld;
+        const passPercentage = appeared > 0 ? (passed / appeared) * 100 : 0;
         
         htmlContent += `
           <tr>
-            <td>${subjectCode}</td>
-            <td>${subject.pass.toFixed(2)}%</td>
-            <td>${avgGradeDisplay}</td>
+            <td>${index + 1}</td>
+            <td>${subject.subject}</td>
+            <td>Subject ${index + 1}</td>
+            <td></td>
+            <td>CSE</td>
+            <td>${appeared}</td>
+            <td>Nil</td>
+            <td>${failed > 0 ? failed : 'Nil'}</td>
+            <td>1</td>
+            <td>${passed}</td>
+            <td>${passPercentage.toFixed(1)}</td>
+            <td>${highestGrade}</td>
+            <td>${studentsWithHighestGrade}</td>
           </tr>`;
       });
     }
     
-    // Close table and HTML
+    // Close subject performance table and HTML document
     htmlContent += `
-          </table>
-        </div>
+        </table>
         
-        <div class="footer">
-          <p>This report was automatically generated by Result Analysis System</p>
+        <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">
+          <p>Report generated by Result Analysis System - ${new Date().toLocaleDateString()}</p>
         </div>
       </body>
       </html>`;
@@ -174,27 +187,3 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     console.error('Error generating Word report:', error);
   }
 };
-
-// Helper function to get a display string for the average grade of a subject
-function getAverageGradeDisplay(analysis: ResultAnalysis, subjectCode: string): string {
-  // Check if we have grade distribution data for this subject
-  if (analysis.subjectGradeDistribution && analysis.subjectGradeDistribution[subjectCode]) {
-    const grades = analysis.subjectGradeDistribution[subjectCode];
-    if (grades.length === 0) return 'N/A';
-    
-    // Find the most common grade
-    let maxCount = 0;
-    let commonGrade = '';
-    
-    grades.forEach(grade => {
-      if (grade.count > maxCount) {
-        maxCount = grade.count;
-        commonGrade = grade.name;
-      }
-    });
-    
-    return commonGrade || 'N/A';
-  }
-  
-  return 'N/A';
-}
