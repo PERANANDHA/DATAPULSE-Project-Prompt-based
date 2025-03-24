@@ -29,7 +29,7 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
           <p><strong>Average CGPA:</strong> ${analysis.averageCGPA.toFixed(2)}</p>
           <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(2)}</p>
           <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(2)}</p>
-          <p><strong>Pass Percentage:</strong> ${analysis.passPercentage.toFixed(2)}%</p>
+          <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>
         </div>
         
         <table>
