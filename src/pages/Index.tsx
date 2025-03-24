@@ -54,11 +54,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-70 z-0"></div>
+      {/* Adjusted Orange and Blue Background Design - More orange coverage */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#F97316]/80 to-[#0EA5E9] opacity-75 z-0"></div>
       
       <div className="absolute inset-0 z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm"></div>
-        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-500 opacity-30 blur-3xl"></div>
+        <div className="absolute top-10 left-10 w-80 h-80 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
+        <div className="absolute top-1/4 left-1/3 w-60 h-60 rounded-full bg-orange-400 opacity-30 blur-3xl"></div>
         <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-500 opacity-30 blur-3xl"></div>
         <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
