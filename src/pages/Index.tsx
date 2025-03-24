@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -11,10 +10,10 @@ const Index = () => {
   
   // Use responsive text sizes
   const heroTitleSize = useBreakpointValue({
-    base: "text-3xl",
-    sm: "text-4xl",
-    md: "text-5xl",
-    lg: "text-6xl"
+    base: "text-4xl",
+    sm: "text-5xl",
+    md: "text-6xl",
+    lg: "text-7xl"
   });
 
   const heroParagraphSize = useBreakpointValue({
@@ -80,8 +79,8 @@ const Index = () => {
         <div className="absolute top-1/3 right-1/4 w-20 h-20 sm:w-40 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
-      {/* College Logo - Adjusted positioning and size */}
-      <div className="relative z-10 p-4">
+      {/* College Logo and Auth Buttons moved to the same section */}
+      <div className="relative z-10 p-4 flex justify-between items-center">
         <div className="bg-white p-2 rounded-lg shadow-md inline-flex">
           <img 
             src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
@@ -89,20 +88,16 @@ const Index = () => {
             className="h-10 sm:h-12 md:h-16 w-auto"
           />
         </div>
-      </div>
-
-      <header className="py-4 sm:py-6 px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="container-centered flex justify-end items-center">
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="bg-[#F97316] hover:bg-[#F97316]/90 text-white font-medium border-transparent">Log in</Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm" className="font-medium">Sign up</Button>
-            </Link>
-          </div>
+        
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <Link to="/login">
+            <Button variant="outline" size="sm" className="bg-[#F97316] hover:bg-[#F97316]/90 text-white font-medium border-transparent">Log in</Button>
+          </Link>
+          <Link to="/signup">
+            <Button size="sm" className="font-medium">Sign up</Button>
+          </Link>
         </div>
-      </header>
+      </div>
 
       <main className="flex-grow relative z-10">
         <section className="py-8 md:py-12 lg:py-16">
@@ -119,11 +114,10 @@ const Index = () => {
                 </span>
               </motion.div>
               <motion.h2 
-                className={`${heroTitleSize || 'text-4xl'} font-extrabold tracking-tight mb-4 sm:mb-6 text-white`}
+                className={`${heroTitleSize || 'text-5xl'} font-extrabold tracking-tight mb-4 sm:mb-6 text-white`}
                 variants={fadeInUp}
               >
-                <span className="inline-block">Transform student data into</span>
-                <span className="block mt-2">actionable insights</span>
+                RESULT ANALYZER
               </motion.h2>
               <motion.p 
                 className={`${heroParagraphSize || 'text-lg'} text-white font-medium mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-2 sm:px-4`}
