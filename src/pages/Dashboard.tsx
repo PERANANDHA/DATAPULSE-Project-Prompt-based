@@ -125,8 +125,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen login-pattern">
+      <header className="bg-white/90 backdrop-blur-sm shadow-sm border-b">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <img 
@@ -134,7 +134,6 @@ const Dashboard = () => {
               alt="College Logo" 
               className="h-10"
             />
-            <h1 className="text-xl font-bold text-gray-800">Result Analyzer</h1>
           </div>
           <div className="flex items-center space-x-2">
             <ProfileButton />

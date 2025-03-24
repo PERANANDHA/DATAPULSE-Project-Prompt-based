@@ -34,7 +34,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ analysis, studentRecord
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="space-y-6"
+      className="space-y-6 bg-white p-6 rounded-lg shadow-md"
     >
       <AnalysisOverview analysis={analysis} />
       <SubjectAnalysis analysis={analysis} />

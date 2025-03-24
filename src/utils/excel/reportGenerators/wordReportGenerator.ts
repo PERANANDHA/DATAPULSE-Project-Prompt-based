@@ -13,31 +13,72 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         <title>Result Analysis Report</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { text-align: left; margin-left: 0; font-size: 18px; }
-          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+          h1 { text-align: center; color: #0056b3; font-size: 20px; margin-bottom: 20px; }
+          h2 { color: #0056b3; font-size: 16px; margin-top: 25px; margin-bottom: 10px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 15px; }
           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
+          th { background-color: #f2f2f2; font-weight: bold; }
           .chart-container { margin-top: 30px; }
-          .summary { margin-top: 30px; }
+          .summary { margin-top: 20px; margin-bottom: 20px; }
+          .summary p { margin: 5px 0; line-height: 1.5; }
+          .section { margin-bottom: 25px; }
+          .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .header-left { text-align: left; }
+          .header-right { text-align: right; }
+          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
         </style>
       </head>
       <body>
-        <h1>End Semester Result Analysis</h1>
-        
-        <div class="summary">
-          <p><strong>Total Students:</strong> ${analysis.totalStudents}</p>
-          <p><strong>Average CGPA:</strong> ${analysis.averageCGPA.toFixed(2)}</p>
-          <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(2)}</p>
-          <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(2)}</p>
-          <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>
+        <div class="header">
+          <div class="header-left">
+            <h1>K. S. Rangasamy College of Technology</h1>
+            <p>Department of Computer Science and Engineering</p>
+          </div>
+          <div class="header-right">
+            <p>Generated: ${new Date().toLocaleDateString()}</p>
+          </div>
         </div>
         
-        <table>
-          <tr>
-            <th>Registration Number</th>
-            <th>SGPA</th>
-            <th>Status</th>
-          </tr>`;
+        <h1>End Semester Result Analysis</h1>
+        
+        <div class="section summary">
+          <h2>Summary Overview</h2>
+          <table>
+            <tr>
+              <th style="width: 50%;">Metric</th>
+              <th style="width: 50%;">Value</th>
+            </tr>
+            <tr>
+              <td>Total Students</td>
+              <td>${analysis.totalStudents}</td>
+            </tr>
+            <tr>
+              <td>Average CGPA</td>
+              <td>${analysis.averageCGPA.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Highest SGPA</td>
+              <td>${analysis.highestSGPA.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Lowest SGPA</td>
+              <td>${analysis.lowestSGPA.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Pass Percentage</td>
+              <td>${analysis.passFailData[0].value.toFixed(2)}%</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div class="section">
+          <h2>Student Performance Analysis</h2>
+          <table>
+            <tr>
+              <th>Registration Number</th>
+              <th>SGPA</th>
+              <th>Status</th>
+            </tr>`;
     
     // Add student data rows
     analysis.studentSgpaDetails?.forEach(student => {
@@ -50,21 +91,64 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         </tr>`;
     });
     
-    // Close table and HTML
+    // Close table and continue
     htmlContent += `
-        </table>
+          </table>
+        </div>
         
-        <div class="summary">
+        <div class="section">
           <h2>Top Performers</h2>
-          <ul>`;
+          <table>
+            <tr>
+              <th>Registration Number</th>
+              <th>SGPA</th>
+              <th>Grade</th>
+            </tr>`;
     
     // Add top performers
     analysis.topPerformers.forEach(student => {
-      htmlContent += `<li>${student.id}: ${student.sgpa.toFixed(2)} (${student.grade})</li>`;
+      htmlContent += `
+        <tr>
+          <td>${student.id}</td>
+          <td>${student.sgpa.toFixed(2)}</td>
+          <td>${student.grade}</td>
+        </tr>`;
     });
     
+    // Close table and continue
     htmlContent += `
-          </ul>
+          </table>
+        </div>
+        
+        <div class="section">
+          <h2>Subject-wise Performance</h2>
+          <table>
+            <tr>
+              <th>Subject Code</th>
+              <th>Pass %</th>
+              <th>Average Grade</th>
+            </tr>`;
+    
+    // Add subject data if available
+    if (analysis.subjectPassPercentages) {
+      Object.entries(analysis.subjectPassPercentages).forEach(([subjectCode, percentage]) => {
+        const avgGrade = analysis.subjectAverageGrades?.[subjectCode] || 'N/A';
+        htmlContent += `
+          <tr>
+            <td>${subjectCode}</td>
+            <td>${percentage.toFixed(2)}%</td>
+            <td>${avgGrade}</td>
+          </tr>`;
+      });
+    }
+    
+    // Close table and HTML
+    htmlContent += `
+          </table>
+        </div>
+        
+        <div class="footer">
+          <p>This report was automatically generated by Result Analysis System</p>
         </div>
       </body>
       </html>`;
