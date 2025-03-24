@@ -34,6 +34,7 @@ const signupSchema = z.object({
   staffId: z.string().min(1, { message: "Staff ID is required." }),
   phoneNumber: z.string().min(10, { message: "Please enter a valid phone number." }),
   department: z.string().min(1, { message: "Department name is required." }),
+  designation: z.string().min(1, { message: "Designation is required." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." })
     .refine(password => /[A-Z]/.test(password), {
       message: "Password must contain at least one uppercase letter",
@@ -101,6 +102,7 @@ const Signup = () => {
       staffId: "",
       phoneNumber: "",
       department: "",
+      designation: "",
       password: "",
       confirmPassword: "",
       robotCheck: false,
@@ -171,6 +173,7 @@ const Signup = () => {
         staffId: values.staffId,
         phoneNumber: values.phoneNumber,
         department: values.department,
+        designation: values.designation,
         password: values.password,
       };
       
@@ -310,19 +313,35 @@ const Signup = () => {
                   />
                 </div>
                 
-                <FormField
-                  control={form.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-medium">Department</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Computer Science" {...field} className="border-gray-300" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-medium">Department</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Computer Science" {...field} className="border-gray-300" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="designation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-medium">Designation</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Assistant Professor" {...field} className="border-gray-300" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
                 <FormField
                   control={form.control}

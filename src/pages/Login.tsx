@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -16,20 +15,12 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useBreakpointValue } from '@/hooks/use-mobile';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
-  rememberMe: z.boolean().optional(),
+  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -37,85 +28,60 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
-  
   const { toast } = useToast();
   const navigate = useNavigate();
-  
-  // Responsive sizing
+
+  // Responsive form width
   const formWidth = useBreakpointValue({
     base: "w-full",
-    sm: "max-w-sm",
-    md: "max-w-md"
+    sm: "max-w-md",
+    md: "max-w-lg"
   });
-
-  // Load stored users from localStorage
-  useEffect(() => {
-    const storedUsers = localStorage.getItem('registeredUsers');
-    if (storedUsers) {
-      setRegisteredUsers(JSON.parse(storedUsers));
-    }
-  }, []);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const handleLogin = async (values: LoginFormValues) => {
     setIsLoading(true);
     
     try {
-      // In a real application, this would call an API
-      console.log("Form values:", values);
+      const storedUsers = localStorage.getItem('registeredUsers');
+      const users = storedUsers ? JSON.parse(storedUsers) : [];
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const user = users.find((u: any) => u.email === values.email && u.password === values.password);
       
-      // Check if user exists in localStorage for demo purposes
-      const user = registeredUsers.find(user => user.email === values.email);
-      
-      if (!user) {
-        setErrorMessage("No account found with this email address. Please sign up.");
-        setShowError(true);
-        setIsLoading(false);
-        return;
+      if (user) {
+        // Store current user email in localStorage
+        localStorage.setItem('currentUser', values.email);
+        
+        toast({
+          title: "Welcome back!",
+          description: `You've successfully logged in as ${user.name}.`,
+        });
+        
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: "Invalid email or password. Please try again.",
+        });
       }
-      
-      if (user.password !== values.password) {
-        setErrorMessage("Incorrect password. Please try again.");
-        setShowError(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Store login status in localStorage
-      localStorage.setItem('currentUser', JSON.stringify({
-        name: user.name,
-        email: user.email,
-        isLoggedIn: true,
-      }));
-      
-      toast({
-        title: "Login successful!",
-        description: "Welcome back! Redirecting to dashboard...",
-      });
-      
-      // Redirect to dashboard after successful login
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
-      
     } catch (error) {
       console.error("Login error:", error);
-      setErrorMessage("An unexpected error occurred. Please try again.");
-      setShowError(true);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "There was a problem logging you in. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -124,48 +90,50 @@ const Login = () => {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
-      {/* Half Orange and Half Blue Background Design */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] to-[#0EA5E9] opacity-70 z-0"></div>
+    <div className="min-h-screen flex flex-col relative">
+      {/* Orange and Blue Background Design - Fixed overflow issues */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-60 z-0"></div>
       
-      {/* Decorative Elements - Adjusted for better mobile display */}
-      <div className="absolute inset-0 z-0">
+      {/* Decorative Elements - Better contained */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-black/15 backdrop-blur-sm"></div>
-        <div className="absolute top-10 left-10 w-40 sm:w-60 md:w-80 h-40 sm:h-60 md:h-80 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-40 sm:w-60 md:w-80 h-40 sm:h-60 md:h-80 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-orange-400 opacity-30 blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
         <div className="absolute top-1/3 right-1/4 w-20 sm:w-40 h-20 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
-      {/* College Logo - Smaller on mobile */}
-      <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
-        <img 
-          src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
-          alt="K.S. Rangasamy College of Technology" 
-          className="h-12 sm:h-16 md:h-20 w-auto"
-        />
+      {/* College Logo - Adjusted for better positioning */}
+      <div className="relative z-10 p-4 flex">
+        <div className="bg-white p-2 rounded-lg shadow-md">
+          <img 
+            src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
+            alt="K.S. Rangasamy College of Technology" 
+            className="h-10 sm:h-14 w-auto"
+          />
+        </div>
       </div>
 
-      <div className="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10">
+      <div className="flex-grow flex items-center justify-center p-4 relative z-10">
         <motion.div 
           className={`${formWidth || 'w-full max-w-md'}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-6 flex justify-end">
+          <div className="mb-4 sm:mb-6 flex justify-end">
             <Link to="/" className="inline-flex items-center text-sm text-white hover:text-white/80 bg-black/40 px-3 py-1.5 rounded-md backdrop-blur-sm shadow-md">
               Back to home
             </Link>
           </div>
           
-          <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6 md:p-8 border border-white/30">
+          <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6 border border-white/30">
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2 text-[#0EA5E9]">Welcome back</h1>
-              <p className="text-gray-700 text-sm">Sign in to your account to continue</p>
+              <h1 className="text-xl sm:text-2xl font-bold mb-2 text-[#0EA5E9]">Login to your account</h1>
+              <p className="text-gray-700 text-sm">Enter your details to access the dashboard</p>
             </div>
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="email"
@@ -185,19 +153,14 @@ const Login = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center justify-between flex-wrap gap-1">
-                        <FormLabel className="font-medium">Password</FormLabel>
-                        <Link to="/forgot-password" className="text-xs text-[#F97316] hover:text-[#0EA5E9] font-medium">
-                          Forgot password?
-                        </Link>
-                      </div>
+                      <FormLabel className="font-medium">Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input 
-                            type={showPassword ? "text" : "password"} 
+                            type={showPassword ? "password" : "text"} 
                             placeholder="••••••••" 
                             {...field} 
-                            className="border-gray-300 pr-10"
+                            className="border-gray-300"
                           />
                           <button 
                             type="button"
@@ -213,54 +176,23 @@ const Login = () => {
                   )}
                 />
                 
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox" 
-                    id="remember" 
-                    className="rounded border-gray-300 text-[#F97316] focus:ring-[#F97316]"
-                    onChange={(e) => form.setValue('rememberMe', e.target.checked)}
-                  />
-                  <label htmlFor="remember" className="text-sm text-gray-700">
-                    Remember me for 30 days
-                  </label>
-                </div>
-                
                 <Button 
                   type="submit" 
-                  className="w-full mt-6 bg-gradient-to-r from-[#F97316] to-[#FF9500] hover:from-[#FF9500] hover:to-[#F97316] text-white font-bold" 
+                  className="w-full mt-4 sm:mt-6 bg-gradient-to-r from-[#F97316] to-[#FF9500] hover:from-[#FF9500] hover:to-[#F97316] text-white font-bold" 
                   disabled={isLoading}
                 >
-                  {isLoading ? "Signing in..." : "Sign in"}
+                  {isLoading ? "Logging in..." : "Log in"}
                 </Button>
               </form>
             </Form>
             
-            <div className="mt-6 text-center text-sm">
+            <div className="mt-4 sm:mt-6 text-center text-sm">
               <span className="text-gray-700">Don't have an account? </span>
               <Link to="/signup" className="text-[#F97316] hover:text-[#0EA5E9] font-medium">
                 Sign up
               </Link>
             </div>
           </div>
-          
-          <Dialog open={showError} onOpenChange={setShowError}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 text-destructive mr-2" />
-                  Login Error
-                </DialogTitle>
-                <DialogDescription>
-                  {errorMessage}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={() => setShowError(false)}>
-                  Close
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </motion.div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -69,6 +68,7 @@ import {
   TableRow,
   TableCell
 } from "@/components/ui/table";
+import ProfileButton from "@/components/ui/ProfileButton";
 
 interface SubjectCredit {
   subjectCode: string;
@@ -250,7 +250,7 @@ const Dashboard = () => {
     }
   };
 
-const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
+  const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
     if (!resultAnalysis || !studentRecords.length) {
       toast({
         variant: "destructive",
@@ -639,23 +639,19 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b border-border">
-        <div className="container-centered py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-medium">ResultAnalyzer</h1>
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Log out
-              </Button>
-              <div 
-                className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer"
-                onClick={() => setProfileOpen(true)}
-              >
-                <User className="h-4 w-4" />
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <img 
+              src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
+              alt="College Logo" 
+              className="h-10"
+            />
+            <h1 className="text-xl font-bold text-gray-800">Result Analyzer</h1>
+          </div>
+          <div className="flex items-center space-x-2">
+            <ProfileButton />
           </div>
         </div>
       </header>
