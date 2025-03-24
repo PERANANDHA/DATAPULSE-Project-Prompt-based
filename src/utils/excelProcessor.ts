@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -465,6 +464,38 @@ export const analyzeResults = (records: StudentRecord[], departmentCode?: string
     departmentCode,
     departmentComparison
   };
+};
+
+// Function to download CSV report
+export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentRecord[]): void => {
+  try {
+    // Create CSV content
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    // Add headers
+    csvContent += "Registration Number,SGPA,Status\n";
+    
+    // Add student data
+    analysis.studentSgpaDetails?.forEach(student => {
+      const status = student.hasArrears ? 'Has Arrears' : (student.sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing');
+      csvContent += `${student.id},${student.sgpa.toFixed(2)},${status}\n`;
+    });
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'result-analysis-report.csv');
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Error generating CSV report:', error);
+  }
 };
 
 // Function to generate Excel data for reports
@@ -995,308 +1026,6 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
   return html;
 };
 
-// Generate PDF report
-export const generatePdfReport = (analysis: ResultAnalysis, records: StudentRecord[]): JsPDF => {
-  const doc = new JsPDF();
-  
-  // Add title
-  doc.setFontSize(18);
-  doc.setTextColor(51, 51, 102);
-  doc.text('Result Analysis Report', 105, 15, { align: 'center' });
-  
-  // Add college information
-  doc.setFontSize(14);
-  doc.setTextColor(51, 51, 102);
-  doc.text('College Information', 14, 25);
-  
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  
-  // Add information table
-  (doc as any).autoTable({
-    startY: 28,
-    head: [['Field', 'Value']],
-    body: [
-      ['College Name', 'K. S. Rangasamy College of Technology'],
-      ['Department', analysis.departmentCode || 'Computer Science and Engineering'],
-      ['Total Students', String(analysis.totalStudents)],
-      ['Files Processed', String(analysis.fileCount || 1)],
-    ],
-    theme: 'grid',
-    headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-    styles: { fontSize: 10 }
-  });
-  
-  // Add performance summary
-  doc.setFontSize(14);
-  doc.setTextColor(51, 51, 102);
-  doc.text('Performance Summary', 14, (doc as any).lastAutoTable.finalY + 10);
-  
-  (doc as any).autoTable({
-    startY: (doc as any).lastAutoTable.finalY + 13,
-    head: [['Metric', 'Value']],
-    body: [
-      ['Average SGPA', analysis.averageCGPA.toFixed(2)],
-      ['Highest SGPA', analysis.highestSGPA.toFixed(2)],
-      ['Lowest SGPA', analysis.lowestSGPA.toFixed(2)],
-      ['Pass Percentage', `${analysis.passFailData[0].value.toFixed(2)}%`],
-    ],
-    theme: 'grid',
-    headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-    styles: { fontSize: 10 }
-  });
-  
-  // Department comparison if available
-  if (analysis.departmentComparison) {
-    doc.setFontSize(14);
-    doc.setTextColor(51, 51, 102);
-    doc.text('Department Comparison', 14, (doc as any).lastAutoTable.finalY + 10);
-    
-    const deptComparisonData = Object.entries(analysis.departmentComparison).map(([deptCode, data]) => [
-      deptCode,
-      data.totalStudents,
-      data.averageSGPA.toFixed(2),
-      `${data.passRate.toFixed(2)}%`,
-    ]);
-    
-    (doc as any).autoTable({
-      startY: (doc as any).lastAutoTable.finalY + 13,
-      head: [['Department Code', 'Total Students', 'Average SGPA', 'Pass Rate']],
-      body: deptComparisonData,
-      theme: 'grid',
-      headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-      styles: { fontSize: 10 }
-    });
-  }
-  
-  // File analysis if multiple files
-  if (analysis.fileWiseAnalysis && Object.keys(analysis.fileWiseAnalysis).length > 0) {
-    doc.setFontSize(14);
-    doc.setTextColor(51, 51, 102);
-    doc.text('File Analysis', 14, (doc as any).lastAutoTable.finalY + 10);
-    
-    const fileAnalysisData = Object.entries(analysis.fileWiseAnalysis).map(([fileName, data]) => [
-      fileName,
-      data.students,
-      data.averageSGPA.toFixed(2),
-      data.semesterName || 'N/A',
-    ]);
-    
-    (doc as any).autoTable({
-      startY: (doc as any).lastAutoTable.finalY + 13,
-      head: [['File Name', 'Students', 'Average SGPA', 'Semester']],
-      body: fileAnalysisData,
-      theme: 'grid',
-      headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-      styles: { fontSize: 10 }
-    });
-  }
-  
-  // CGPA analysis if available
-  if (analysis.cgpaAnalysis) {
-    doc.setFontSize(14);
-    doc.setTextColor(51, 51, 102);
-    doc.text('CGPA Analysis', 14, (doc as any).lastAutoTable.finalY + 10);
-    
-    (doc as any).autoTable({
-      startY: (doc as any).lastAutoTable.finalY + 13,
-      head: [['Metric', 'Value']],
-      body: [
-        ['Average CGPA', analysis.cgpaAnalysis.averageCGPA.toFixed(2)],
-        ['Highest CGPA', analysis.cgpaAnalysis.highestCGPA.toFixed(2)],
-        ['Lowest CGPA', analysis.cgpaAnalysis.lowestCGPA.toFixed(2)],
-      ],
-      theme: 'grid',
-      headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-      styles: { fontSize: 10 }
-    });
-    
-    // Top CGPA performers
-    const topCgpaPerformers = analysis.cgpaAnalysis.studentCGPAs
-      .sort((a, b) => b.cgpa - a.cgpa)
-      .slice(0, 5)
-      .map((student, index) => [
-        index + 1,
-        student.id,
-        student.cgpa.toFixed(2),
-      ]);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(51, 51, 102);
-    doc.text('Top Performers (CGPA)', 14, (doc as any).lastAutoTable.finalY + 10);
-    
-    (doc as any).autoTable({
-      startY: (doc as any).lastAutoTable.finalY + 13,
-      head: [['Rank', 'Registration Number', 'CGPA']],
-      body: topCgpaPerformers,
-      theme: 'grid',
-      headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-      styles: { fontSize: 10 }
-    });
-  }
-  
-  // Add a new page for subject analysis
-  doc.addPage();
-  
-  // Subject analysis
-  doc.setFontSize(14);
-  doc.setTextColor(51, 51, 102);
-  doc.text('End Semester Result Analysis', 14, 15);
-  
-  // Create subject-wise analysis data
-  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
-  const subjectAnalysisData = uniqueSubjects.map((subject, index) => {
-    const subjectRecords = records.filter(record => record.SCODE === subject);
-    const totalStudents = subjectRecords.length;
-    const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
-    const failedStudents = totalStudents - passedStudents;
-    const passPercentage = (passedStudents / totalStudents) * 100;
-    
-    // Find the highest grade
-    const grades = subjectRecords.map(record => record.GR);
-    const highestGrade = grades.sort((a, b) => gradePointMap[b] - gradePointMap[a])[0];
-    
-    // Count students with highest grade
-    const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
-    
-    // Generate subject name as "Subject 1", "Subject 2", etc.
-    const subjectName = `Subject ${index + 1}`;
-    
-    return [
-      index + 1,
-      subject,
-      subjectName,
-      analysis.departmentCode || "",
-      totalStudents,
-      failedStudents || "Nil",
-      passedStudents,
-      `${passPercentage.toFixed(1)}%`,
-      highestGrade,
-      studentsWithHighestGrade
-    ];
-  });
-  
-  (doc as any).autoTable({
-    startY: 18,
-    head: [['S.No', 'Subject Code', 'Subject Name', 'Dept', 'App', 'Fail', 'Passed', '% of pass', 'Highest Grade', 'Students']],
-    body: subjectAnalysisData,
-    theme: 'grid',
-    headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-    styles: { fontSize: 8 },
-    columnStyles: {
-      0: { cellWidth: 15 },
-      2: { cellWidth: 35 },
-    }
-  });
-  
-  // Add grade distribution
-  doc.setFontSize(14);
-  doc.setTextColor(51, 51, 102);
-  doc.text('Grade Distribution', 14, (doc as any).lastAutoTable.finalY + 10);
-  
-  const gradeDistributionData = analysis.gradeDistribution.map(grade => [
-    grade.name,
-    grade.count,
-    `${((grade.count / analysis.totalGrades) * 100).toFixed(2)}%`,
-  ]);
-  
-  (doc as any).autoTable({
-    startY: (doc as any).lastAutoTable.finalY + 13,
-    head: [['Grade', 'Count', 'Percentage']],
-    body: gradeDistributionData,
-    theme: 'grid',
-    headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-    styles: { fontSize: 10 }
-  });
-  
-  // Add top performers
-  doc.setFontSize(14);
-  doc.setTextColor(51, 51, 102);
-  doc.text('Top Performers', 14, (doc as any).lastAutoTable.finalY + 10);
-  
-  const topPerformersData = analysis.topPerformers.map((student, index) => [
-    index + 1,
-    student.id,
-    student.sgpa.toFixed(2),
-  ]);
-  
-  (doc as any).autoTable({
-    startY: (doc as any).lastAutoTable.finalY + 13,
-    head: [['Rank', 'Registration Number', 'SGPA']],
-    body: topPerformersData,
-    theme: 'grid',
-    headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-    styles: { fontSize: 10 }
-  });
-  
-  // Add new page for additional data
-  doc.addPage();
-  
-  // Add students needing improvement
-  doc.setFontSize(14);
-  doc.setTextColor(51, 51, 102);
-  doc.text('Students Needing Improvement', 14, 15);
-  
-  const needsImprovementData = analysis.needsImprovement.map((student, index) => [
-    index + 1,
-    student.id,
-    student.sgpa.toFixed(2),
-    student.subjects,
-  ]);
-  
-  (doc as any).autoTable({
-    startY: 18,
-    head: [['S.No', 'Registration Number', 'SGPA', 'Arrear Subjects']],
-    body: needsImprovementData,
-    theme: 'grid',
-    headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-    styles: { fontSize: 10 }
-  });
-  
-  // Add subject-wise performance
-  doc.setFontSize(14);
-  doc.setTextColor(51, 51, 102);
-  doc.text('Subject-wise Performance', 14, (doc as any).lastAutoTable.finalY + 10);
-  
-  const subjectPerformanceData = analysis.subjectPerformance.map((subject, index) => [
-    index + 1,
-    subject.subject,
-    `${subject.pass.toFixed(2)}%`,
-    `${subject.fail.toFixed(2)}%`,
-  ]);
-  
-  (doc as any).autoTable({
-    startY: (doc as any).lastAutoTable.finalY + 13,
-    head: [['S.No', 'Subject Code', 'Pass %', 'Fail %']],
-    body: subjectPerformanceData,
-    theme: 'grid',
-    headStyles: { fillColor: [51, 51, 102], textColor: [255, 255, 255] },
-    styles: { fontSize: 10 }
-  });
-  
-  // Add footer
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
-    doc.text(`Generated on ${new Date().toLocaleString()}`, 105, 295, { align: 'center' });
-  }
-  
-  return doc;
-};
-
-// Function to download PDF report
-export const downloadPdfReport = (analysis: ResultAnalysis, records: StudentRecord[]): void => {
-  try {
-    const doc = generatePdfReport(analysis, records);
-    doc.save('result-analysis-report.pdf');
-  } catch (error) {
-    console.error('Error generating PDF report:', error);
-  }
-};
-
 // Function to download Word report (HTML Export)
 export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): void => {
   try {
@@ -1316,6 +1045,55 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     URL.revokeObjectURL(link.href);
   } catch (error) {
     console.error('Error generating Word report:', error);
+  }
+};
+
+// Function to download PDF report using html2canvas
+export const downloadPdfReport = async (elementId: string): Promise<boolean> => {
+  try {
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.error('Element not found:', elementId);
+      return false;
+    }
+    
+    // Create a new jsPDF instance
+    const doc = new JsPDF('p', 'mm', 'a4');
+    
+    // Use html2canvas to capture the element
+    const canvas = await import('html2canvas').then(html2canvas => html2canvas.default(element, {
+      scale: 1,
+      useCORS: true,
+      logging: false
+    }));
+    
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Calculate dimensions to fit on the page
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 295; // A4 height in mm
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    
+    // Add first page
+    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    
+    // Add additional pages if needed for long content
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      doc.addPage();
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    
+    // Save the PDF
+    doc.save('result-analysis-report.pdf');
+    return true;
+  } catch (error) {
+    console.error('Error generating PDF report:', error);
+    return false;
   }
 };
 

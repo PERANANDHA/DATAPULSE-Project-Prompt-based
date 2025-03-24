@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -285,7 +284,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
+const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
     if (!resultAnalysis || !studentRecords.length) {
       toast({
         variant: "destructive",
@@ -310,8 +309,8 @@ const Dashboard = () => {
       } else if (format === 'word') {
         downloadWordReport(resultAnalysis, filteredRecords);
       } else if (format === 'pdf') {
-        const success = await downloadPdfReport('dashboard-content');
-        if (!success) throw new Error("Failed to generate PDF");
+        // Call with element ID instead of analysis
+        await downloadPdfReport('dashboard-content');
       }
       
       toast({
@@ -905,34 +904,3 @@ const Dashboard = () => {
               Your account details and information
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col space-y-4 py-2">
-            <div className="flex flex-col items-center mb-4">
-              <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-3">
-                <User className="h-10 w-10" />
-              </div>
-              <h3 className="text-lg font-medium">{profileInfo.name}</h3>
-              <p className="text-sm text-muted-foreground">{profileInfo.email}</p>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between py-1 border-b">
-                <span className="text-sm font-medium">Role</span>
-                <span className="text-sm">{profileInfo.role}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b">
-                <span className="text-sm font-medium">Department</span>
-                <span className="text-sm">{profileInfo.department}</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-sm font-medium">Institution</span>
-                <span className="text-sm">{profileInfo.college}</span>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default Dashboard;
