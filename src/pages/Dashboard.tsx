@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -904,3 +905,33 @@ const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') =>
               Your account details and information
             </DialogDescription>
           </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Name</h3>
+              <p className="text-lg">{profileInfo.name}</p>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+              <p className="text-lg">{profileInfo.email}</p>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Role</h3>
+              <p className="text-lg">{profileInfo.role}</p>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">Department</h3>
+              <p className="text-lg">{profileInfo.department}</p>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <h3 className="text-sm font-medium text-muted-foreground">College</h3>
+              <p className="text-lg">{profileInfo.college}</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Dashboard;
