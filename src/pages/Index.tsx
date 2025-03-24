@@ -68,24 +68,27 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Half Orange and Half Blue Background Design */}
+    <div className="min-h-screen flex flex-col relative">
+      {/* Half Orange and Half Blue Background Design - Fixed overflow issue */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] to-[#0EA5E9] opacity-75 z-0"></div>
       
-      <div className="absolute inset-0 z-0">
+      {/* Decorative Elements - Adjusted positioning and z-index */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm"></div>
-        <div className="absolute top-10 left-10 w-60 md:w-80 h-60 md:h-80 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-60 md:w-80 h-60 md:h-80 rounded-full bg-blue-500 opacity-30 blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
+        <div className="absolute top-10 left-10 w-40 md:w-60 h-40 md:h-60 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-40 md:w-60 h-40 md:h-60 rounded-full bg-blue-500 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-20 h-20 sm:w-40 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
-      {/* College Logo - Adjusted for better mobile positioning */}
-      <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
-        <img 
-          src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
-          alt="K.S. Rangasamy College of Technology" 
-          className="h-12 sm:h-16 md:h-20 w-auto"
-        />
+      {/* College Logo - Adjusted positioning and size */}
+      <div className="relative z-10 p-4">
+        <div className="bg-white p-2 rounded-lg shadow-md inline-flex">
+          <img 
+            src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
+            alt="K.S. Rangasamy College of Technology" 
+            className="h-10 sm:h-12 md:h-16 w-auto"
+          />
+        </div>
       </div>
 
       <header className="py-4 sm:py-6 px-4 sm:px-6 lg:px-8 relative z-10">
@@ -102,7 +105,7 @@ const Index = () => {
       </header>
 
       <main className="flex-grow relative z-10">
-        <section className="py-12 md:py-16 lg:py-24">
+        <section className="py-8 md:py-12 lg:py-16">
           <div className="container-centered px-4 sm:px-6">
             <motion.div 
               className="max-w-3xl mx-auto text-center"
@@ -116,14 +119,14 @@ const Index = () => {
                 </span>
               </motion.div>
               <motion.h2 
-                className={`${heroTitleSize || 'text-4xl'} font-extrabold tracking-tight mb-6 sm:mb-8 text-white`}
+                className={`${heroTitleSize || 'text-4xl'} font-extrabold tracking-tight mb-4 sm:mb-6 text-white`}
                 variants={fadeInUp}
               >
                 <span className="inline-block">Transform student data into</span>
                 <span className="block mt-2">actionable insights</span>
               </motion.h2>
               <motion.p 
-                className={`${heroParagraphSize || 'text-lg'} text-white font-medium mb-8 max-w-2xl mx-auto leading-relaxed px-4`}
+                className={`${heroParagraphSize || 'text-lg'} text-white font-medium mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-2 sm:px-4`}
                 variants={fadeInUp}
               >
                 A powerful platform designed for educational professionals to analyze, track, and improve student performance with just a few clicks.
@@ -147,43 +150,43 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="py-12 md:py-16 bg-white/95 backdrop-blur-sm">
+        <section className="py-8 md:py-12 bg-white/95 backdrop-blur-sm">
           <div className="container-centered px-4 sm:px-6">
             <motion.div 
-              className="text-center mb-10 md:mb-16"
+              className="text-center mb-8 md:mb-12"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
               <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-[#0EA5E9]">Features Designed for Educators</h2>
-              <p className="text-gray-700 max-w-2xl mx-auto font-medium px-4">
+              <p className="text-gray-700 max-w-2xl mx-auto font-medium px-2 sm:px-4">
                 Our platform provides powerful tools to help you understand student performance and make data-driven decisions.
               </p>
             </motion.div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 px-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-2 sm:px-4">
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
-                  className="bg-gradient-to-br from-white to-blue-50 p-6 rounded-lg shadow-md card-hover border border-blue-100"
+                  className="bg-gradient-to-br from-white to-blue-50 p-4 sm:p-6 rounded-lg shadow-md card-hover border border-blue-100"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <div className="mb-4 text-[#F97316]">{feature.icon}</div>
-                  <h3 className="text-xl font-bold mb-2 text-[#0EA5E9]">{feature.title}</h3>
-                  <p className="text-gray-700">{feature.description}</p>
+                  <div className="mb-3 text-[#F97316]">{feature.icon}</div>
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 text-[#0EA5E9]">{feature.title}</h3>
+                  <p className="text-gray-700 text-sm sm:text-base">{feature.description}</p>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="py-12 md:py-16 lg:py-24">
+        <section className="py-8 md:py-12 lg:py-16">
           <div className="container-centered px-4 sm:px-6">
-            <div className="bg-white/95 backdrop-blur-sm p-6 md:p-8 lg:p-12 rounded-xl shadow-lg text-center border border-white/30">
+            <div className="bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-xl shadow-lg text-center border border-white/30">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -191,7 +194,7 @@ const Index = () => {
                 transition={{ duration: 0.5 }}
               >
                 <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-[#0EA5E9]">Ready to Optimize Your Analysis Process?</h2>
-                <p className="text-gray-700 mb-8 max-w-2xl mx-auto">
+                <p className="text-gray-700 mb-6 sm:mb-8 max-w-2xl mx-auto">
                   Join other educators who are using our platform to save time and gain deeper insights into student performance.
                 </p>
                 <Link to="/signup">
@@ -203,7 +206,7 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="py-6 md:py-8 relative z-10 bg-white/95 backdrop-blur-sm">
+      <footer className="py-4 sm:py-6 relative z-10 bg-white/95 backdrop-blur-sm">
         <div className="container-centered px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-700 text-sm">

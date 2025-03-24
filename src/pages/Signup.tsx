@@ -25,6 +25,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useBreakpointValue } from '@/hooks/use-mobile';
 
 // Enhanced password validation
 const signupSchema = z.object({
@@ -66,6 +67,13 @@ const Signup = () => {
   const [showRobotCheck, setShowRobotCheck] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Responsive form width
+  const formWidth = useBreakpointValue({
+    base: "w-full",
+    sm: "max-w-md",
+    md: "max-w-lg"
+  });
 
   // Password validation criteria checks
   const hasMinLength = password.length >= 8;
@@ -195,43 +203,45 @@ const Signup = () => {
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Orange and Blue Background Design - Less faded */}
+    <div className="min-h-screen flex flex-col relative">
+      {/* Orange and Blue Background Design - Fixed overflow issues */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-60 z-0"></div>
       
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 z-0">
+      {/* Decorative Elements - Better contained */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-black/15 backdrop-blur-sm"></div>
-        <div className="absolute top-20 left-20 w-60 h-60 rounded-full bg-orange-400 opacity-30 blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
+        <div className="absolute top-20 left-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-orange-400 opacity-30 blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-20 sm:w-40 h-20 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
-      {/* College Logo in Left Upper Corner */}
-      <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
-        <img 
-          src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
-          alt="K.S. Rangasamy College of Technology" 
-          className="h-16 md:h-20"
-        />
+      {/* College Logo - Adjusted for better positioning */}
+      <div className="relative z-10 p-4 flex">
+        <div className="bg-white p-2 rounded-lg shadow-md">
+          <img 
+            src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
+            alt="K.S. Rangasamy College of Technology" 
+            className="h-10 sm:h-14 w-auto"
+          />
+        </div>
       </div>
 
-      <div className="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10">
+      <div className="flex-grow flex items-center justify-center p-4 relative z-10">
         <motion.div 
-          className="w-full max-w-md transform translate-x-4 translate-y-4" /* Offset the form box similar to the logo */
+          className={`${formWidth || 'w-full max-w-md'}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-6 flex justify-end">
+          <div className="mb-4 sm:mb-6 flex justify-end">
             <Link to="/" className="inline-flex items-center text-sm text-white hover:text-white/80 bg-black/40 px-3 py-1.5 rounded-md backdrop-blur-sm shadow-md">
               Back to home
             </Link>
           </div>
           
-          <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-lg p-6 sm:p-8 border border-white/30">
+          <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6 border border-white/30">
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2 text-[#0EA5E9]">Create your account</h1>
+              <h1 className="text-xl sm:text-2xl font-bold mb-2 text-[#0EA5E9]">Create your account</h1>
               <p className="text-gray-700 text-sm">Enter your details to get started</p>
             </div>
             
@@ -265,7 +275,7 @@ const Signup = () => {
                   )}
                 />
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="staffId"
@@ -344,8 +354,8 @@ const Signup = () => {
                       <FormMessage />
                       
                       {/* Password strength indicators */}
-                      <div className="mt-2 space-y-1.5">
-                        <p className="text-xs font-medium mb-1">Password must contain:</p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs font-medium">Password must contain:</p>
                         <div className="grid grid-cols-1 gap-1">
                           <div className="flex items-center">
                             {hasMinLength ? 
@@ -448,7 +458,7 @@ const Signup = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full mt-6 bg-gradient-to-r from-[#F97316] to-[#FF9500] hover:from-[#FF9500] hover:to-[#F97316] text-white font-bold" 
+                  className="w-full mt-4 sm:mt-6 bg-gradient-to-r from-[#F97316] to-[#FF9500] hover:from-[#FF9500] hover:to-[#F97316] text-white font-bold" 
                   disabled={isLoading}
                 >
                   {isLoading ? "Creating account..." : "Create account"}
@@ -456,7 +466,7 @@ const Signup = () => {
               </form>
             </Form>
             
-            <div className="mt-6 text-center text-sm">
+            <div className="mt-4 sm:mt-6 text-center text-sm">
               <span className="text-gray-700">Already have an account? </span>
               <Link to="/login" className="text-[#F97316] hover:text-[#0EA5E9] font-medium">
                 Log in
