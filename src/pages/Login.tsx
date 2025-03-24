@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useBreakpointValue } from '@/hooks/use-mobile';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -42,6 +43,13 @@ const Login = () => {
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Responsive sizing
+  const formWidth = useBreakpointValue({
+    base: "w-full",
+    sm: "max-w-sm",
+    md: "max-w-md"
+  });
 
   // Load stored users from localStorage
   useEffect(() => {
@@ -116,30 +124,30 @@ const Login = () => {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
       {/* Half Orange and Half Blue Background Design */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] to-[#0EA5E9] opacity-70 z-0"></div>
       
-      {/* Decorative Elements */}
+      {/* Decorative Elements - Adjusted for better mobile display */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-black/15 backdrop-blur-sm"></div>
-        <div className="absolute top-10 left-10 w-80 h-80 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
+        <div className="absolute top-10 left-10 w-40 sm:w-60 md:w-80 h-40 sm:h-60 md:h-80 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-40 sm:w-60 md:w-80 h-40 sm:h-60 md:h-80 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-20 sm:w-40 h-20 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
-      {/* College Logo in Left Upper Corner */}
+      {/* College Logo - Smaller on mobile */}
       <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
         <img 
           src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
           alt="K.S. Rangasamy College of Technology" 
-          className="h-16 md:h-20"
+          className="h-12 sm:h-16 md:h-20 w-auto"
         />
       </div>
 
       <div className="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10">
         <motion.div 
-          className="w-full max-w-md"
+          className={`${formWidth || 'w-full max-w-md'}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -150,7 +158,7 @@ const Login = () => {
             </Link>
           </div>
           
-          <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-lg p-6 sm:p-8 border border-white/30">
+          <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-lg p-4 sm:p-6 md:p-8 border border-white/30">
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold mb-2 text-[#0EA5E9]">Welcome back</h1>
               <p className="text-gray-700 text-sm">Sign in to your account to continue</p>
@@ -177,7 +185,7 @@ const Login = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-1">
                         <FormLabel className="font-medium">Password</FormLabel>
                         <Link to="/forgot-password" className="text-xs text-[#F97316] hover:text-[#0EA5E9] font-medium">
                           Forgot password?
@@ -189,7 +197,7 @@ const Login = () => {
                             type={showPassword ? "text" : "password"} 
                             placeholder="••••••••" 
                             {...field} 
-                            className="border-gray-300"
+                            className="border-gray-300 pr-10"
                           />
                           <button 
                             type="button"

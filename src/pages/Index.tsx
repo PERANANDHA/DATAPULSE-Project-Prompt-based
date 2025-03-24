@@ -4,9 +4,23 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BarChart4, LineChart, FileSpreadsheet, Users } from 'lucide-react';
+import { useBreakpointValue } from '@/hooks/use-mobile';
 
 const Index = () => {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Use responsive text sizes
+  const heroTitleSize = useBreakpointValue({
+    base: "text-3xl",
+    sm: "text-4xl",
+    md: "text-5xl",
+    lg: "text-6xl"
+  });
+
+  const heroParagraphSize = useBreakpointValue({
+    base: "text-lg",
+    md: "text-xl"
+  });
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
@@ -60,22 +74,23 @@ const Index = () => {
       
       <div className="absolute inset-0 z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm"></div>
-        <div className="absolute top-10 left-10 w-80 h-80 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-500 opacity-30 blur-3xl"></div>
+        <div className="absolute top-10 left-10 w-60 md:w-80 h-60 md:h-80 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-60 md:w-80 h-60 md:h-80 rounded-full bg-blue-500 opacity-30 blur-3xl"></div>
         <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
       </div>
       
+      {/* College Logo - Adjusted for better mobile positioning */}
       <div className="absolute top-4 left-4 z-10 flex items-center bg-white p-2 rounded-lg shadow-md">
         <img 
           src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
           alt="K.S. Rangasamy College of Technology" 
-          className="h-16 md:h-20"
+          className="h-12 sm:h-16 md:h-20 w-auto"
         />
       </div>
 
-      <header className="py-6 px-4 sm:px-6 lg:px-8 relative z-10">
+      <header className="py-4 sm:py-6 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="container-centered flex justify-end items-center">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Link to="/login">
               <Button variant="outline" size="sm" className="bg-[#F97316] hover:bg-[#F97316]/90 text-white font-medium border-transparent">Log in</Button>
             </Link>
@@ -87,8 +102,8 @@ const Index = () => {
       </header>
 
       <main className="flex-grow relative z-10">
-        <section className="py-16 md:py-24">
-          <div className="container-centered">
+        <section className="py-12 md:py-16 lg:py-24">
+          <div className="container-centered px-4 sm:px-6">
             <motion.div 
               className="max-w-3xl mx-auto text-center"
               initial="hidden"
@@ -96,19 +111,19 @@ const Index = () => {
               variants={staggerContainer}
             >
               <motion.div variants={fadeInUp}>
-                <span className="inline-block px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-400 text-white mb-6 shadow-lg">
+                <span className="inline-block px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-400 text-white mb-4 sm:mb-6 shadow-lg">
                   For Class Advisors
                 </span>
               </motion.div>
               <motion.h2 
-                className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-8 text-white"
+                className={`${heroTitleSize || 'text-4xl'} font-extrabold tracking-tight mb-6 sm:mb-8 text-white`}
                 variants={fadeInUp}
               >
-                <span className="inline-block mb-3">Transform student data into</span><br /> 
-                <span>actionable insights</span>
+                <span className="inline-block">Transform student data into</span>
+                <span className="block mt-2">actionable insights</span>
               </motion.h2>
               <motion.p 
-                className="text-xl text-white font-medium mb-10 max-w-2xl mx-auto leading-relaxed"
+                className={`${heroParagraphSize || 'text-lg'} text-white font-medium mb-8 max-w-2xl mx-auto leading-relaxed px-4`}
                 variants={fadeInUp}
               >
                 A powerful platform designed for educational professionals to analyze, track, and improve student performance with just a few clicks.
@@ -117,7 +132,7 @@ const Index = () => {
                 <Link to="/signup">
                   <Button 
                     size="lg" 
-                    className="rounded-full px-8 group bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500 shadow-lg font-bold"
+                    className="rounded-full px-6 sm:px-8 group bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500 shadow-lg font-bold"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                   >
@@ -132,22 +147,22 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="py-16 bg-white/95 backdrop-blur-sm">
-          <div className="container-centered">
+        <section className="py-12 md:py-16 bg-white/95 backdrop-blur-sm">
+          <div className="container-centered px-4 sm:px-6">
             <motion.div 
-              className="text-center mb-16"
+              className="text-center mb-10 md:mb-16"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <h2 className="text-3xl font-bold mb-4 text-[#0EA5E9]">Features Designed for Educators</h2>
-              <p className="text-gray-700 max-w-2xl mx-auto font-medium">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-[#0EA5E9]">Features Designed for Educators</h2>
+              <p className="text-gray-700 max-w-2xl mx-auto font-medium px-4">
                 Our platform provides powerful tools to help you understand student performance and make data-driven decisions.
               </p>
             </motion.div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 px-4">
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
@@ -166,16 +181,16 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="py-16 md:py-24">
-          <div className="container-centered">
-            <div className="bg-white/95 backdrop-blur-sm p-8 md:p-12 rounded-xl shadow-lg text-center border border-white/30">
+        <section className="py-12 md:py-16 lg:py-24">
+          <div className="container-centered px-4 sm:px-6">
+            <div className="bg-white/95 backdrop-blur-sm p-6 md:p-8 lg:p-12 rounded-xl shadow-lg text-center border border-white/30">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <h2 className="text-3xl font-bold mb-4 text-[#0EA5E9]">Ready to Optimize Your Analysis Process?</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-[#0EA5E9]">Ready to Optimize Your Analysis Process?</h2>
                 <p className="text-gray-700 mb-8 max-w-2xl mx-auto">
                   Join other educators who are using our platform to save time and gain deeper insights into student performance.
                 </p>
@@ -188,8 +203,8 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="py-8 relative z-10 bg-white/95 backdrop-blur-sm">
-        <div className="container-centered">
+      <footer className="py-6 md:py-8 relative z-10 bg-white/95 backdrop-blur-sm">
+        <div className="container-centered px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-700 text-sm">
               © {new Date().getFullYear()} Result Analyzer. All rights reserved.
