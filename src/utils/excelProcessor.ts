@@ -28,6 +28,14 @@ export interface ResultAnalysis {
   subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] };
   fileCount?: number; // Number of files processed
   filesProcessed?: string[]; // Names of files processed
+  departmentCode?: string; // The department code that was filtered
+  departmentComparison?: {
+    [deptCode: string]: {
+      totalStudents: number;
+      averageSGPA: number;
+      passRate: number;
+    }
+  }; // Comparison data between departments
   fileWiseAnalysis?: { 
     [fileName: string]: {
       averageSGPA: number;
@@ -77,6 +85,16 @@ const getGradeColor = (grade: string): string => {
 // Helper function to format numbers to exactly 2 decimal places
 const formatTo2Decimals = (value: number): number => {
   return Number(value.toFixed(2));
+};
+
+// Helper function to get unique department codes from the records
+export const getUniqueDepartmentCodes = (records: StudentRecord[]): string[] => {
+  return [...new Set(records.map(record => record.CNo))].filter(code => code);
+};
+
+// Filter records by department code
+export const filterRecordsByDepartment = (records: StudentRecord[], departmentCode: string): StudentRecord[] => {
+  return records.filter(record => record.CNo === departmentCode);
 };
 
 export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
@@ -202,15 +220,57 @@ export const parseMultipleExcelFiles = async (files: File[]): Promise<StudentRec
   }
 };
 
-export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
+// Generate department performance comparison data
+export const generateDepartmentComparison = (allRecords: StudentRecord[]): { [deptCode: string]: any } => {
+  const deptCodes = getUniqueDepartmentCodes(allRecords);
+  const comparison: { [deptCode: string]: any } = {};
+  
+  deptCodes.forEach(deptCode => {
+    const deptRecords = filterRecordsByDepartment(allRecords, deptCode);
+    const totalStudents = [...new Set(deptRecords.map(record => record.REGNO))].length;
+    
+    if (totalStudents === 0) return;
+    
+    // Calculate average SGPA for this department
+    let totalSGPA = 0;
+    const studentIds = [...new Set(deptRecords.map(record => record.REGNO))];
+    
+    studentIds.forEach(studentId => {
+      totalSGPA += calculateSGPA(deptRecords, studentId);
+    });
+    
+    const avgSGPA = totalStudents > 0 ? formatTo2Decimals(totalSGPA / totalStudents) : 0;
+    
+    // Calculate pass rate
+    const passCount = deptRecords.filter(record => record.GR !== 'U').length;
+    const totalGrades = deptRecords.length;
+    const passRate = totalGrades > 0 ? formatTo2Decimals((passCount / totalGrades) * 100) : 0;
+    
+    comparison[deptCode] = {
+      totalStudents,
+      averageSGPA: avgSGPA,
+      passRate,
+    };
+  });
+  
+  return comparison;
+};
+
+export const analyzeResults = (records: StudentRecord[], departmentCode?: string): ResultAnalysis => {
+  // Filter records by department code if provided
+  const filteredRecords = departmentCode ? filterRecordsByDepartment(records, departmentCode) : records;
+  
+  // Generate comparison data between departments
+  const departmentComparison = generateDepartmentComparison(records);
+  
   // Get unique files processed
-  const filesProcessed = [...new Set(records.map(record => record.fileSource || 'Unknown'))];
+  const filesProcessed = [...new Set(filteredRecords.map(record => record.fileSource || 'Unknown'))];
   const fileCount = filesProcessed.length;
   
   // Group records by file source
   const fileGroups: { [fileName: string]: StudentRecord[] } = {};
   filesProcessed.forEach(fileName => {
-    fileGroups[fileName] = records.filter(record => record.fileSource === fileName);
+    fileGroups[fileName] = filteredRecords.filter(record => record.fileSource === fileName);
   });
   
   // Per-file analysis
@@ -239,13 +299,13 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
-  // Calculate CGPA if multiple files - ensure 2 decimal places
+  // Calculate CGPA if multiple files
   let cgpaAnalysis;
   if (fileCount > 1) {
-    const studentIds = [...new Set(records.map(record => record.REGNO))];
+    const studentIds = [...new Set(filteredRecords.map(record => record.REGNO))];
     const studentCGPAs = studentIds.map(id => ({
       id,
-      cgpa: calculateCGPA(records, id, fileGroups)
+      cgpa: calculateCGPA(filteredRecords, id, fileGroups)
     }));
     
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
@@ -257,19 +317,19 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   }
   
-  const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
+  const totalStudents = [...new Set(filteredRecords.map(record => record.REGNO))].length;
   
-  // Calculate SGPA for each student - ensure 2 decimal places
+  // Calculate SGPA for each student
   const studentSgpaMap: { [studentId: string]: number } = {};
   const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
   
-  [...new Set(records.map(record => record.REGNO))].forEach(studentId => {
-    const sgpa = calculateSGPA(records, studentId);
+  [...new Set(filteredRecords.map(record => record.REGNO))].forEach(studentId => {
+    const sgpa = calculateSGPA(filteredRecords, studentId);
     studentSgpaMap[studentId] = sgpa;
     studentSgpaDetails.push({
       id: studentId,
       sgpa: sgpa,
-      hasArrears: hasArrears(records, studentId)
+      hasArrears: hasArrears(filteredRecords, studentId)
     });
   });
   
@@ -287,7 +347,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   
   // Grade distribution - filter out any non-standard grades
   const gradeDistribution: { [grade: string]: number } = {};
-  records.forEach(record => {
+  filteredRecords.forEach(record => {
     if (record.GR in gradePointMap) {
       gradeDistribution[record.GR] = (gradeDistribution[record.GR] || 0) + 1;
     }
@@ -299,11 +359,11 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     fill: getGradeColor(grade),
   }));
   
-  const totalGrades = records.filter(record => record.GR in gradePointMap).length;
+  const totalGrades = filteredRecords.filter(record => record.GR in gradePointMap).length;
   
   // Subject-wise performance
   const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number } } = {};
-  records.forEach(record => {
+  filteredRecords.forEach(record => {
     // Skip records with invalid grades
     if (!(record.GR in gradePointMap)) return;
     
@@ -325,12 +385,12 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     fail: data.total > 0 ? formatTo2Decimals((data.fail / data.total) * 100) : 0,
   }));
   
-  // Top performers - Get top 6 instead of 5
+  // Top performers
   const topPerformers = studentSgpaDetails
     .sort((a, b) => b.sgpa - a.sgpa)
     .slice(0, 6)
     .map(student => {
-      const studentRecords = records.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
+      const studentRecords = filteredRecords.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
       const bestGrade = studentRecords.length > 0 ? 
         studentRecords.sort((a, b) => (gradePointMap[b.GR] || 0) - (gradePointMap[a.GR] || 0))[0].GR : 'A';
       return {
@@ -346,12 +406,12 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     .map(student => ({
       id: student.id,
       sgpa: student.sgpa,
-      subjects: hasArrears(records, student.id) ? getSubjectsWithArrears(records, student.id) : '',
+      subjects: hasArrears(filteredRecords, student.id) ? getSubjectsWithArrears(filteredRecords, student.id) : '',
     }));
   
   // Pass/Fail data
-  const passCount = records.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
-  const failCount = records.filter(record => record.GR === 'U').length;
+  const passCount = filteredRecords.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
+  const failCount = filteredRecords.filter(record => record.GR === 'U').length;
   const totalValidGrades = passCount + failCount;
   
   const passPercentage = totalValidGrades > 0 ? formatTo2Decimals((passCount / totalValidGrades) * 100) : 0;
@@ -364,10 +424,10 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
 
   // Subject-wise grade distribution
   const subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] } = {};
-  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
+  const uniqueSubjects = [...new Set(filteredRecords.map(record => record.SCODE))];
 
   uniqueSubjects.forEach(subject => {
-    const subjectRecords = records.filter(record => record.SCODE === subject);
+    const subjectRecords = filteredRecords.filter(record => record.SCODE === subject);
     const gradeCounts: { [grade: string]: number } = {};
 
     subjectRecords.forEach(record => {
@@ -400,7 +460,9 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     fileCount,
     filesProcessed,
     fileWiseAnalysis,
-    cgpaAnalysis
+    cgpaAnalysis,
+    departmentCode,
+    departmentComparison
   };
 };
 
@@ -441,7 +503,7 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
   // College Information
   const collegeInfoData = [
     ["College Name", "K. S. Rangasamy College of Technology"],
-    ["Department", "Computer Science and Engineering"],
+    ["Department", analysis.departmentCode || "Computer Science and Engineering"],
     ["Batch", "2023-2027"],
     ["Year/Semester", "II/III"],
     ["Section", "A&B"],
@@ -454,6 +516,16 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     ["Highest SGPA", analysis.highestSGPA.toFixed(2)],
     ["Lowest SGPA", analysis.lowestSGPA.toFixed(2)],
   ];
+
+  // Add department comparison if available
+  if (analysis.departmentComparison) {
+    performanceData.push(["Department Comparison", ""]);
+    Object.entries(analysis.departmentComparison).forEach(([deptCode, data]) => {
+      performanceData.push([`${deptCode} - Total Students`, data.totalStudents]);
+      performanceData.push([`${deptCode} - Average SGPA`, data.averageSGPA.toFixed(2)]);
+      performanceData.push([`${deptCode} - Pass Rate (%)`, data.passRate.toFixed(2)]);
+    });
+  }
 
   // Add file information if multiple files were used
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
@@ -495,12 +567,15 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     // Count students with highest grade
     const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
     
+    // Generate subject name as "Subject 1", "Subject 2", etc.
+    const subjectName = `Subject ${index + 1}`;
+    
     return [
       index + 1,
       subject,
-      "", // Subject name (empty)
+      subjectName, // Subject name 
       "", // Faculty name (empty)
-      "", // Department (empty)
+      analysis.departmentCode || "", // Department 
       totalStudents,
       "Nil", // Absent
       failedStudents || "Nil", 
@@ -593,6 +668,19 @@ const generateExcelData = (analysis: ResultAnalysis, records: StudentRecord[]): 
     addSheet(cgpaDetailsData, "Student CGPA Details", ["Registration Number", "CGPA"]);
   }
   
+  // Add department comparison data
+  if (analysis.departmentComparison) {
+    const deptCompHeader = ["Department Code", "Total Students", "Average SGPA", "Pass Rate (%)"];
+    const deptCompData = Object.entries(analysis.departmentComparison).map(([deptCode, data]) => [
+      deptCode,
+      data.totalStudents,
+      data.averageSGPA.toFixed(2),
+      data.passRate.toFixed(2)
+    ]);
+    
+    addSheet(deptCompData, "Department Comparison", deptCompHeader);
+  }
+  
   // Add file details to the workbook if multiple files were processed
   if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
     const fileDetailsHeader = ["File Name", "Record Count", "Semester"];
@@ -639,13 +727,16 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     // Count students with highest grade
     const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
     
+    // Generate subject name as "Subject 1", "Subject 2", etc.
+    const subjectName = `Subject ${index + 1}`;
+    
     return `
       <tr>
         <td style="width: 5%;">${index + 1}</td>
         <td style="width: 12%;">${subject}</td>
+        <td style="width: 20%;">${subjectName}</td>
         <td style="width: 20%;"></td>
-        <td style="width: 20%;"></td>
-        <td style="width: 8%;"></td>
+        <td style="width: 8%;">${analysis.departmentCode || ""}</td>
         <td style="width: 5%;">${totalStudents}</td>
         <td style="width: 5%;">Nil</td>
         <td style="width: 5%;">${failedStudents || "Nil"}</td>
@@ -658,543 +749,16 @@ export const generateWordReport = (analysis: ResultAnalysis, records: StudentRec
     `;
   }).join('');
   
-  // Format SGPA values to always have 2 decimal places
-  const topSgpaRows = analysis.topPerformers
-    .slice(0, 3)
-    .map((student, index) => `
+  // Department comparison rows
+  let departmentComparisonContent = '';
+  if (analysis.departmentComparison) {
+    const deptRows = Object.entries(analysis.departmentComparison).map(([deptCode, data]) => `
       <tr>
-        <td>${index + 1}</td>
-        <td>${student.id}</td>
-        <td>${student.sgpa.toFixed(2)}</td>
+        <td>${deptCode}</td>
+        <td>${data.totalStudents}</td>
+        <td>${data.averageSGPA.toFixed(2)}</td>
+        <td>${data.passRate.toFixed(2)}%</td>
       </tr>
     `).join('');
-  
-  // Format CGPA values to always have 2 decimal places
-  let topCgpaRows = '';
-  if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
-    topCgpaRows = analysis.cgpaAnalysis.studentCGPAs
-      .sort((a, b) => b.cgpa - a.cgpa)
-      .slice(0, 3)
-      .map((student, index) => `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${student.id}</td>
-          <td>${student.cgpa.toFixed(2)}</td>
-        </tr>
-      `).join('');
-  } else {
-    // If no CGPA, use SGPA data
-    topCgpaRows = topSgpaRows;
-  }
-  
-  // Add file processing information if multiple files were used
-  let fileInfoContent = '';
-  if (analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed) {
-    const fileRows = analysis.filesProcessed.map(fileName => {
-      const fileRecordCount = records.filter(record => record.fileSource === fileName).length;
-      const semester = records.find(record => record.fileSource === fileName)?.SEM || 'Unknown';
-      const avgSGPA = analysis.fileWiseAnalysis?.[fileName]?.averageSGPA.toFixed(2) || 'N/A';
-      return `
-        <tr>
-          <td>${fileName}</td>
-          <td>${fileRecordCount}</td>
-          <td>${semester}</td>
-          <td>${avgSGPA}</td>
-        </tr>
-      `;
-    }).join('');
     
-    fileInfoContent = `
-      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8; text-align: center;">Files Processed</h2>
-      <table border="1" cellpadding="5" cellspacing="0" style="width: 90%; margin: 0 auto; border-collapse: collapse; margin-bottom: 20px;">
-        <thead>
-          <tr style="background-color: #f3f4f6;">
-            <th>File Name</th>
-            <th>Record Count</th>
-            <th>Semester</th>
-            <th>Average SGPA</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${fileRows}
-        </tbody>
-      </table>
-    `;
-  }
-  
-  // CGPA analysis section if multiple files - ensure 2 decimal places
-  let cgpaContent = '';
-  if (analysis.fileCount && analysis.fileCount > 1 && analysis.cgpaAnalysis) {
-    cgpaContent = `
-      <h2 style="margin-top: 20px; margin-bottom: 10px; color: #1d4ed8; text-align: center;">CGPA Analysis</h2>
-      <table border="1" cellpadding="5" cellspacing="0" style="width: 90%; margin: 0 auto; border-collapse: collapse; margin-bottom: 20px;">
-        <tr>
-          <td style="width: 30%;"><strong>Average CGPA:</strong></td>
-          <td>${analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td><strong>Highest CGPA:</strong></td>
-          <td>${analysis.cgpaAnalysis.highestCGPA.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td><strong>Lowest CGPA:</strong></td>
-          <td>${analysis.cgpaAnalysis.lowestCGPA.toFixed(2)}</td>
-        </tr>
-      </table>
-    `;
-  }
-  
-  // Create the Word document HTML content with improved table structure and alignment
-  let htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Result Analysis Report</title>
-      <style>
-        /* Reset styles */
-        body, h1, h2, h3, p, table {
-          margin: 0;
-          padding: 0;
-        }
-        
-        @page {
-          margin: 2cm;
-        }
-        
-        body {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 12pt;
-          line-height: 1.3;
-          text-align: center;
-          width: 100%;
-          max-width: 100%;
-        }
-        
-        h1 {
-          font-size: 16pt;
-          text-align: center;
-          margin-bottom: 0.5cm;
-        }
-        
-        h2 {
-          font-size: 14pt;
-          margin-top: 0.8cm;
-          margin-bottom: 0.3cm;
-          text-align: center;
-        }
-        
-        p {
-          text-align: center;
-        }
-        
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 0.5cm;
-          page-break-inside: avoid;
-          margin-left: auto;
-          margin-right: auto;
-          text-align: center;
-        }
-        
-        th, td {
-          border: 1px solid #000;
-          padding: 0.2cm;
-          text-align: center;
-          font-size: 10pt;
-        }
-        
-        th {
-          background-color: #f0f0f0;
-          font-weight: bold;
-        }
-        
-        .college-header {
-          text-align: center;
-          margin-bottom: 1cm;
-          width: 100%;
-        }
-        
-        .section-title {
-          font-weight: bold;
-          margin-top: 0.5cm;
-          margin-bottom: 0.2cm;
-          text-align: center;
-        }
-        
-        .signatures {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 2cm;
-          width: 100%;
-          text-align: center;
-        }
-        
-        .signature {
-          text-align: center;
-          width: 30%;
-        }
-        
-        .signature-line {
-          margin-top: 1cm;
-          border-top: 1px solid #000;
-          width: 100%;
-        }
-        
-        /* Wider table styling */
-        .wide-table {
-          width: 100% !important;
-          table-layout: fixed;
-          margin-left: auto !important;
-          margin-right: auto !important;
-        }
-        
-        /* Center alignment for all tables */
-        table.center {
-          margin-left: auto !important;
-          margin-right: auto !important;
-          text-align: center !important;
-        }
-        
-        /* Ensure proper page breaks */
-        .page-break {
-          page-break-before: always;
-        }
-        
-        /* Override any external styling that might affect alignment */
-        table, tr, td, th {
-          text-align: center !important;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="college-header">
-        <h1>K. S. Rangasamy College of Technology, Tiruchengode - 637 215</h1>
-        <p style="text-align: center; margin-bottom: 10px;">(Autonomous)</p>
-        <p style="text-align: center; margin-bottom: 10px;">Computer Science and Engineering</p>
-        <table style="width: 90%; margin: 0 auto; border: none;" class="center">
-          <tr style="border: none;">
-            <td style="border: none; text-align: left; width: 33%;">Batch: 2023-2027</td>
-            <td style="border: none; text-align: center; width: 34%;">Year / Sem: II/III</td>
-            <td style="border: none; text-align: right; width: 33%;">Section: A&B</td>
-          </tr>
-        </table>
-      </div>
-      
-      <h2 style="text-align: center; margin: 20px 0;">End Semester Result Analysis</h2>
-      
-      <table class="wide-table center" border="1" cellpadding="3" cellspacing="0" style="width: 100%; margin: 0 auto;">
-        <thead>
-          <tr>
-            <th rowspan="2" style="width: 5%;">S. No</th>
-            <th rowspan="2" style="width: 12%;">Subject code</th>
-            <th rowspan="2" style="width: 18%;">Subject name</th>
-            <th rowspan="2" style="width: 18%;">Faculty name</th>
-            <th rowspan="2" style="width: 8%;">Dept</th>
-            <th colspan="5" style="width: 25%;">No. of students</th>
-            <th rowspan="2" style="width: 7%;">% of pass</th>
-            <th colspan="2" style="width: 16%;">Highest Grade</th>
-          </tr>
-          <tr>
-            <th style="width: 5%;">App</th>
-            <th style="width: 5%;">Absent</th>
-            <th style="width: 5%;">Fail</th>
-            <th style="width: 5%;">WH</th>
-            <th style="width: 5%;">Passed</th>
-            <th style="width: 8%;">Obtained</th>
-            <th style="width: 8%;">No. of students</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${subjectAnalysisRows}
-        </tbody>
-      </table>
-      
-      <h2 style="text-align: center; margin: 20px 0;">Classification</h2>
-      
-      <table class="wide-table center" border="1" cellpadding="3" cellspacing="0" style="width: 100%; margin: 0 auto;">
-        <tr>
-          <th colspan="7" style="width: 50%;">Current semester</th>
-          <th colspan="7" style="width: 50%;">Upto this semester</th>
-        </tr>
-        <tr>
-          <th rowspan="2" style="width: 8%;">Distinction</th>
-          <th colspan="2" style="width: 16%;">First class</th>
-          <th colspan="2" style="width: 16%;">Second class</th>
-          <th rowspan="2" style="width: 5%;">Fail</th>
-          <th rowspan="2" style="width: 5%;">% of pass</th>
-          <th rowspan="2" style="width: 8%;">Distinction</th>
-          <th colspan="2" style="width: 16%;">First class</th>
-          <th colspan="2" style="width: 16%;">Second class</th>
-          <th rowspan="2" style="width: 5%;">Fail</th>
-          <th rowspan="2" style="width: 5%;">% of pass</th>
-        </tr>
-        <tr>
-          <th style="width: 8%;">WOA</th>
-          <th style="width: 8%;">WA</th>
-          <th style="width: 8%;">WOA</th>
-          <th style="width: 8%;">WA</th>
-          <th style="width: 8%;">WOA</th>
-          <th style="width: 8%;">WA</th>
-          <th style="width: 8%;">WOA</th>
-          <th style="width: 8%;">WA</th>
-        </tr>
-        <tr>
-          <td>40</td>
-          <td>65</td>
-          <td>3</td>
-          <td>5</td>
-          <td>16</td>
-          <td>18</td>
-          <td>71.6</td>
-          <td>25</td>
-          <td>62</td>
-          <td>2</td>
-          <td>22</td>
-          <td>18</td>
-          <td>20</td>
-          <td>64.5</td>
-        </tr>
-      </table>
-      
-      <h2 style="text-align: center; margin: 20px 0;">First Three Rank Position</h2>
-      
-      <table class="wide-table center" border="1" cellpadding="3" cellspacing="0" style="width: 100%; margin: 0 auto;">
-        <tr>
-          <th colspan="3" style="width: 50%;">Rank in this semester</th>
-          <th colspan="3" style="width: 50%;">Rank up to this semester</th>
-        </tr>
-        <tr>
-          <th style="width: 8%;">S.No</th>
-          <th style="width: 34%;">Name of the student</th>
-          <th style="width: 8%;">SGPA</th>
-          <th style="width: 8%;">S.No</th>
-          <th style="width: 34%;">Name of the student</th>
-          <th style="width: 8%;">CGPA</th>
-        </tr>
-        ${topSgpaRows}
-        ${topCgpaRows}
-        <tr>
-          <th colspan="3">Category</th>
-          <th colspan="3">Grade Point</th>
-        </tr>
-        <tr>
-          <td colspan="3">1. Distinction</td>
-          <td colspan="3">>= 8.5 and no history of arrears</td>
-        </tr>
-        <tr>
-          <td colspan="3">2. First class</td>
-          <td colspan="3">>= 6.5</td>
-        </tr>
-        <tr>
-          <td colspan="3">3. Second class</td>
-          <td colspan="3">< 6.5</td>
-        </tr>
-      </table>
-      
-      ${fileInfoContent}
-      
-      ${cgpaContent}
-      
-      <div class="signatures">
-        <div class="signature">
-          <p>Class Advisor</p>
-          <div class="signature-line"></div>
-          <p>HoD/CSE</p>
-        </div>
-        
-        <div class="signature">
-          <p>Dean - Academics</p>
-          <div class="signature-line"></div>
-        </div>
-        
-        <div class="signature">
-          <p>Principal</p>
-          <div class="signature-line"></div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-  
-  return htmlContent;
-};
-
-// Download PNG chart
-export const downloadChartAsPng = (elementId: string, fileName: string): void => {
-  try {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      console.error('Element not found:', elementId);
-      return;
-    }
-    
-    // @ts-ignore - html2canvas is imported as an external script
-    html2canvas(element).then((canvas: HTMLCanvasElement) => {
-      const link = document.createElement('a');
-      link.download = `${fileName}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    });
-  } catch (error) {
-    console.error('Error generating PNG:', error);
-  }
-};
-
-/**
- * Download PDF Report - Improved to better capture the full page
- */
-export const downloadPdfReport = async (elementId: string): Promise<boolean> => {
-  try {
-    // Use html2canvas to capture the element as an image
-    const element = document.getElementById(elementId);
-    if (!element) {
-      console.error('Element not found:', elementId);
-      return false;
-    }
-    
-    // Create a clone of the element to avoid modifying the original
-    const clonedElement = element.cloneNode(true) as HTMLElement;
-    
-    // Apply styles to the clone for better rendering
-    clonedElement.style.width = element.scrollWidth + 'px';
-    clonedElement.style.backgroundColor = '#ffffff';
-    clonedElement.style.position = 'absolute';
-    clonedElement.style.top = '-9999px';
-    clonedElement.style.left = '-9999px';
-    document.body.appendChild(clonedElement);
-    
-    // Set a slightly higher scale for better quality
-    // @ts-ignore - html2canvas is imported as an external script
-    const canvas = await html2canvas(clonedElement, {
-      scale: 1.5,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-      width: clonedElement.scrollWidth,
-      height: clonedElement.scrollHeight,
-      x: 0,
-      y: 0,
-      windowWidth: document.documentElement.offsetWidth,
-      windowHeight: document.documentElement.offsetHeight
-    });
-    
-    // Clean up the DOM
-    document.body.removeChild(clonedElement);
-    
-    // Create a new PDF document matching the aspect ratio of the captured element
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new JsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    // Calculate dimensions to fit PDF page
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    
-    // Calculate scaling factor to fit in PDF while maintaining aspect ratio
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const scaledWidth = imgWidth * ratio;
-    const scaledHeight = imgHeight * ratio;
-    
-    // Calculate how many pages we need
-    const totalPages = Math.ceil(imgHeight * ratio / pdfHeight);
-    
-    // Add each portion of the image to a new page
-    let remainingHeight = imgHeight;
-    let currentY = 0;
-    
-    for (let page = 0; page < totalPages; page++) {
-      // Add a new page after the first one
-      if (page > 0) {
-        pdf.addPage();
-      }
-      
-      // Calculate the height for this page (remaining or full page)
-      const segmentHeight = Math.min(pdfHeight / ratio, remainingHeight);
-      
-      // Add this segment of the image to the PDF
-      pdf.addImage(
-        imgData,
-        'PNG',
-        0,
-        -currentY * ratio,
-        pdfWidth,
-        imgHeight * ratio,
-        undefined,
-        'FAST'
-      );
-      
-      // Update for next page
-      currentY += pdfHeight / ratio;
-      remainingHeight -= segmentHeight;
-    }
-    
-    // Save the PDF
-    pdf.save('result-analysis-report.pdf');
-    return true;
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    return false;
-  }
-};
-
-/**
- * Download Word Report
- */
-export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): void => {
-  const htmlContent = generateWordReport(analysis, records);
-  
-  // Create a Blob from the HTML content
-  const blob = new Blob([htmlContent], { type: 'application/msword' });
-  
-  // Create download link
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'result-analysis-report.doc';
-  
-  // Trigger download
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-};
-
-/**
- * Download CSV Report
- */
-export const downloadCSVReport = (analysis: ResultAnalysis, records: StudentRecord[]): void => {
-  // Create CSV content
-  let csvContent = "data:text/csv;charset=utf-8,";
-  
-  // Add headers
-  csvContent += "Registration Number,SGPA,Status\n";
-  
-  // Add data for each student
-  analysis.studentSgpaDetails?.forEach(student => {
-    const status = student.hasArrears ? 'Has Arrears' : (student.sgpa < 6.5 ? 'SGPA below 6.5' : 'Good Standing');
-    csvContent += `${student.id},${student.sgpa.toFixed(2)},${status}\n`;
-  });
-  
-  // Create download link
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "result-analysis-report.csv");
-  
-  // Trigger download
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  document.body.removeChild(link);
-};
-
+    departmentComparisonContent = `
