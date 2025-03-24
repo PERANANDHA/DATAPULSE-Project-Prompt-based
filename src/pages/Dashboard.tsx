@@ -222,7 +222,7 @@ const Dashboard = () => {
         };
       });
       
-      // Now we're analyzing without any department filtering
+      // Analyze all records without department filtering
       const analysis = analyzeResults(recordsWithCredits);
       setResultAnalysis(analysis);
       
