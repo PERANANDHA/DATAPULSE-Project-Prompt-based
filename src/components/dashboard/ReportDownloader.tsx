@@ -38,7 +38,11 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       } else if (format === 'excel') {
         downloadExcelReport(analysis, studentRecords);
       } else if (format === 'word') {
-        downloadWordReport(analysis, studentRecords);
+        // Pass the header and footer image paths to the Word report generator
+        downloadWordReport(analysis, studentRecords, {
+          headerImagePath: '/lovable-uploads/4997e6ac-f6aa-400a-98a6-aacabb4e2c4a.png',
+          footerImagePath: '/lovable-uploads/88828c10-c5b0-4c8c-93e2-07333837d8be.png'
+        });
       } else if (format === 'pdf') {
         await downloadPdfReport('dashboard-content');
       }

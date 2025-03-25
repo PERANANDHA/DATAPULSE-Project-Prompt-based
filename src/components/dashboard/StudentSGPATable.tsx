@@ -44,13 +44,13 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
                 // Determine status based on SGPA and arrears
                 const getStatusText = () => {
                   if (student.hasArrears) {
-                    return <span className="text-red-500 text-sm font-medium">Has Arrears</span>;
+                    return <span className="text-red-600 text-sm font-medium">Has Arrears</span>;
                   } else if (student.sgpa >= 8.5) {
-                    return <span className="text-green-600 text-sm font-medium">Distinction</span>;
+                    return <span className="text-emerald-600 text-sm font-medium">Distinction</span>;
                   } else if (student.sgpa >= 6.5) {
-                    return <span className="text-blue-500 text-sm font-medium">First Class</span>;
+                    return <span className="text-blue-600 text-sm font-medium">First Class</span>;
                   } else {
-                    return <span className="text-amber-500 text-sm font-medium">Second Class</span>;
+                    return <span className="text-amber-600 text-sm font-medium">Second Class</span>;
                   }
                 };
                 
@@ -59,7 +59,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
                   if (student.hasArrears) {
                     return "bg-red-50";
                   } else if (student.sgpa >= 8.5) {
-                    return "bg-green-50";
+                    return "bg-emerald-50";
                   } else if (student.sgpa >= 6.5) {
                     return "bg-blue-50";
                   } else {

@@ -1,8 +1,17 @@
 
 import { ResultAnalysis, StudentRecord } from '../types';
 
+interface WordReportOptions {
+  headerImagePath?: string;
+  footerImagePath?: string;
+}
+
 // Function to download Word document (docx)
-export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRecord[]): void => {
+export const downloadWordReport = (
+  analysis: ResultAnalysis, 
+  records: StudentRecord[], 
+  options?: WordReportOptions
+): void => {
   try {
     // Create HTML content for Word document
     let htmlContent = `
@@ -12,7 +21,7 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         <meta charset="UTF-8">
         <title>Result Analysis Report</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
           h1 { text-align: center; color: #2F3770; font-size: 24px; margin-bottom: 30px; }
           h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }
           table { border-collapse: collapse; width: 100%; margin: 15px 0; page-break-inside: avoid; }
@@ -32,16 +41,28 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
           .rank-table { width: 100%; border-collapse: collapse; }
           .rank-table th { background-color: #f2f2f2; padding: 8px; text-align: center; }
           .rank-table td { padding: 8px; text-align: center; }
-          .classification-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          .classification-table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: center; }
           .classification-table th, .classification-table td { text-align: center; padding: 5px; }
           .category-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           .category-table th, .category-table td { padding: 8px; }
           .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
           .signatures div { text-align: center; width: 24%; }
-          @page { size: landscape; }
+          .header-image { width: 100%; margin-bottom: 20px; }
+          .footer-image { width: 100%; margin-top: 20px; }
+          @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
-      <body>
+      <body>`;
+    
+    // Add header image if provided
+    if (options?.headerImagePath) {
+      htmlContent += `
+        <div class="header-container">
+          <img src="${options.headerImagePath}" alt="College Header" class="header-image">
+        </div>`;
+    }
+    
+    htmlContent += `
         <h1>Result Analysis Report</h1>
         
         <h2>College Information</h2>
@@ -117,81 +138,112 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     htmlContent += `
         </table>`;
     
-    // Add Rank Tables exactly as shown in the image
+    // Add End Semester Result Analysis section
     htmlContent += `
-        <h2>Rank Analysis</h2>
-        <table class="rank-table">
+        <div class="section-title">
+          <h2 style="margin: 0;">End Semester Result Analysis</h2>
+        </div>
+        
+        <table class="end-semester-table">
           <tr>
-            <th colspan="3" style="width: 50%; background-color: #f2f2f2;">Rank in this semester</th>
-            <th colspan="3" style="width: 50%; background-color: #f2f2f2;">Rank up to this semester</th>
-          </tr>
-          <tr>
-            <th style="width: 8%;">S.No</th>
-            <th style="width: 25%;">Name of the student</th>
-            <th style="width: 17%;">SGPA</th>
-            <th style="width: 8%;">S.No</th>
-            <th style="width: 25%;">Name of the student</th>
-            <th style="width: 17%;">CGPA</th>
+            <th style="width: 5%;">S.No</th>
+            <th style="width: 12%;">Subject Code</th>
+            <th style="width: 12%;">Subject Name</th>
+            <th style="width: 12%;">Faculty Name</th>
+            <th style="width: 8%;">Dept</th>
+            <th style="width: 6%;">App</th>
+            <th style="width: 6%;">Ab</th>
+            <th style="width: 6%;">Fail</th>
+            <th style="width: 6%;">WH</th>
+            <th style="width: 8%;">Passed</th>
+            <th style="width: 7%;">% of pass</th>
+            <th style="width: 7%;">Highest Grade</th>
+            <th style="width: 7%;">No. of students</th>
           </tr>`;
     
-    // Add top 3 students by SGPA for current semester
-    const topThreeSGPA = [...(analysis.studentSgpaDetails || [])]
-      .filter(s => !s.hasArrears)  // Filter out students with arrears
-      .sort((a, b) => b.sgpa - a.sgpa)
-      .slice(0, 3);
-    
-    // Add top 3 students by CGPA if available
-    const topThreeCGPA = analysis.cgpaAnalysis?.studentCGPAs 
-      ? [...analysis.cgpaAnalysis.studentCGPAs]
-          .filter(s => {
-            // Filter out students with arrears
-            const studentRecord = analysis.studentSgpaDetails?.find(sd => sd.id === s.id);
-            return !(studentRecord?.hasArrears);
-          })
-          .sort((a, b) => b.cgpa - a.cgpa)
-          .slice(0, 3) 
-      : [];
-    
-    // Display top 3 rows
-    for (let i = 0; i < 3; i++) {
-      const sgpaStudent = topThreeSGPA[i] || { id: '', sgpa: 0 };
-      const cgpaStudent = topThreeCGPA[i] || { id: '', cgpa: 0 };
-      
-      htmlContent += `
+    // Create subject-wise performance data
+    if (analysis.subjectPerformance) {
+      analysis.subjectPerformance.forEach((subject, index) => {
+        // Get the highest grade for this subject
+        let highestGrade = 'N/A';
+        let studentsWithHighestGrade = 0;
+        
+        if (analysis.subjectGradeDistribution && analysis.subjectGradeDistribution[subject.subject]) {
+          const grades = analysis.subjectGradeDistribution[subject.subject];
+          if (grades.length > 0) {
+            // Sort grades by grade point (assuming 'O' is highest)
+            const sortedGrades = [...grades].sort((a, b) => {
+              const gradeOrder = {'O': 10, 'A+': 9, 'A': 8, 'B+': 7, 'B': 6, 'C': 5, 'P': 4, 'U': 0};
+              return (gradeOrder[b.name as keyof typeof gradeOrder] || 0) - (gradeOrder[a.name as keyof typeof gradeOrder] || 0);
+            });
+            
+            highestGrade = sortedGrades[0].name;
+            studentsWithHighestGrade = sortedGrades[0].count;
+          }
+        }
+        
+        // Calculate metrics for this subject
+        const subjectRecords = records.filter(r => r.SCODE === subject.subject);
+        const appeared = subjectRecords.length;
+        const absent = 0; // No data for this, using "Nil"
+        const failed = subjectRecords.filter(r => r.GR === 'U').length;
+        const withheld = 0; // No data for this
+        const passed = appeared - failed;
+        const passPercentage = appeared > 0 ? (passed / appeared) * 100 : 0;
+        
+        htmlContent += `
           <tr>
-            <td>${i + 1}</td>
-            <td>${sgpaStudent.id}</td>
-            <td>${sgpaStudent.sgpa ? sgpaStudent.sgpa.toFixed(1) : ''}</td>
-            <td>${i + 1}</td>
-            <td>${cgpaStudent.id}</td>
-            <td>${cgpaStudent.cgpa ? cgpaStudent.cgpa.toFixed(1) : ''}</td>
+            <td>${index + 1}</td>
+            <td>${subject.subject}</td>
+            <td>Subject ${index + 1}</td>
+            <td></td>
+            <td>CSE</td>
+            <td>${appeared}</td>
+            <td>Nil</td>
+            <td>${failed > 0 ? failed : 'Nil'}</td>
+            <td>${withheld}</td>
+            <td>${passed}</td>
+            <td>${passPercentage.toFixed(1)}</td>
+            <td>${highestGrade}</td>
+            <td>${studentsWithHighestGrade}</td>
           </tr>`;
+      });
     }
     
+    // Close subject performance table
     htmlContent += `
         </table>`;
     
-    // Add Category table as shown in the second image
+    // Add Classification section
     htmlContent += `
-        <h2>Category Analysis</h2>
-        <table class="category-table">
+        <h2 style="text-align: center;">Classification</h2>
+        <table class="classification-table">
           <tr>
-            <th style="width: 40%; background-color: #f2f2f2;">Category</th>
-            <th style="width: 60%; background-color: #f2f2f2;">Grade Point</th>
+            <th colspan="7" style="background-color: #f2f2f2;">Current semester</th>
+            <th colspan="7" style="background-color: #f2f2f2;">Upto this semester</th>
           </tr>
           <tr>
-            <td>1. Distinction</td>
-            <td>>= 8.5 and no history of arrears</td>
+            <th rowspan="2">Distinction</th>
+            <th colspan="2">First class</th>
+            <th colspan="2">Second class</th>
+            <th rowspan="2">Fail</th>
+            <th rowspan="2">% of pass</th>
+            <th rowspan="2">Distinction</th>
+            <th colspan="2">First class</th>
+            <th colspan="2">Second class</th>
+            <th rowspan="2">Fail</th>
+            <th rowspan="2">% of pass</th>
           </tr>
           <tr>
-            <td>2. First class</td>
-            <td>>= 6.5</td>
-          </tr>
-          <tr>
-            <td>3. Second class</td>
-            <td>< 6.5</td>
-          </tr>
-        </table>`;
+            <th>WOA</th>
+            <th>WA</th>
+            <th>WOA</th>
+            <th>WA</th>
+            <th>WOA</th>
+            <th>WA</th>
+            <th>WOA</th>
+            <th>WA</th>
+          </tr>`;
     
     // Calculate classification data
     const getStudentCounts = () => {
@@ -299,36 +351,7 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
       ? Math.round(((cumulativeTotal - cumulativeData.fail) / cumulativeTotal) * 100) 
       : 0;
     
-    // Add Classification table as shown in the third image
     htmlContent += `
-        <h2>Classification</h2>
-        <table class="classification-table">
-          <tr>
-            <th colspan="7" style="background-color: #f2f2f2;">Current semester</th>
-            <th colspan="7" style="background-color: #f2f2f2;">Upto this semester</th>
-          </tr>
-          <tr>
-            <th rowspan="2">Distinction</th>
-            <th colspan="2">First class</th>
-            <th colspan="2">Second class</th>
-            <th rowspan="2">Fail</th>
-            <th rowspan="2">% of pass</th>
-            <th rowspan="2">Distinction</th>
-            <th colspan="2">First class</th>
-            <th colspan="2">Second class</th>
-            <th rowspan="2">Fail</th>
-            <th rowspan="2">% of pass</th>
-          </tr>
-          <tr>
-            <th>WOA</th>
-            <th>WA</th>
-            <th>WOA</th>
-            <th>WA</th>
-            <th>WOA</th>
-            <th>WA</th>
-            <th>WOA</th>
-            <th>WA</th>
-          </tr>
           <tr>
             <td>${currentData.distinction}</td>
             <td>${currentData.firstClassWOA}</td>
@@ -347,89 +370,84 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
           </tr>
         </table>`;
     
-    // Add signature section
+    // Add Rank Analysis section
     htmlContent += `
-        <div class="signatures">
-          <div>Class Advisor</div>
-          <div>HoD</div>
-          <div>Dean – Academics</div>
-          <div>Principal</div>
-        </div>
-    
-        <div class="section-title">
-          <h2 style="margin: 0;">End Semester Result Analysis</h2>
-        </div>
-        
-        <table class="end-semester-table">
+        <h2>Rank Analysis</h2>
+        <table class="rank-table">
           <tr>
-            <th style="width: 5%;">S.No</th>
-            <th style="width: 12%;">Subject Code</th>
-            <th style="width: 12%;">Subject Name</th>
-            <th style="width: 12%;">Faculty Name</th>
-            <th style="width: 8%;">Dept</th>
-            <th style="width: 6%;">App</th>
-            <th style="width: 6%;">Ab</th>
-            <th style="width: 6%;">Fail</th>
-            <th style="width: 6%;">WH</th>
-            <th style="width: 8%;">Passed</th>
-            <th style="width: 7%;">% of pass</th>
-            <th style="width: 7%;">Highest Grade</th>
-            <th style="width: 7%;">No. of students</th>
+            <th colspan="3" style="width: 50%; background-color: #f2f2f2;">Rank in this semester</th>
+            <th colspan="3" style="width: 50%; background-color: #f2f2f2;">Rank up to this semester</th>
+          </tr>
+          <tr>
+            <th style="width: 8%;">S.No</th>
+            <th style="width: 25%;">Name of the student</th>
+            <th style="width: 17%;">SGPA</th>
+            <th style="width: 8%;">S.No</th>
+            <th style="width: 25%;">Name of the student</th>
+            <th style="width: 17%;">CGPA</th>
           </tr>`;
     
-    // Create subject-wise performance data - exactly matching your table format
-    if (analysis.subjectPerformance) {
-      analysis.subjectPerformance.forEach((subject, index) => {
-        // Get the highest grade for this subject
-        let highestGrade = 'N/A';
-        let studentsWithHighestGrade = 0;
-        
-        if (analysis.subjectGradeDistribution && analysis.subjectGradeDistribution[subject.subject]) {
-          const grades = analysis.subjectGradeDistribution[subject.subject];
-          if (grades.length > 0) {
-            // Sort grades by grade point (assuming 'O' is highest)
-            const sortedGrades = [...grades].sort((a, b) => {
-              const gradeOrder = {'O': 10, 'A+': 9, 'A': 8, 'B+': 7, 'B': 6, 'C': 5, 'P': 4, 'U': 0};
-              return (gradeOrder[b.name as keyof typeof gradeOrder] || 0) - (gradeOrder[a.name as keyof typeof gradeOrder] || 0);
-            });
-            
-            highestGrade = sortedGrades[0].name;
-            studentsWithHighestGrade = sortedGrades[0].count;
-          }
-        }
-        
-        // Calculate metrics for this subject
-        const subjectRecords = records.filter(r => r.SCODE === subject.subject);
-        const appeared = subjectRecords.length;
-        const absent = 0; // No data for this, using "Nil"
-        const failed = subjectRecords.filter(r => r.GR === 'U').length;
-        const withheld = 0; // No data for this
-        const passed = appeared - failed;
-        const passPercentage = appeared > 0 ? (passed / appeared) * 100 : 0;
-        
-        htmlContent += `
+    // Add top 3 students by SGPA for current semester
+    const topThreeSGPA = [...(analysis.studentSgpaDetails || [])]
+      .filter(s => !s.hasArrears)  // Filter out students with arrears
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .slice(0, 3);
+    
+    // Add top 3 students by CGPA if available
+    const topThreeCGPA = analysis.cgpaAnalysis?.studentCGPAs 
+      ? [...analysis.cgpaAnalysis.studentCGPAs]
+          .filter(s => {
+            // Filter out students with arrears
+            const studentRecord = analysis.studentSgpaDetails?.find(sd => sd.id === s.id);
+            return !(studentRecord?.hasArrears);
+          })
+          .sort((a, b) => b.cgpa - a.cgpa)
+          .slice(0, 3) 
+      : [];
+    
+    // Display top 3 rows
+    for (let i = 0; i < 3; i++) {
+      const sgpaStudent = topThreeSGPA[i] || { id: '', sgpa: 0 };
+      const cgpaStudent = topThreeCGPA[i] || { id: '', cgpa: 0 };
+      
+      htmlContent += `
           <tr>
-            <td>${index + 1}</td>
-            <td>${subject.subject}</td>
-            <td>Subject ${index + 1}</td>
-            <td></td>
-            <td>CSE</td>
-            <td>${appeared}</td>
-            <td>Nil</td>
-            <td>${failed > 0 ? failed : 'Nil'}</td>
-            <td>${withheld}</td>
-            <td>${passed}</td>
-            <td>${passPercentage.toFixed(1)}</td>
-            <td>${highestGrade}</td>
-            <td>${studentsWithHighestGrade}</td>
+            <td>${i + 1}</td>
+            <td>${sgpaStudent.id}</td>
+            <td>${sgpaStudent.sgpa ? sgpaStudent.sgpa.toFixed(1) : ''}</td>
+            <td>${i + 1}</td>
+            <td>${cgpaStudent.id}</td>
+            <td>${cgpaStudent.cgpa ? cgpaStudent.cgpa.toFixed(1) : ''}</td>
           </tr>`;
-      });
     }
     
-    // Close subject performance table and add individual student performance
     htmlContent += `
-        </table>
-        
+        </table>`;
+    
+    // Add Category Analysis section
+    htmlContent += `
+        <h2>Category Analysis</h2>
+        <table class="category-table">
+          <tr>
+            <th style="width: 40%; background-color: #f2f2f2;">Category</th>
+            <th style="width: 60%; background-color: #f2f2f2;">Grade Point</th>
+          </tr>
+          <tr>
+            <td>1. Distinction</td>
+            <td>>= 8.5 and no history of arrears</td>
+          </tr>
+          <tr>
+            <td>2. First class</td>
+            <td>>= 6.5</td>
+          </tr>
+          <tr>
+            <td>3. Second class</td>
+            <td>< 6.5</td>
+          </tr>
+        </table>`;
+    
+    // Add Individual Student Performance section
+    htmlContent += `
         <h2>Individual Student Performance</h2>
         <table>
           <tr>
@@ -477,8 +495,26 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     
     // Close individual performance table
     htmlContent += `
-        </table>
-        
+        </table>`;
+    
+    // Add signature section
+    htmlContent += `
+        <div class="signatures">
+          <div>Class Advisor</div>
+          <div>HoD</div>
+          <div>Dean – Academics</div>
+          <div>Principal</div>
+        </div>`;
+    
+    // Add footer image if provided
+    if (options?.footerImagePath) {
+      htmlContent += `
+        <div class="footer-container">
+          <img src="${options.footerImagePath}" alt="College Footer" class="footer-image">
+        </div>`;
+    }
+    
+    htmlContent += `
         <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">
           <p>Report generated by Result Analysis System - ${new Date().toLocaleDateString()}</p>
         </div>
