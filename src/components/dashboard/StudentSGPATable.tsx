@@ -13,7 +13,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
   const sortedStudents = [...(analysis.studentSgpaDetails || [])].sort((a, b) => b.sgpa - a.sgpa);
   
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Student-wise SGPA Analysis</CardTitle>
         <CardDescription>SGPA calculation for each student</CardDescription>
@@ -23,7 +23,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16">Rank</TableHead>
+                <TableHead className="w-16 text-center">Rank</TableHead>
                 <TableHead>Registration Number</TableHead>
                 <TableHead className="w-24 text-center">SGPA</TableHead>
                 {analysis.cgpaAnalysis && (
@@ -41,34 +41,47 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
                   cgpa = cgpaInfo?.cgpa;
                 }
                 
+                // Determine status based on SGPA and arrears
+                const getStatusText = () => {
+                  if (student.hasArrears) {
+                    return <span className="text-red-500 text-sm font-medium">Has Arrears</span>;
+                  } else if (student.sgpa >= 8.5) {
+                    return <span className="text-green-600 text-sm font-medium">Distinction</span>;
+                  } else if (student.sgpa >= 6.5) {
+                    return <span className="text-blue-500 text-sm font-medium">First Class</span>;
+                  } else {
+                    return <span className="text-amber-500 text-sm font-medium">Second Class</span>;
+                  }
+                };
+                
+                // Apply different background colors based on status
+                const getRowClass = () => {
+                  if (student.hasArrears) {
+                    return "bg-red-50";
+                  } else if (student.sgpa >= 8.5) {
+                    return "bg-green-50";
+                  } else if (student.sgpa >= 6.5) {
+                    return "bg-blue-50";
+                  } else {
+                    return "bg-amber-50";
+                  }
+                };
+                
                 return (
                   <TableRow 
                     key={index} 
-                    className={
-                      student.hasArrears ? "bg-red-50" : 
-                      student.sgpa < 6.5 ? "bg-amber-50" : 
-                      index < 3 ? "bg-green-50" :
-                      ""
-                    }
+                    className={getRowClass()}
                   >
                     <TableCell className="text-center font-medium">{index + 1}</TableCell>
                     <TableCell>{student.id}</TableCell>
-                    <TableCell className="text-center font-medium">{student.sgpa.toFixed(2)}</TableCell>
+                    <TableCell className="text-center font-semibold">{student.sgpa.toFixed(2)}</TableCell>
                     {analysis.cgpaAnalysis && (
-                      <TableCell className="text-center font-medium">
+                      <TableCell className="text-center font-semibold">
                         {cgpa !== undefined ? cgpa.toFixed(2) : "-"}
                       </TableCell>
                     )}
                     <TableCell>
-                      {student.hasArrears ? (
-                        <span className="text-red-500 text-sm font-medium">Has Arrears</span>
-                      ) : student.sgpa < 6.5 ? (
-                        <span className="text-amber-500 text-sm font-medium">SGPA below 6.5</span>
-                      ) : index < 3 ? (
-                        <span className="text-green-500 text-sm font-medium">Top Performer</span>
-                      ) : (
-                        <span className="text-green-500 text-sm">Good Standing</span>
-                      )}
+                      {getStatusText()}
                     </TableCell>
                   </TableRow>
                 );

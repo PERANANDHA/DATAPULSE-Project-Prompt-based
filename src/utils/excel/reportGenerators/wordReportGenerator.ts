@@ -29,6 +29,15 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
           .end-semester-table th:first-child, .end-semester-table td:first-child { text-align: center; }
           .end-semester-table th:nth-child(2), .end-semester-table td:nth-child(2), 
           .end-semester-table th:nth-child(3), .end-semester-table td:nth-child(3) { text-align: left; }
+          .rank-table { width: 100%; border-collapse: collapse; }
+          .rank-table th { background-color: #f2f2f2; padding: 8px; text-align: center; }
+          .rank-table td { padding: 8px; text-align: center; }
+          .classification-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          .classification-table th, .classification-table td { text-align: center; padding: 5px; }
+          .category-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          .category-table th, .category-table td { padding: 8px; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+          .signatures div { text-align: center; width: 24%; }
           @page { size: landscape; }
         </style>
       </head>
@@ -108,33 +117,245 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     htmlContent += `
         </table>`;
     
-    // Add CGPA toppers list if available (multiple files were processed)
-    if (analysis.cgpaAnalysis?.toppersList && analysis.cgpaAnalysis.toppersList.length > 0) {
-      htmlContent += `
-        <h2>CGPA Toppers List (Up to this Semester)</h2>
-        <table>
+    // Add Rank Tables exactly as shown in the image
+    htmlContent += `
+        <h2>Rank Analysis</h2>
+        <table class="rank-table">
           <tr>
-            <th>Rank</th>
-            <th>Register Number</th>
-            <th>CGPA</th>
-          </tr>`;
-      
-      // Add toppers data
-      analysis.cgpaAnalysis.toppersList.forEach((student, index) => {
-        htmlContent += `
+            <th colspan="3" style="width: 50%; background-color: #f2f2f2;">Rank in this semester</th>
+            <th colspan="3" style="width: 50%; background-color: #f2f2f2;">Rank up to this semester</th>
+          </tr>
           <tr>
-            <td style="text-align: center;">${index + 1}</td>
-            <td>${student.id}</td>
-            <td style="text-align: center;">${student.cgpa.toFixed(2)}</td>
+            <th style="width: 8%;">S.No</th>
+            <th style="width: 25%;">Name of the student</th>
+            <th style="width: 17%;">SGPA</th>
+            <th style="width: 8%;">S.No</th>
+            <th style="width: 25%;">Name of the student</th>
+            <th style="width: 17%;">CGPA</th>
           </tr>`;
-      });
+    
+    // Add top 3 students by SGPA for current semester
+    const topThreeSGPA = [...(analysis.studentSgpaDetails || [])]
+      .filter(s => !s.hasArrears)  // Filter out students with arrears
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .slice(0, 3);
+    
+    // Add top 3 students by CGPA if available
+    const topThreeCGPA = analysis.cgpaAnalysis?.studentCGPAs 
+      ? [...analysis.cgpaAnalysis.studentCGPAs]
+          .filter(s => {
+            // Filter out students with arrears
+            const studentRecord = analysis.studentSgpaDetails?.find(sd => sd.id === s.id);
+            return !(studentRecord?.hasArrears);
+          })
+          .sort((a, b) => b.cgpa - a.cgpa)
+          .slice(0, 3) 
+      : [];
+    
+    // Display top 3 rows
+    for (let i = 0; i < 3; i++) {
+      const sgpaStudent = topThreeSGPA[i] || { id: '', sgpa: 0 };
+      const cgpaStudent = topThreeCGPA[i] || { id: '', cgpa: 0 };
       
-      // Close CGPA toppers table
       htmlContent += `
-        </table>`;
+          <tr>
+            <td>${i + 1}</td>
+            <td>${sgpaStudent.id}</td>
+            <td>${sgpaStudent.sgpa ? sgpaStudent.sgpa.toFixed(1) : ''}</td>
+            <td>${i + 1}</td>
+            <td>${cgpaStudent.id}</td>
+            <td>${cgpaStudent.cgpa ? cgpaStudent.cgpa.toFixed(1) : ''}</td>
+          </tr>`;
     }
     
     htmlContent += `
+        </table>`;
+    
+    // Add Category table as shown in the second image
+    htmlContent += `
+        <h2>Category Analysis</h2>
+        <table class="category-table">
+          <tr>
+            <th style="width: 40%; background-color: #f2f2f2;">Category</th>
+            <th style="width: 60%; background-color: #f2f2f2;">Grade Point</th>
+          </tr>
+          <tr>
+            <td>1. Distinction</td>
+            <td>>= 8.5 and no history of arrears</td>
+          </tr>
+          <tr>
+            <td>2. First class</td>
+            <td>>= 6.5</td>
+          </tr>
+          <tr>
+            <td>3. Second class</td>
+            <td>< 6.5</td>
+          </tr>
+        </table>`;
+    
+    // Calculate classification data
+    const getStudentCounts = () => {
+      // For current semester
+      const currentData = {
+        distinction: 0,
+        firstClassWOA: 0,
+        firstClassWA: 0,
+        secondClassWOA: 0,
+        secondClassWA: 0,
+        fail: 0
+      };
+      
+      // For up to this semester (CGPA)
+      const cumulativeData = {
+        distinction: 0,
+        firstClassWOA: 0,
+        firstClassWA: 0,
+        secondClassWOA: 0,
+        secondClassWA: 0,
+        fail: 0
+      };
+      
+      // Process current semester data
+      (analysis.studentSgpaDetails || []).forEach(student => {
+        if (student.hasArrears) {
+          // With arrears
+          if (student.sgpa >= 6.5) {
+            currentData.firstClassWA++;
+          } else {
+            currentData.secondClassWA++;
+          }
+        } else {
+          // Without arrears
+          if (student.sgpa >= 8.5) {
+            currentData.distinction++;
+          } else if (student.sgpa >= 6.5) {
+            currentData.firstClassWOA++;
+          } else if (student.sgpa > 0) {
+            currentData.secondClassWOA++;
+          } else {
+            currentData.fail++;
+          }
+        }
+      });
+      
+      // Process CGPA data if available
+      if (analysis.cgpaAnalysis?.studentCGPAs) {
+        analysis.cgpaAnalysis.studentCGPAs.forEach(cgpaData => {
+          const student = analysis.studentSgpaDetails?.find(s => s.id === cgpaData.id);
+          const hasArrears = student?.hasArrears || false;
+          
+          if (hasArrears) {
+            // With arrears
+            if (cgpaData.cgpa >= 6.5) {
+              cumulativeData.firstClassWA++;
+            } else {
+              cumulativeData.secondClassWA++;
+            }
+          } else {
+            // Without arrears
+            if (cgpaData.cgpa >= 8.5) {
+              cumulativeData.distinction++;
+            } else if (cgpaData.cgpa >= 6.5) {
+              cumulativeData.firstClassWOA++;
+            } else if (cgpaData.cgpa > 0) {
+              cumulativeData.secondClassWOA++;
+            } else {
+              cumulativeData.fail++;
+            }
+          }
+        });
+      } else {
+        // If no CGPA data, use current semester data
+        Object.assign(cumulativeData, currentData);
+      }
+      
+      return { currentData, cumulativeData };
+    };
+    
+    const { currentData, cumulativeData } = getStudentCounts();
+    
+    // Calculate total and pass percentage
+    const currentTotal = 
+      currentData.distinction + 
+      currentData.firstClassWOA + 
+      currentData.firstClassWA + 
+      currentData.secondClassWOA + 
+      currentData.secondClassWA + 
+      currentData.fail;
+    
+    const cumulativeTotal = 
+      cumulativeData.distinction + 
+      cumulativeData.firstClassWOA + 
+      cumulativeData.firstClassWA + 
+      cumulativeData.secondClassWOA + 
+      cumulativeData.secondClassWA + 
+      cumulativeData.fail;
+    
+    const currentPassPercentage = currentTotal > 0 
+      ? Math.round(((currentTotal - currentData.fail) / currentTotal) * 100) 
+      : 0;
+    
+    const cumulativePassPercentage = cumulativeTotal > 0 
+      ? Math.round(((cumulativeTotal - cumulativeData.fail) / cumulativeTotal) * 100) 
+      : 0;
+    
+    // Add Classification table as shown in the third image
+    htmlContent += `
+        <h2>Classification</h2>
+        <table class="classification-table">
+          <tr>
+            <th colspan="7" style="background-color: #f2f2f2;">Current semester</th>
+            <th colspan="7" style="background-color: #f2f2f2;">Upto this semester</th>
+          </tr>
+          <tr>
+            <th rowspan="2">Distinction</th>
+            <th colspan="2">First class</th>
+            <th colspan="2">Second class</th>
+            <th rowspan="2">Fail</th>
+            <th rowspan="2">% of pass</th>
+            <th rowspan="2">Distinction</th>
+            <th colspan="2">First class</th>
+            <th colspan="2">Second class</th>
+            <th rowspan="2">Fail</th>
+            <th rowspan="2">% of pass</th>
+          </tr>
+          <tr>
+            <th>WOA</th>
+            <th>WA</th>
+            <th>WOA</th>
+            <th>WA</th>
+            <th>WOA</th>
+            <th>WA</th>
+            <th>WOA</th>
+            <th>WA</th>
+          </tr>
+          <tr>
+            <td>${currentData.distinction}</td>
+            <td>${currentData.firstClassWOA}</td>
+            <td>${currentData.firstClassWA}</td>
+            <td>${currentData.secondClassWOA}</td>
+            <td>${currentData.secondClassWA}</td>
+            <td>${currentData.fail}</td>
+            <td>${currentPassPercentage}</td>
+            <td>${cumulativeData.distinction}</td>
+            <td>${cumulativeData.firstClassWOA}</td>
+            <td>${cumulativeData.firstClassWA}</td>
+            <td>${cumulativeData.secondClassWOA}</td>
+            <td>${cumulativeData.secondClassWA}</td>
+            <td>${cumulativeData.fail}</td>
+            <td>${cumulativePassPercentage}</td>
+          </tr>
+        </table>`;
+    
+    // Add signature section
+    htmlContent += `
+        <div class="signatures">
+          <div>Class Advisor</div>
+          <div>HoD</div>
+          <div>Dean – Academics</div>
+          <div>Principal</div>
+        </div>
+    
         <div class="section-title">
           <h2 style="margin: 0;">End Semester Result Analysis</h2>
         </div>
@@ -236,7 +457,11 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         if (student.hasArrears) {
           status = 'Has Arrears';
         } else if (student.sgpa < 6.5) {
-          status = 'SGPA below 6.5';
+          status = 'Second Class';
+        } else if (student.sgpa >= 8.5) {
+          status = 'Distinction';
+        } else {
+          status = 'First Class';
         }
         
         htmlContent += `
