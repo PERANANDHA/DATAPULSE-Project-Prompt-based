@@ -1,4 +1,3 @@
-
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
@@ -46,22 +45,63 @@ export const downloadWordReport = (
           .classification-table th, .classification-table td { text-align: center; padding: 5px; }
           .category-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           .category-table th, .category-table td { padding: 8px; }
-          .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
-          .signature-cell { width: 23%; text-align: center; }
+          .signature-line { text-align: center; margin-top: 10px; border-top: 1px solid #000; padding-top: 5px; }
+          .signatures { display: table; width: 100%; margin-top: 50px; }
+          .signature-row { display: table-row; }
+          .signature-cell { display: table-cell; width: 25%; text-align: center; padding: 20px 10px; }
           .logo-container { text-align: center; margin-bottom: 20px; }
-          .college-logo { max-width: 400px; height: auto; margin: 0 auto; }
+          .college-logo { max-width: 350px; height: auto; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add KSR logo at the top
+    // Add KSR logo at the top - using base64 encoding to avoid external image reference issues
     if (options?.logoImagePath) {
-      const absoluteLogoPath = window.location.origin + options.logoImagePath;
-      htmlContent += `
-        <div class="logo-container">
-          <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
-        </div>`;
+      // First try to load image and convert to Base64
+      const img = new Image();
+      img.src = options.logoImagePath;
+      
+      // Create a canvas to draw the image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Once the image is loaded, draw it on the canvas and get base64 data
+      img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        
+        try {
+          // Get base64 representation
+          const dataUrl = canvas.toDataURL('image/png');
+          
+          // Update HTML content with the base64 image
+          const logoImgHtml = `
+            <div class="logo-container">
+              <img src="${dataUrl}" alt="K.S.Rangasamy College of Technology" class="college-logo">
+            </div>`;
+          
+          // Find the position where to inject the logo
+          const bodyStartPos = htmlContent.indexOf('<body>') + 6;
+          htmlContent = htmlContent.slice(0, bodyStartPos) + logoImgHtml + htmlContent.slice(bodyStartPos);
+        } catch (err) {
+          console.error("Error converting logo to base64:", err);
+        }
+      };
+      
+      // In case image fails to load, use a fallback approach with direct URL
+      img.onerror = function() {
+        console.warn("Failed to load image for base64 conversion, using direct URL");
+        const absoluteLogoPath = window.location.origin + options.logoImagePath;
+        const logoImgHtml = `
+          <div class="logo-container">
+            <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
+          </div>`;
+        
+        const bodyStartPos = htmlContent.indexOf('<body>') + 6;
+        htmlContent = htmlContent.slice(0, bodyStartPos) + logoImgHtml + htmlContent.slice(bodyStartPos);
+      };
     }
     
     htmlContent += `
@@ -507,24 +547,26 @@ export const downloadWordReport = (
     htmlContent += `
         </table>`;
     
-    // Fix the signatures section to be on the same line with proper spacing
+    // Fix the signatures section to be just text in a single line with proper spacing
     htmlContent += `
-        <table style="border: none; margin-top: 50px;">
-          <tr style="border: none;">
-            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
-              <div style="border-top: 1px solid black; padding-top: 5px;">Class Advisor</div>
-            </td>
-            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
-              <div style="border-top: 1px solid black; padding-top: 5px;">HoD/${options?.department || 'CSE'}</div>
-            </td>
-            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
-              <div style="border-top: 1px solid black; padding-top: 5px;">Dean – Academics</div>
-            </td>
-            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
-              <div style="border-top: 1px solid black; padding-top: 5px;">Principal</div>
-            </td>
-          </tr>
-        </table>`;
+        <div style="margin-top: 60px; text-align: center;">
+          <table style="width: 100%; border: none;">
+            <tr style="border: none;">
+              <td style="width: 25%; border: none; text-align: center;">
+                <div class="signature-line">Class Advisor</div>
+              </td>
+              <td style="width: 25%; border: none; text-align: center;">
+                <div class="signature-line">HoD/${options?.department || 'CSE'}</div>
+              </td>
+              <td style="width: 25%; border: none; text-align: center;">
+                <div class="signature-line">Dean – Academics</div>
+              </td>
+              <td style="width: 25%; border: none; text-align: center;">
+                <div class="signature-line">Principal</div>
+              </td>
+            </tr>
+          </table>
+        </div>`;
     
     htmlContent += `
         <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">
@@ -552,4 +594,3 @@ export const downloadWordReport = (
     throw error;
   }
 };
-

@@ -23,7 +23,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [departmentCode, setDepartmentCode] = useState('CSE');
   const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'word' | 'pdf' | null>(null);
+  const [selectedFormat, setSelectedFormat<'csv' | 'excel' | 'word' | 'pdf' | null>>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const { toast } = useToast();
 
@@ -101,7 +101,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word') {
-        // Using KSR logo from our uploads folder
+        // Use the KSR logo from our uploads folder with the correct path
         const logoPath = '/lovable-uploads/9e13347d-1f65-46ff-a068-8643e6ec0984.png';
         
         downloadWordReport(analysis!, studentRecords, {
