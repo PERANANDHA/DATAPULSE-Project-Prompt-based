@@ -1,4 +1,3 @@
-
 import { ResultAnalysis, StudentRecord } from '../types';
 import { hasArrears } from '../gradeUtils';
 
@@ -57,7 +56,7 @@ export const downloadWordReport = (
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
           .logo-container { text-align: center; margin-bottom: 20px; }
-          .college-logo { width: 590px; height: auto; }
+          .college-logo { width: 590px; height: 174px; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
@@ -65,11 +64,10 @@ export const downloadWordReport = (
     
     // Add logo directly at the top with a direct reference to the image
     if (options?.logoImagePath) {
-      const absoluteLogoPath = window.location.origin + options.logoImagePath;
-      htmlContent = htmlContent.slice(0, htmlContent.indexOf('<body>') + 6) + `
+      htmlContent += `
         <div class="logo-container">
-          <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
-        </div>` + htmlContent.slice(htmlContent.indexOf('<body>') + 6);
+          <img src="${window.location.origin}${options.logoImagePath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
+        </div>`;
     }
     
     // Continue with the rest of the document
