@@ -1,3 +1,4 @@
+
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
@@ -48,7 +49,7 @@ export const downloadWordReport = (
           .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
           .signature-cell { width: 23%; text-align: center; }
           .logo-container { text-align: center; margin-bottom: 20px; }
-          .college-logo { max-width: 500px; height: auto; margin: 0 auto; }
+          .college-logo { max-width: 400px; height: auto; margin: 0 auto; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
@@ -56,9 +57,10 @@ export const downloadWordReport = (
     
     // Add KSR logo at the top
     if (options?.logoImagePath) {
+      const absoluteLogoPath = window.location.origin + options.logoImagePath;
       htmlContent += `
         <div class="logo-container">
-          <img src="${options.logoImagePath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
+          <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
         </div>`;
     }
     
@@ -547,5 +549,7 @@ export const downloadWordReport = (
     
   } catch (error) {
     console.error('Error generating Word report:', error);
+    throw error;
   }
 };
+

@@ -101,8 +101,11 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word') {
+        // Using KSR logo from our uploads folder
+        const logoPath = '/lovable-uploads/9e13347d-1f65-46ff-a068-8643e6ec0984.png';
+        
         downloadWordReport(analysis!, studentRecords, {
-          logoImagePath: '/lovable-uploads/aa3af1c3-1045-4768-a52b-12db488b4750.png',
+          logoImagePath: logoPath,
           department: departmentCode,
           departmentFullName: departmentFullName
         });
