@@ -12,6 +12,7 @@ import { ResultAnalysis, StudentRecord, downloadCSVReport, downloadExcelReport, 
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 
 interface ReportDownloaderProps {
   analysis: ResultAnalysis | null;
@@ -24,6 +25,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'word' | 'pdf' | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const { toast } = useToast();
 
   const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
@@ -44,6 +46,10 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     }
     
     setIsDownloading(true);
+    setDownloadProgress(0);
+    
+    // Start progress animation
+    const progressInterval = startProgressSimulation();
     
     try {
       if (format === 'csv') {
@@ -54,25 +60,48 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         await downloadPdfReport('dashboard-content');
       }
       
-      toast({
-        title: "Report downloaded",
-        description: `Your analysis report has been downloaded as ${format.toUpperCase()}.`,
-      });
+      clearInterval(progressInterval);
+      setDownloadProgress(100);
+      
+      setTimeout(() => {
+        toast({
+          title: "Report downloaded",
+          description: `Your analysis report has been downloaded as ${format.toUpperCase()}.`,
+        });
+        setIsDownloading(false);
+        setDownloadProgress(0);
+      }, 500);
     } catch (error) {
+      clearInterval(progressInterval);
       console.error("Download error:", error);
       toast({
         variant: "destructive",
         title: "Download failed",
         description: "There was a problem generating your report. Please try again.",
       });
-    } finally {
       setIsDownloading(false);
+      setDownloadProgress(0);
     }
+  };
+
+  const startProgressSimulation = () => {
+    return setInterval(() => {
+      setDownloadProgress(prev => {
+        if (prev >= 90) {
+          return 90; // Hold at 90% until complete
+        }
+        return prev + Math.random() * 10;
+      });
+    }, 150);
   };
 
   const handleConfirmDepartment = () => {
     setIsDepartmentDialogOpen(false);
     setIsDownloading(true);
+    setDownloadProgress(0);
+    
+    // Start progress animation
+    const progressInterval = startProgressSimulation();
     
     try {
       if (selectedFormat === 'word') {
@@ -85,61 +114,81 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         });
       }
       
-      toast({
-        title: "Report downloaded",
-        description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
-      });
+      clearInterval(progressInterval);
+      setDownloadProgress(100);
+      
+      setTimeout(() => {
+        toast({
+          title: "Report downloaded",
+          description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
+        });
+        setIsDownloading(false);
+        setDownloadProgress(0);
+        setSelectedFormat(null);
+      }, 500);
     } catch (error) {
+      clearInterval(progressInterval);
       console.error("Download error:", error);
       toast({
         variant: "destructive",
         title: "Download failed",
         description: "There was a problem generating your report. Please try again.",
       });
-    } finally {
       setIsDownloading(false);
+      setDownloadProgress(0);
       setSelectedFormat(null);
     }
   };
 
   return (
     <>
-      <div className="flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button disabled={isDownloading}>
-              {isDownloading ? (
-                <>
-                  <Loader className="h-4 w-4 mr-2 animate-spin" />
-                  Downloading...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Report
-                </>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
-              <File className="h-4 w-4 mr-2" />
-              <span>Download as PDF</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
-              <FileText className="h-4 w-4 mr-2" />
-              <span>Download as Word</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
-              <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
-              <span>Download as Excel</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
-              <Download className="h-4 w-4 mr-2" />
-              <span>Download as CSV</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="flex flex-col gap-2">
+        {isDownloading && (
+          <div className="w-full mb-2">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Generating report</span>
+              <span>{Math.round(downloadProgress)}%</span>
+            </div>
+            <Progress value={downloadProgress} className="h-2" />
+          </div>
+        )}
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={isDownloading}>
+                {isDownloading ? (
+                  <>
+                    <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Report
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
+                <File className="h-4 w-4 mr-2" />
+                <span>Download as PDF</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
+                <FileText className="h-4 w-4 mr-2" />
+                <span>Download as Word</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
+                <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
+                <span>Download as Excel</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
+                <Download className="h-4 w-4 mr-2" />
+                <span>Download as CSV</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       
       <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
