@@ -21,6 +21,7 @@ interface ReportDownloaderProps {
 const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRecords }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [departmentCode, setDepartmentCode] = useState('CSE');
+  const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'word' | 'pdf' | null>(null);
   const { toast } = useToast();
@@ -79,7 +80,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         downloadWordReport(analysis!, studentRecords, {
           headerImagePath: '/lovable-uploads/4997e6ac-f6aa-400a-98a6-aacabb4e2c4a.png',
           footerImagePath: '/lovable-uploads/88828c10-c5b0-4c8c-93e2-07333837d8be.png',
-          department: departmentCode
+          department: departmentCode,
+          departmentFullName: departmentFullName
         });
       }
       
@@ -145,21 +147,39 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
           <DialogHeader>
             <DialogTitle>Department Information</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <label htmlFor="department-code" className="text-sm font-medium mb-2 block">
-              Enter Department Code (short form)
-            </label>
-            <Input
-              id="department-code"
-              value={departmentCode}
-              onChange={(e) => setDepartmentCode(e.target.value)}
-              placeholder="e.g. CSE"
-              className="mb-2"
-              maxLength={5}
-            />
-            <p className="text-sm text-muted-foreground">
-              This will be used in the End Semester Result Analysis table.
-            </p>
+          <div className="py-4 space-y-4">
+            <div>
+              <label htmlFor="department-full-name" className="text-sm font-medium mb-2 block">
+                Enter Department Full Name
+              </label>
+              <Input
+                id="department-full-name"
+                value={departmentFullName}
+                onChange={(e) => setDepartmentFullName(e.target.value)}
+                placeholder="e.g. Computer Science and Engineering"
+                className="mb-2"
+              />
+              <p className="text-sm text-muted-foreground">
+                This will be used in the College Information table.
+              </p>
+            </div>
+            
+            <div>
+              <label htmlFor="department-code" className="text-sm font-medium mb-2 block">
+                Enter Department Code (short form)
+              </label>
+              <Input
+                id="department-code"
+                value={departmentCode}
+                onChange={(e) => setDepartmentCode(e.target.value)}
+                placeholder="e.g. CSE"
+                className="mb-2"
+                maxLength={5}
+              />
+              <p className="text-sm text-muted-foreground">
+                This will be used in the End Semester Result Analysis table.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDepartmentDialogOpen(false)}>

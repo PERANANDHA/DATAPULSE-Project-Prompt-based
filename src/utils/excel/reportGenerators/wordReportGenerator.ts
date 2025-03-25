@@ -5,6 +5,7 @@ interface WordReportOptions {
   headerImagePath?: string;
   footerImagePath?: string;
   department?: string;
+  departmentFullName?: string;
 }
 
 // Function to download Word document (docx)
@@ -74,7 +75,7 @@ export const downloadWordReport = (
           </tr>
           <tr>
             <td style="font-weight: bold;">Department</td>
-            <td>Computer Science and Engineering</td>
+            <td>${options?.departmentFullName || 'Computer Science and Engineering'}</td>
           </tr>
           <tr>
             <td style="font-weight: bold;">Total Students</td>
@@ -508,7 +509,7 @@ export const downloadWordReport = (
     htmlContent += `
         <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center;">
           <div style="width: 22%;">Class Advisor</div>
-          <div style="width: 22%;">HoD</div>
+          <div style="width: 22%;">HoD/${options?.department || 'CSE'}</div>
           <div style="width: 22%;">Dean – Academics</div>
           <div style="width: 22%;">Principal</div>
         </div>`;
