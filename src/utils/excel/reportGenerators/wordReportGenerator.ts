@@ -1,3 +1,4 @@
+
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
@@ -24,12 +25,11 @@ export const downloadWordReport = (
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
           h1 { text-align: center; color: #2F3770; font-size: 24px; margin-bottom: 30px; }
-          h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; page-break-before: always; }
-          h2:first-of-type { page-break-before: avoid; }
+          h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }
           table { border-collapse: collapse; width: 100%; margin: 15px 0; page-break-inside: avoid; }
           th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11pt; }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
-          .section-title { background-color: #d9d9d9; padding: 10px; margin-top: 30px; margin-bottom: 20px; page-break-before: always; }
+          .section-title { background-color: #d9d9d9; padding: 10px; margin-top: 30px; margin-bottom: 20px; }
           .summary { margin: 20px 0; }
           .summary p { margin: 5px 0; line-height: 1.5; }
           .end-semester-table th, .end-semester-table td { 
