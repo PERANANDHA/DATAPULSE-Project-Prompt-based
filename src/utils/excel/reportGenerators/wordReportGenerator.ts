@@ -1,9 +1,7 @@
-
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
-  headerImagePath?: string;
-  footerImagePath?: string;
+  logoImagePath?: string;
   department?: string;
   departmentFullName?: string;
 }
@@ -48,19 +46,19 @@ export const downloadWordReport = (
           .category-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           .category-table th, .category-table td { padding: 8px; }
           .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
-          .signatures div { text-align: center; width: 24%; }
-          .header-image { width: 100%; margin-bottom: 20px; }
-          .footer-image { width: 100%; margin-top: 20px; }
+          .signature-cell { width: 23%; text-align: center; }
+          .logo-container { text-align: center; margin-bottom: 20px; }
+          .college-logo { max-width: 500px; height: auto; margin: 0 auto; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add header image if provided
-    if (options?.headerImagePath) {
+    // Add KSR logo at the top
+    if (options?.logoImagePath) {
       htmlContent += `
-        <div class="header-container">
-          <img src="${options.headerImagePath}" alt="College Header" class="header-image">
+        <div class="logo-container">
+          <img src="${options.logoImagePath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
         </div>`;
     }
     
@@ -85,8 +83,9 @@ export const downloadWordReport = (
             <td style="font-weight: bold;">Files Processed</td>
             <td>${analysis.fileCount || 1}</td>
           </tr>
-        </table>
+        </table>`;
         
+    htmlContent += `
         <h2>Performance Summary</h2>
         <div class="summary">
           <p><strong>Average SGPA:</strong> ${analysis.averageCGPA.toFixed(2)}</p>
@@ -103,8 +102,9 @@ export const downloadWordReport = (
     }
     
     htmlContent += `
-        </div>
-        
+        </div>`;
+    
+    htmlContent += `
         <h2>File Analysis</h2>
         <table>
           <tr>
@@ -507,20 +507,22 @@ export const downloadWordReport = (
     
     // Fix the signatures section to be on the same line with proper spacing
     htmlContent += `
-        <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center;">
-          <div style="width: 22%;">Class Advisor</div>
-          <div style="width: 22%;">HoD/${options?.department || 'CSE'}</div>
-          <div style="width: 22%;">Dean – Academics</div>
-          <div style="width: 22%;">Principal</div>
-        </div>`;
-    
-    // Add footer image if provided
-    if (options?.footerImagePath) {
-      htmlContent += `
-        <div class="footer-container">
-          <img src="${options.footerImagePath}" alt="College Footer" class="footer-image">
-        </div>`;
-    }
+        <table style="border: none; margin-top: 50px;">
+          <tr style="border: none;">
+            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
+              <div style="border-top: 1px solid black; padding-top: 5px;">Class Advisor</div>
+            </td>
+            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
+              <div style="border-top: 1px solid black; padding-top: 5px;">HoD/${options?.department || 'CSE'}</div>
+            </td>
+            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
+              <div style="border-top: 1px solid black; padding-top: 5px;">Dean – Academics</div>
+            </td>
+            <td style="border: none; width: 25%; text-align: center; vertical-align: bottom; padding: 20px;">
+              <div style="border-top: 1px solid black; padding-top: 5px;">Principal</div>
+            </td>
+          </tr>
+        </table>`;
     
     htmlContent += `
         <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">

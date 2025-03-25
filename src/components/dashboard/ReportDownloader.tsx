@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -38,7 +37,6 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       return;
     }
     
-    // For Word format, ask for department code first
     if (format === 'word') {
       setSelectedFormat('word');
       setIsDepartmentDialogOpen(true);
@@ -48,7 +46,6 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     setIsDownloading(true);
     setDownloadProgress(0);
     
-    // Start progress animation
     const progressInterval = startProgressSimulation();
     
     try {
@@ -88,7 +85,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     return setInterval(() => {
       setDownloadProgress(prev => {
         if (prev >= 90) {
-          return 90; // Hold at 90% until complete
+          return 90;
         }
         return prev + Math.random() * 10;
       });
@@ -100,15 +97,12 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     setIsDownloading(true);
     setDownloadProgress(0);
     
-    // Start progress animation
     const progressInterval = startProgressSimulation();
     
     try {
       if (selectedFormat === 'word') {
-        // Pass the header and footer image paths and department to the Word report generator
         downloadWordReport(analysis!, studentRecords, {
-          headerImagePath: '/lovable-uploads/4997e6ac-f6aa-400a-98a6-aacabb4e2c4a.png',
-          footerImagePath: '/lovable-uploads/88828c10-c5b0-4c8c-93e2-07333837d8be.png',
+          logoImagePath: '/lovable-uploads/aa3af1c3-1045-4768-a52b-12db488b4750.png',
           department: departmentCode,
           departmentFullName: departmentFullName
         });
