@@ -39,6 +39,7 @@ export interface ResultAnalysis {
     averageCGPA: number;
     highestCGPA: number;
     lowestCGPA: number;
+    toppersList?: { id: string; cgpa: number }[]; // Added for toppers list
   }; // CGPA analysis when multiple files
 }
 

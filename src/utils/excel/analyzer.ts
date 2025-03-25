@@ -40,7 +40,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
-  // Calculate CGPA if multiple files
+  // Calculate CGPA if multiple files - enhanced for accuracy
   let cgpaAnalysis;
   if (fileCount > 1) {
     const studentIds = [...new Set(records.map(record => record.REGNO))];
@@ -49,12 +49,16 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
       cgpa: calculateCGPA(records, id, fileGroups)
     }));
     
+    // Sort by CGPA in descending order for toppers list
+    studentCGPAs.sort((a, b) => b.cgpa - a.cgpa);
+    
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
     cgpaAnalysis = {
       studentCGPAs,
       averageCGPA: cgpaValues.length > 0 ? formatTo2Decimals(cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length) : 0,
       highestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.max(...cgpaValues)) : 0,
       lowestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.min(...cgpaValues)) : 0,
+      toppersList: studentCGPAs.slice(0, 10) // Get top 10 students
     };
   }
   

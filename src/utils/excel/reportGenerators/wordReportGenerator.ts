@@ -15,7 +15,7 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
           body { font-family: Arial, sans-serif; margin: 15px; }
           h1 { text-align: center; color: #2F3770; font-size: 24px; margin-bottom: 30px; }
           h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }
-          table { border-collapse: collapse; width: 95%; margin-top: 15px; margin-bottom: 25px; margin-left: 0; }
+          table { border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 25px; margin-left: 0; }
           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
           th { background-color: #f2f2f2; font-weight: bold; }
           .section-title { background-color: #d9d9d9; padding: 10px; margin-top: 30px; margin-bottom: 20px; }
@@ -51,7 +51,17 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
           <p><strong>Average SGPA:</strong> ${analysis.averageCGPA.toFixed(2)}</p>
           <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(2)}</p>
           <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(2)}</p>
-          <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>
+          <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>`;
+          
+    // Add CGPA information if multiple files were processed
+    if (analysis.cgpaAnalysis) {
+      htmlContent += `
+          <p><strong>Average CGPA (Multiple Semesters):</strong> ${analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</p>
+          <p><strong>Highest CGPA:</strong> ${analysis.cgpaAnalysis.highestCGPA.toFixed(2)}</p>
+          <p><strong>Lowest CGPA:</strong> ${analysis.cgpaAnalysis.lowestCGPA.toFixed(2)}</p>`;
+    }
+    
+    htmlContent += `
         </div>
         
         <h2>File Analysis</h2>
@@ -87,8 +97,35 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     
     // Close file analysis table
     htmlContent += `
-        </table>
-        
+        </table>`;
+    
+    // Add CGPA toppers list if available (multiple files were processed)
+    if (analysis.cgpaAnalysis?.toppersList && analysis.cgpaAnalysis.toppersList.length > 0) {
+      htmlContent += `
+        <h2>CGPA Toppers List</h2>
+        <table>
+          <tr style="background-color: #f2f2f2;">
+            <th>Rank</th>
+            <th>Register Number</th>
+            <th>CGPA</th>
+          </tr>`;
+      
+      // Add toppers data
+      analysis.cgpaAnalysis.toppersList.forEach((student, index) => {
+        htmlContent += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${student.id}</td>
+            <td>${student.cgpa.toFixed(2)}</td>
+          </tr>`;
+      });
+      
+      // Close CGPA toppers table
+      htmlContent += `
+        </table>`;
+    }
+    
+    htmlContent += `
         <div class="section-title">
           <h2 style="margin: 0;">End Semester Result Analysis</h2>
         </div>
@@ -150,7 +187,7 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
             <td>${appeared}</td>
             <td>Nil</td>
             <td>${failed > 0 ? failed : 'Nil'}</td>
-            <td>1</td>
+            <td>0</td>
             <td>${passed}</td>
             <td>${passPercentage.toFixed(1)}</td>
             <td>${highestGrade}</td>
@@ -160,6 +197,51 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     }
     
     // Close subject performance table and HTML document
+    htmlContent += `
+        </table>
+        
+        <h2>Individual Student Performance</h2>
+        <table>
+          <tr style="background-color: #f2f2f2;">
+            <th>S.No</th>
+            <th>Register Number</th>
+            <th>SGPA</th>
+            ${analysis.cgpaAnalysis ? '<th>CGPA</th>' : ''}
+            <th>Status</th>
+          </tr>`;
+    
+    // Add individual student performance data
+    if (analysis.studentSgpaDetails) {
+      analysis.studentSgpaDetails.forEach((student, index) => {
+        // Find CGPA if available
+        let cgpa = '';
+        if (analysis.cgpaAnalysis) {
+          const studentCgpa = analysis.cgpaAnalysis.studentCGPAs.find(s => s.id === student.id);
+          if (studentCgpa) {
+            cgpa = studentCgpa.cgpa.toFixed(2);
+          }
+        }
+        
+        // Determine status
+        let status = 'Good Standing';
+        if (student.hasArrears) {
+          status = 'Has Arrears';
+        } else if (student.sgpa < 6.5) {
+          status = 'SGPA below 6.5';
+        }
+        
+        htmlContent += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${student.id}</td>
+            <td>${student.sgpa.toFixed(2)}</td>
+            ${analysis.cgpaAnalysis ? `<td>${cgpa}</td>` : ''}
+            <td>${status}</td>
+          </tr>`;
+      });
+    }
+    
+    // Close individual performance table
     htmlContent += `
         </table>
         
