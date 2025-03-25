@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -23,7 +24,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [departmentCode, setDepartmentCode] = useState('CSE');
   const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
-  const [selectedFormat, setSelectedFormat<'csv' | 'excel' | 'word' | 'pdf' | null>>(null);
+  const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'word' | 'pdf' | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const { toast } = useToast();
 
