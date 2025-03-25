@@ -4,6 +4,7 @@ import { ResultAnalysis, StudentRecord } from '../types';
 interface WordReportOptions {
   headerImagePath?: string;
   footerImagePath?: string;
+  department?: string;
 }
 
 // Function to download Word document (docx)
@@ -197,7 +198,7 @@ export const downloadWordReport = (
             <td>${subject.subject}</td>
             <td>Subject ${index + 1}</td>
             <td></td>
-            <td>CSE</td>
+            <td>${options?.department || 'CSE'}</td>
             <td>${appeared}</td>
             <td>Nil</td>
             <td>${failed > 0 ? failed : 'Nil'}</td>
@@ -216,7 +217,9 @@ export const downloadWordReport = (
     
     // Add Classification section
     htmlContent += `
-        <h2 style="text-align: center;">Classification</h2>
+        <div class="section-title">
+          <h2 style="margin: 0; text-align: center;">Classification</h2>
+        </div>
         <table class="classification-table">
           <tr>
             <th colspan="7" style="background-color: #f2f2f2;">Current semester</th>
@@ -372,7 +375,9 @@ export const downloadWordReport = (
     
     // Add Rank Analysis section
     htmlContent += `
-        <h2>Rank Analysis</h2>
+        <div class="section-title">
+          <h2 style="margin: 0;">Rank Analysis</h2>
+        </div>
         <table class="rank-table">
           <tr>
             <th colspan="3" style="width: 50%; background-color: #f2f2f2;">Rank in this semester</th>
@@ -426,7 +431,9 @@ export const downloadWordReport = (
     
     // Add Category Analysis section
     htmlContent += `
-        <h2>Category Analysis</h2>
+        <div class="section-title">
+          <h2 style="margin: 0;">Category Analysis</h2>
+        </div>
         <table class="category-table">
           <tr>
             <th style="width: 40%; background-color: #f2f2f2;">Category</th>
@@ -497,13 +504,13 @@ export const downloadWordReport = (
     htmlContent += `
         </table>`;
     
-    // Add signature section
+    // Fix the signatures section to be on the same line with proper spacing
     htmlContent += `
-        <div class="signatures">
-          <div>Class Advisor</div>
-          <div>HoD</div>
-          <div>Dean – Academics</div>
-          <div>Principal</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center;">
+          <div style="width: 22%;">Class Advisor</div>
+          <div style="width: 22%;">HoD</div>
+          <div style="width: 22%;">Dean – Academics</div>
+          <div style="width: 22%;">Principal</div>
         </div>`;
     
     // Add footer image if provided

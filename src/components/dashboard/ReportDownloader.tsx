@@ -10,6 +10,8 @@ import {
 import { Download, Loader, File, FileText, FileSpreadsheetIcon } from 'lucide-react';
 import { ResultAnalysis, StudentRecord, downloadCSVReport, downloadExcelReport, downloadWordReport, downloadPdfReport } from '@/utils/excelProcessor';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface ReportDownloaderProps {
   analysis: ResultAnalysis | null;
@@ -18,6 +20,9 @@ interface ReportDownloaderProps {
 
 const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRecords }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [departmentCode, setDepartmentCode] = useState('CSE');
+  const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'word' | 'pdf' | null>(null);
   const { toast } = useToast();
 
   const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
@@ -30,6 +35,13 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       return;
     }
     
+    // For Word format, ask for department code first
+    if (format === 'word') {
+      setSelectedFormat('word');
+      setIsDepartmentDialogOpen(true);
+      return;
+    }
+    
     setIsDownloading(true);
     
     try {
@@ -37,12 +49,6 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         downloadCSVReport(analysis, studentRecords);
       } else if (format === 'excel') {
         downloadExcelReport(analysis, studentRecords);
-      } else if (format === 'word') {
-        // Pass the header and footer image paths to the Word report generator
-        downloadWordReport(analysis, studentRecords, {
-          headerImagePath: '/lovable-uploads/4997e6ac-f6aa-400a-98a6-aacabb4e2c4a.png',
-          footerImagePath: '/lovable-uploads/88828c10-c5b0-4c8c-93e2-07333837d8be.png'
-        });
       } else if (format === 'pdf') {
         await downloadPdfReport('dashboard-content');
       }
@@ -63,44 +69,109 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     }
   };
 
+  const handleConfirmDepartment = () => {
+    setIsDepartmentDialogOpen(false);
+    setIsDownloading(true);
+    
+    try {
+      if (selectedFormat === 'word') {
+        // Pass the header and footer image paths and department to the Word report generator
+        downloadWordReport(analysis!, studentRecords, {
+          headerImagePath: '/lovable-uploads/4997e6ac-f6aa-400a-98a6-aacabb4e2c4a.png',
+          footerImagePath: '/lovable-uploads/88828c10-c5b0-4c8c-93e2-07333837d8be.png',
+          department: departmentCode
+        });
+      }
+      
+      toast({
+        title: "Report downloaded",
+        description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
+      });
+    } catch (error) {
+      console.error("Download error:", error);
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: "There was a problem generating your report. Please try again.",
+      });
+    } finally {
+      setIsDownloading(false);
+      setSelectedFormat(null);
+    }
+  };
+
   return (
-    <div className="flex justify-end">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button disabled={isDownloading}>
-            {isDownloading ? (
-              <>
-                <Loader className="h-4 w-4 mr-2 animate-spin" />
-                Downloading...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                Download Report
-              </>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
-            <File className="h-4 w-4 mr-2" />
-            <span>Download as PDF</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
-            <FileText className="h-4 w-4 mr-2" />
-            <span>Download as Word</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
-            <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
-            <span>Download as Excel</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
-            <Download className="h-4 w-4 mr-2" />
-            <span>Download as CSV</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <>
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button disabled={isDownloading}>
+              {isDownloading ? (
+                <>
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  Downloading...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
+              <File className="h-4 w-4 mr-2" />
+              <span>Download as PDF</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
+              <FileText className="h-4 w-4 mr-2" />
+              <span>Download as Word</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
+              <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
+              <span>Download as Excel</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
+              <Download className="h-4 w-4 mr-2" />
+              <span>Download as CSV</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      
+      <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Department Information</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <label htmlFor="department-code" className="text-sm font-medium mb-2 block">
+              Enter Department Code (short form)
+            </label>
+            <Input
+              id="department-code"
+              value={departmentCode}
+              onChange={(e) => setDepartmentCode(e.target.value)}
+              placeholder="e.g. CSE"
+              className="mb-2"
+              maxLength={5}
+            />
+            <p className="text-sm text-muted-foreground">
+              This will be used in the End Semester Result Analysis table.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDepartmentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmDepartment}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
