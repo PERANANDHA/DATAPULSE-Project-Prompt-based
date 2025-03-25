@@ -17,6 +17,7 @@ import {
   Tooltip as RechartsTooltip,
   Legend 
 } from 'recharts';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 interface AnalysisOverviewProps {
   analysis: ResultAnalysis;
@@ -26,7 +27,7 @@ const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
   return (
     <>
       {analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed && (
-        <Card>
+        <Card className="mb-6">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Files Processed</CardTitle>
             <CardDescription>Combined analysis from {analysis.fileCount} files</CardDescription>
@@ -40,6 +41,26 @@ const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
                 </Badge>
               ))}
             </div>
+            
+            {analysis.cgpaAnalysis && (
+              <div className="mt-4 p-4 bg-slate-50 rounded-md">
+                <h3 className="text-sm font-semibold mb-2">CGPA Analysis</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Average CGPA</p>
+                    <p className="font-semibold">{analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Highest CGPA</p>
+                    <p className="font-semibold">{analysis.cgpaAnalysis.highestCGPA.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Lowest CGPA</p>
+                    <p className="font-semibold">{analysis.cgpaAnalysis.lowestCGPA.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -51,9 +72,9 @@ const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
             <CardDescription>Overall course completion</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
+            <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                   <Pie
                     data={analysis.passFailData}
                     cx="50%"
@@ -62,15 +83,36 @@ const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value.toFixed(2)}%`}
+                    label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+                    labelLine={true}
                   >
                     {analysis.passFailData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <RechartsTooltip formatter={(value: number) => `${value.toFixed(2)}%`} />
+                  <RechartsTooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Percentage']} />
+                  <Legend verticalAlign="bottom" align="center" />
                 </PieChart>
               </ResponsiveContainer>
+            </div>
+            
+            <div className="mt-2 border rounded-md overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Percentage</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analysis.passFailData.map((entry, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{entry.name}</TableCell>
+                      <TableCell>{entry.value.toFixed(1)}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -81,20 +123,54 @@ const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
             <CardDescription>Count of grades across all subjects</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
+            <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analysis.gradeDistribution}>
+                <BarChart 
+                  data={analysis.gradeDistribution}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <RechartsTooltip />
-                  <Bar dataKey="count" name="Count">
+                  <RechartsTooltip 
+                    formatter={(value: any) => [`${value} students`, 'Count']}
+                    labelFormatter={(label) => `Grade: ${label}`}
+                  />
+                  <Legend verticalAlign="top" />
+                  <Bar dataKey="count" name="Students">
                     {analysis.gradeDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+            
+            <div className="mt-2 border rounded-md overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Grade</TableHead>
+                    <TableHead>Count</TableHead>
+                    <TableHead>Percentage</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analysis.gradeDistribution.map((grade, index) => {
+                    const percentage = analysis.totalGrades > 0 
+                      ? ((grade.count / analysis.totalGrades) * 100).toFixed(1) 
+                      : "0.0";
+                      
+                    return (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{grade.name}</TableCell>
+                        <TableCell>{grade.count}</TableCell>
+                        <TableCell>{percentage}%</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -107,7 +183,7 @@ const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Average CGPA</span>
+                <span className="text-sm font-medium">Average SGPA</span>
                 <span className="text-lg font-semibold">{analysis.averageCGPA.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
@@ -122,6 +198,20 @@ const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
                 <span className="text-sm font-medium">Total Students</span>
                 <span className="text-lg font-semibold">{analysis.totalStudents}</span>
               </div>
+              
+              {analysis.cgpaAnalysis?.toppersList && analysis.cgpaAnalysis.toppersList.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="text-sm font-semibold mb-2">Top CGPA Performers</h3>
+                  <ul className="space-y-2">
+                    {analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, idx) => (
+                      <li key={idx} className="flex justify-between">
+                        <span className="text-sm">{student.id}</span>
+                        <span className="text-sm font-medium">{student.cgpa.toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

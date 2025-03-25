@@ -12,15 +12,24 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         <meta charset="UTF-8">
         <title>Result Analysis Report</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 15px; }
+          body { font-family: Arial, sans-serif; margin: 20px; }
           h1 { text-align: center; color: #2F3770; font-size: 24px; margin-bottom: 30px; }
           h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }
-          table { border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 25px; margin-left: 0; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; font-weight: bold; }
+          table { border-collapse: collapse; width: 100%; margin: 15px 0; page-break-inside: avoid; }
+          th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11pt; }
+          th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
           .section-title { background-color: #d9d9d9; padding: 10px; margin-top: 30px; margin-bottom: 20px; }
           .summary { margin: 20px 0; }
           .summary p { margin: 5px 0; line-height: 1.5; }
+          .end-semester-table th, .end-semester-table td { 
+            text-align: center; 
+            padding: 6px 4px;
+            font-size: 10pt;
+          }
+          .end-semester-table th:first-child, .end-semester-table td:first-child { text-align: center; }
+          .end-semester-table th:nth-child(2), .end-semester-table td:nth-child(2), 
+          .end-semester-table th:nth-child(3), .end-semester-table td:nth-child(3) { text-align: left; }
+          @page { size: landscape; }
         </style>
       </head>
       <body>
@@ -29,8 +38,8 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         <h2>College Information</h2>
         <table>
           <tr>
-            <td style="width: 40%; font-weight: bold;">College Name</td>
-            <td style="width: 60%;">K. S. Rangasamy College of Technology</td>
+            <td style="width: 30%; font-weight: bold;">College Name</td>
+            <td style="width: 70%;">K. S. Rangasamy College of Technology</td>
           </tr>
           <tr>
             <td style="font-weight: bold;">Department</td>
@@ -66,7 +75,7 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         
         <h2>File Analysis</h2>
         <table>
-          <tr style="background-color: #f2f2f2;">
+          <tr>
             <th>File Name</th>
             <th>Students</th>
             <th>Average SGPA</th>
@@ -102,9 +111,9 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
     // Add CGPA toppers list if available (multiple files were processed)
     if (analysis.cgpaAnalysis?.toppersList && analysis.cgpaAnalysis.toppersList.length > 0) {
       htmlContent += `
-        <h2>CGPA Toppers List</h2>
+        <h2>CGPA Toppers List (Up to this Semester)</h2>
         <table>
-          <tr style="background-color: #f2f2f2;">
+          <tr>
             <th>Rank</th>
             <th>Register Number</th>
             <th>CGPA</th>
@@ -114,9 +123,9 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
       analysis.cgpaAnalysis.toppersList.forEach((student, index) => {
         htmlContent += `
           <tr>
-            <td>${index + 1}</td>
+            <td style="text-align: center;">${index + 1}</td>
             <td>${student.id}</td>
-            <td>${student.cgpa.toFixed(2)}</td>
+            <td style="text-align: center;">${student.cgpa.toFixed(2)}</td>
           </tr>`;
       });
       
@@ -130,24 +139,24 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
           <h2 style="margin: 0;">End Semester Result Analysis</h2>
         </div>
         
-        <table>
-          <tr style="background-color: #f2f2f2;">
-            <th>S.No</th>
-            <th>Subject Code</th>
-            <th>Subject Name</th>
-            <th>Faculty Name</th>
-            <th>Dept</th>
-            <th>App</th>
-            <th>Ab</th>
-            <th>Fail</th>
-            <th>WH</th>
-            <th>Passed</th>
-            <th>% of pass</th>
-            <th>Highest Grade</th>
-            <th>No. of students</th>
+        <table class="end-semester-table">
+          <tr>
+            <th style="width: 5%;">S.No</th>
+            <th style="width: 12%;">Subject Code</th>
+            <th style="width: 12%;">Subject Name</th>
+            <th style="width: 12%;">Faculty Name</th>
+            <th style="width: 8%;">Dept</th>
+            <th style="width: 6%;">App</th>
+            <th style="width: 6%;">Ab</th>
+            <th style="width: 6%;">Fail</th>
+            <th style="width: 6%;">WH</th>
+            <th style="width: 8%;">Passed</th>
+            <th style="width: 7%;">% of pass</th>
+            <th style="width: 7%;">Highest Grade</th>
+            <th style="width: 7%;">No. of students</th>
           </tr>`;
     
-    // Create subject-wise performance data
+    // Create subject-wise performance data - exactly matching your table format
     if (analysis.subjectPerformance) {
       analysis.subjectPerformance.forEach((subject, index) => {
         // Get the highest grade for this subject
@@ -171,10 +180,10 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         // Calculate metrics for this subject
         const subjectRecords = records.filter(r => r.SCODE === subject.subject);
         const appeared = subjectRecords.length;
-        const absent = 0; // No data for this
+        const absent = 0; // No data for this, using "Nil"
         const failed = subjectRecords.filter(r => r.GR === 'U').length;
         const withheld = 0; // No data for this
-        const passed = appeared - failed - absent - withheld;
+        const passed = appeared - failed;
         const passPercentage = appeared > 0 ? (passed / appeared) * 100 : 0;
         
         htmlContent += `
@@ -187,7 +196,7 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
             <td>${appeared}</td>
             <td>Nil</td>
             <td>${failed > 0 ? failed : 'Nil'}</td>
-            <td>0</td>
+            <td>${withheld}</td>
             <td>${passed}</td>
             <td>${passPercentage.toFixed(1)}</td>
             <td>${highestGrade}</td>
@@ -196,17 +205,17 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
       });
     }
     
-    // Close subject performance table and HTML document
+    // Close subject performance table and add individual student performance
     htmlContent += `
         </table>
         
         <h2>Individual Student Performance</h2>
         <table>
-          <tr style="background-color: #f2f2f2;">
-            <th>S.No</th>
-            <th>Register Number</th>
-            <th>SGPA</th>
-            ${analysis.cgpaAnalysis ? '<th>CGPA</th>' : ''}
+          <tr>
+            <th style="width: 5%;">S.No</th>
+            <th style="width: 20%;">Register Number</th>
+            <th style="width: 15%;">SGPA</th>
+            ${analysis.cgpaAnalysis ? '<th style="width: 15%;">CGPA</th>' : ''}
             <th>Status</th>
           </tr>`;
     
@@ -232,10 +241,10 @@ export const downloadWordReport = (analysis: ResultAnalysis, records: StudentRec
         
         htmlContent += `
           <tr>
-            <td>${index + 1}</td>
+            <td style="text-align: center;">${index + 1}</td>
             <td>${student.id}</td>
-            <td>${student.sgpa.toFixed(2)}</td>
-            ${analysis.cgpaAnalysis ? `<td>${cgpa}</td>` : ''}
+            <td style="text-align: center;">${student.sgpa.toFixed(2)}</td>
+            ${analysis.cgpaAnalysis ? `<td style="text-align: center;">${cgpa}</td>` : ''}
             <td>${status}</td>
           </tr>`;
       });

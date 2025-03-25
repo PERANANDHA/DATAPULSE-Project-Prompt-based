@@ -2,12 +2,16 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ResultAnalysis } from '@/utils/excelProcessor';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 interface StudentSGPATableProps {
   analysis: ResultAnalysis;
 }
 
 const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
+  // Sort students by SGPA descending
+  const sortedStudents = [...(analysis.studentSgpaDetails || [])].sort((a, b) => b.sgpa - a.sgpa);
+  
   return (
     <Card>
       <CardHeader>
@@ -15,40 +19,62 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
         <CardDescription>SGPA calculation for each student</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4 text-left">Registration Number</th>
-                <th className="py-2 px-4 text-left">SGPA</th>
-                <th className="py-2 px-4 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analysis.studentSgpaDetails?.map((student, index) => (
-                <tr 
-                  key={index} 
-                  className={`border-b ${
-                    student.hasArrears ? "bg-red-50" : 
-                    Number(student.sgpa) < 6.5 ? "bg-amber-50" : 
-                    "hover:bg-gray-50"
-                  }`}
-                >
-                  <td className="py-2 px-4">{student.id}</td>
-                  <td className="py-2 px-4 font-medium">{student.sgpa.toFixed(2)}</td>
-                  <td className="py-2 px-4">
-                    {student.hasArrears ? (
-                      <span className="text-red-500 text-sm">Has Arrears</span>
-                    ) : Number(student.sgpa) < 6.5 ? (
-                      <span className="text-amber-500 text-sm">SGPA below 6.5</span>
-                    ) : (
-                      <span className="text-green-500 text-sm">Good Standing</span>
+        <div className="overflow-x-auto border rounded-md">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Rank</TableHead>
+                <TableHead>Registration Number</TableHead>
+                <TableHead className="w-24 text-center">SGPA</TableHead>
+                {analysis.cgpaAnalysis && (
+                  <TableHead className="w-24 text-center">CGPA</TableHead>
+                )}
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedStudents.map((student, index) => {
+                // Find CGPA if available
+                let cgpa = undefined;
+                if (analysis.cgpaAnalysis?.studentCGPAs) {
+                  const cgpaInfo = analysis.cgpaAnalysis.studentCGPAs.find(s => s.id === student.id);
+                  cgpa = cgpaInfo?.cgpa;
+                }
+                
+                return (
+                  <TableRow 
+                    key={index} 
+                    className={
+                      student.hasArrears ? "bg-red-50" : 
+                      student.sgpa < 6.5 ? "bg-amber-50" : 
+                      index < 3 ? "bg-green-50" :
+                      ""
+                    }
+                  >
+                    <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                    <TableCell>{student.id}</TableCell>
+                    <TableCell className="text-center font-medium">{student.sgpa.toFixed(2)}</TableCell>
+                    {analysis.cgpaAnalysis && (
+                      <TableCell className="text-center font-medium">
+                        {cgpa !== undefined ? cgpa.toFixed(2) : "-"}
+                      </TableCell>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <TableCell>
+                      {student.hasArrears ? (
+                        <span className="text-red-500 text-sm font-medium">Has Arrears</span>
+                      ) : student.sgpa < 6.5 ? (
+                        <span className="text-amber-500 text-sm font-medium">SGPA below 6.5</span>
+                      ) : index < 3 ? (
+                        <span className="text-green-500 text-sm font-medium">Top Performer</span>
+                      ) : (
+                        <span className="text-green-500 text-sm">Good Standing</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
