@@ -47,35 +47,61 @@ export const downloadWordReport = (
           .category-table th, .category-table td { padding: 8px; }
           .signature-section { margin-top: 60px; text-align: center; }
           .signature-line { display: inline-block; border-top: 1px solid #000; width: 150px; margin: 0 30px; padding-top: 5px; }
-          /* Header image styling - wider container with controlled image size */
-          .header-image {
-            width: 100%;
-            margin: 0 auto 20px;
-            display: block;
-            text-align: left;
+          /* Custom header table styling */
+          .custom-header-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 20px; 
           }
-          .header-image img {
-            width: 30%;
-            height: auto;
-            margin-left: 0;
+          .custom-header-table td {
+            border: 1px solid #000;
+            padding: 10px;
+            vertical-align: middle;
+          }
+          .custom-header-table .logo-cell {
+            width: 15%;
+            text-align: center;
+          }
+          .custom-header-table .title-cell {
+            width: 70%;
+            text-align: center;
+            font-weight: bold;
+          }
+          .custom-header-table .result-cell {
+            width: 15%;
+            text-align: center;
+            font-weight: bold;
+          }
+          .custom-header-table img {
+            max-width: 80px;
+            max-height: 80px;
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add the header image that is left-aligned with controlled size
+    // Add custom header table instead of the image
     const baseURL = window.location.origin;
-    const headerImagePath = baseURL + "/lovable-uploads/6c555048-56f9-487c-a7a1-100babe97cd7.png";
+    const logoPath = baseURL + "/lovable-uploads/76cdb2e8-df2a-42ec-aabc-75bb5af6cf4d.png";
     
     htmlContent += `
-      <div class="header-image">
-        <img src="${headerImagePath}" alt="College Header" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Header image failed to load');">
-      </div>`;
+      <table class="custom-header-table">
+        <tr>
+          <td class="logo-cell">
+            <img src="${logoPath}" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
+          </td>
+          <td class="title-cell">
+            K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE – 637 215<br>
+            (An Autonomous Institute Affiliated to Anna University, Chennai)
+          </td>
+          <td class="result-cell">
+            RESULT<br>ANALYSIS
+          </td>
+        </tr>
+      </table>`;
     
-    // Add a centered h1 for "RESULT ANALYSIS" header
-    htmlContent += `
-      <h1>RESULT ANALYSIS</h1>`;
+    // Skip adding the heading since it's now in the header table
     
     htmlContent += `
         <h2>College Information</h2>
@@ -512,7 +538,7 @@ export const downloadWordReport = (
     htmlContent += `
         </table>`;
     
-    // Simplify signatures section to be just text
+    // Updated signature section with no boxes
     htmlContent += `
         <div class="signature-section">
           <div>
