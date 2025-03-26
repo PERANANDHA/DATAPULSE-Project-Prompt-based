@@ -52,34 +52,30 @@ export const downloadWordReport = (
           .logo-container { 
             text-align: center; 
             margin-bottom: 20px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            width: 100%; 
           }
           .college-logo { 
-            max-width: 350px; 
+            max-width: 100%; 
             height: auto; 
-            margin: 0 auto; 
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add logo directly at the top with a direct reference to the image
+    // Add logo at the top of the document before the heading
     if (options?.logoImagePath) {
       const absoluteLogoPath = window.location.origin + options.logoImagePath;
-      htmlContent = htmlContent.slice(0, htmlContent.indexOf('<body>') + 6) + `
+      htmlContent += `
         <div class="logo-container">
           <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
-        </div>` + htmlContent.slice(htmlContent.indexOf('<body>') + 6);
+        </div>
+        <h1>Result Analysis Report</h1>`;
+    } else {
+      htmlContent += `<h1>Result Analysis Report</h1>`;
     }
     
     // Continue with the rest of the document
     htmlContent += `
-        <h1>Result Analysis Report</h1>
-        
         <h2>College Information</h2>
         <table>
           <tr>
