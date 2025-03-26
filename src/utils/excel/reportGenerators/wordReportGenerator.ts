@@ -75,6 +75,10 @@ export const downloadWordReport = (
         <img src="${headerImagePath}" alt="College Header" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Header image failed to load');">
       </div>`;
     
+    // Add a centered h1 for "RESULT ANALYSIS" header
+    htmlContent += `
+      <h1>RESULT ANALYSIS</h1>`;
+    
     htmlContent += `
         <h2>College Information</h2>
         <table>
