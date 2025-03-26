@@ -22,326 +22,565 @@ export const downloadWordReport = (
     const department = options.department || 'CSE';
     const departmentFullName = options.departmentFullName || 'Computer Science and Engineering';
     
-    // Use HTML-based report generation (since docx library has limitations with charts)
-    generateHtmlWordReport(analysis, records, options);
+    // Create a new Document
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          // Header with College name and logo
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: "K. S. Rangasamy College of Technology",
+                bold: true,
+                size: 36,
+                color: "2563eb"
+              })
+            ]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: departmentFullName,
+                bold: true,
+                size: 28,
+                color: "1d4ed8"
+              })
+            ]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: "END SEMESTER RESULT ANALYSIS",
+                bold: true,
+                size: 32,
+                color: "2563eb"
+              })
+            ],
+            spacing: {
+              after: 400
+            }
+          }),
+          
+          // College Information Table
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun({
+                text: "College Information",
+                bold: true,
+                size: 28
+              })
+            ],
+            spacing: {
+              after: 200
+            }
+          }),
+          createInfoTable([
+            ["College Name", "K. S. Rangasamy College of Technology"],
+            ["Department", departmentFullName],
+            ["Academic Year", "2023-2024"],
+            ["Semester", "III"]
+          ]),
+          
+          // Performance Summary
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun({
+                text: "Performance Summary",
+                bold: true, 
+                size: 28
+              })
+            ],
+            spacing: {
+              before: 400,
+              after: 200
+            }
+          }),
+          createInfoTable([
+            ["Total Students", analysis.totalStudents.toString()],
+            ["Average SGPA", analysis.averageCGPA.toFixed(2)],
+            ["Highest SGPA", analysis.highestSGPA.toFixed(2)],
+            ["Lowest SGPA", analysis.lowestSGPA.toFixed(2)],
+            ...(analysis.cgpaAnalysis ? [
+              ["Average CGPA", analysis.cgpaAnalysis.averageCGPA.toFixed(2)],
+              ["Highest CGPA", analysis.cgpaAnalysis.highestCGPA.toFixed(2)],
+              ["Lowest CGPA", analysis.cgpaAnalysis.lowestCGPA.toFixed(2)]
+            ] : [])
+          ]),
+          
+          // Subject Performance
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun({
+                text: "End Semester Result Analysis",
+                bold: true,
+                size: 28
+              })
+            ],
+            spacing: {
+              before: 400,
+              after: 200
+            }
+          }),
+          createSubjectTable(records, department),
+          
+          // Grade Distribution
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun({
+                text: "Grade Distribution",
+                bold: true,
+                size: 28
+              })
+            ],
+            spacing: {
+              before: 400,
+              after: 200
+            }
+          }),
+          createGradeDistributionTable(analysis),
+          
+          // Top Performers
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun({
+                text: "Top Performers",
+                bold: true,
+                size: 28
+              })
+            ],
+            spacing: {
+              before: 400,
+              after: 200
+            }
+          }),
+          createTopPerformersTable(analysis.topPerformers),
+          
+          // CGPA Rankings if available
+          ...(analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs ? [
+            new Paragraph({
+              heading: HeadingLevel.HEADING_2,
+              children: [
+                new TextRun({
+                  text: "CGPA Rankings",
+                  bold: true,
+                  size: 28
+                })
+              ],
+              spacing: {
+                before: 400,
+                after: 200
+              }
+            }),
+            createCGPARankingsTable(analysis.cgpaAnalysis.studentCGPAs)
+          ] : []),
+          
+          // Signature section
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun({
+                text: "Signatures",
+                bold: true,
+                size: 28
+              })
+            ],
+            spacing: {
+              before: 600,
+              after: 200
+            }
+          }),
+          createSignatureTable()
+        ]
+      }]
+    });
+    
+    // Generate the document
+    Packer.toBlob(doc).then(blob => {
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'result-analysis-report.docx';
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    });
+    
   } catch (error) {
     console.error('Error generating Word report:', error);
     throw error;
   }
 };
 
-/**
- * Generate an HTML-based Word document that can be opened in MS Word
- */
-const generateHtmlWordReport = (
-  analysis: ResultAnalysis, 
-  records: StudentRecord[],
-  options: WordReportOptions
-): void => {
-  try {
-    // Extract options with defaults
-    const department = options.department || 'CSE';
-    const departmentFullName = options.departmentFullName || 'Computer Science and Engineering';
+// Helper function to create a simple information table
+function createInfoTable(rows: string[][]): Table {
+  return new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" }
+    },
+    rows: rows.map(row => new TableRow({
+      children: [
+        new TableCell({
+          width: {
+            size: 30,
+            type: WidthType.PERCENTAGE
+          },
+          children: [new Paragraph({
+            children: [new TextRun({ text: row[0], bold: true })]
+          })]
+        }),
+        new TableCell({
+          width: {
+            size: 70,
+            type: WidthType.PERCENTAGE
+          },
+          children: [new Paragraph({
+            children: [new TextRun({ text: row[1] })]
+          })]
+        })
+      ]
+    }))
+  });
+}
+
+// Helper function to create subject performance table
+function createSubjectTable(records: StudentRecord[], department: string): Table {
+  // Get unique subjects
+  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
+  
+  // Create header row
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: [
+      "S.No", "Subject Code", "Subject Name", "Faculty Name", "Dept", 
+      "App", "Absent", "Fail", "WH", "Passed", "% of pass"
+    ].map(header => 
+      new TableCell({
+        shading: {
+          fill: "e0e7ff"
+        },
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: header,
+                bold: true,
+                color: "1e40af"
+              })
+            ]
+          })
+        ]
+      })
+    )
+  });
+  
+  // Create data rows
+  const dataRows = uniqueSubjects.map((subject, index) => {
+    const subjectRecords = records.filter(record => record.SCODE === subject);
+    const totalStudents = subjectRecords.length;
+    const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
+    const failedStudents = totalStudents - passedStudents;
+    const passPercentage = (passedStudents / totalStudents) * 100;
     
-    // Create HTML content for the Word document
-    let html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Result Analysis Report</title>
-        <style>
-          body { font-family: 'Calibri', sans-serif; color: #333; line-height: 1.5; }
-          h1 { color: #2563eb; margin-bottom: 20px; }
-          h2 { color: #1d4ed8; margin-top: 30px; margin-bottom: 10px; }
-          h3 { color: #1e40af; margin-top: 20px; margin-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-          th { background-color: #e0e7ff; color: #1e40af; font-weight: bold; text-align: left; padding: 8px; border: 1px solid #cbd5e1; }
-          td { padding: 8px; border: 1px solid #cbd5e1; }
-          .chart-placeholder { background-color: #f8fafc; border: 1px dashed #94a3b8; padding: 20px; text-align: center; margin-bottom: 20px; }
-          .signature-table { width: 100%; border: none; }
-          .signature-cell { width: 25%; text-align: center; border: none; }
-          .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          /* Header image styling - ensuring full image visibility */
-          .header-image {
-            width: 100%;
-            margin: 0 auto 20px;
-            display: block;
-            position: relative;
-          }
-          .header-image img {
-            width: 20%; /* Reduced width to ensure full image visibility */
-            height: auto;
-            margin-left: 1in; /* Start at 1 inch mark */
-            max-width: 5.5in; /* Ensure image width stays within 5.5 inches (6.5 - 1) */
-            object-fit: contain; /* Ensure the entire image is visible */
-          }
-          @page { size: landscape; margin: 0.5in; }
-        </style>
-      </head>
-      <body>`;
-    
-    // Add the header image positioned within the ruler limits with reduced width
-    const baseURL = window.location.origin;
-    const headerImagePath = baseURL + "/lovable-uploads/6c555048-56f9-487c-a7a1-100babe97cd7.png";
-    
-    html += `
-      <div class="header-image">
-        <img src="${options.logoImagePath || headerImagePath}" alt="College Logo">
-      </div>`;
-    
-    // Add title for the report
-    html += `
-      <h1 style="text-align: center;">END SEMESTER RESULT ANALYSIS</h1>`;
-
-    // Add college information table
-    html += `
-      <table>
-        <tr>
-          <th colspan="2">College Information</th>
-        </tr>
-        <tr>
-          <td>College Name</td>
-          <td>K. S. Rangasamy College of Technology</td>
-        </tr>
-        <tr>
-          <td>Department</td>
-          <td>${departmentFullName}</td>
-        </tr>
-        <tr>
-          <td>Academic Year</td>
-          <td>2023-2024</td>
-        </tr>
-        <tr>
-          <td>Semester</td>
-          <td>III</td>
-        </tr>
-      </table>`;
-
-    // Add performance summary section
-    html += `
-      <h2>Performance Summary</h2>
-      <table>
-        <tr>
-          <th>Metric</th>
-          <th>Value</th>
-        </tr>
-        <tr>
-          <td>Total Students</td>
-          <td>${analysis.totalStudents}</td>
-        </tr>
-        <tr>
-          <td>Average SGPA</td>
-          <td>${analysis.averageCGPA.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td>Highest SGPA</td>
-          <td>${analysis.highestSGPA.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td>Lowest SGPA</td>
-          <td>${analysis.lowestSGPA.toFixed(2)}</td>
-        </tr>`;
-
-    // Add CGPA information if multiple files were processed
-    if (analysis.fileCount && analysis.fileCount > 1 && analysis.cgpaAnalysis) {
-      html += `
-        <tr>
-          <td>Number of Files Processed</td>
-          <td>${analysis.fileCount}</td>
-        </tr>
-        <tr>
-          <td>Average CGPA</td>
-          <td>${analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td>Highest CGPA</td>
-          <td>${analysis.cgpaAnalysis.highestCGPA.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td>Lowest CGPA</td>
-          <td>${analysis.cgpaAnalysis.lowestCGPA.toFixed(2)}</td>
-        </tr>`;
-    }
-
-    html += `
-      </table>`;
-
-    // Add subject performance section (End Semester Result Analysis)
-    html += `
-      <h2>End Semester Result Analysis</h2>
-      <table>
-        <tr>
-          <th>S.No</th>
-          <th>Subject Code</th>
-          <th>Subject Name</th>
-          <th>Faculty Name</th>
-          <th>Dept</th>
-          <th>App</th>
-          <th>Absent</th>
-          <th>Fail</th>
-          <th>WH</th>
-          <th>Passed</th>
-          <th>% of pass</th>
-        </tr>`;
-
-    // Add subject performance data
-    const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
-    uniqueSubjects.forEach((subject, index) => {
-      const subjectRecords = records.filter(record => record.SCODE === subject);
-      const totalStudents = subjectRecords.length;
-      const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
-      const failedStudents = totalStudents - passedStudents;
-      const passPercentage = (passedStudents / totalStudents) * 100;
-      
-      html += `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${subject}</td>
-          <td>Subject ${index + 1}</td>
-          <td></td>
-          <td>${department}</td>
-          <td>${totalStudents}</td>
-          <td>Nil</td>
-          <td>${failedStudents || 'Nil'}</td>
-          <td>1</td>
-          <td>${passedStudents}</td>
-          <td>${passPercentage.toFixed(1)}</td>
-        </tr>`;
+    return new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString() })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: subject })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `Subject ${index + 1}` })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "" })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: department })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: totalStudents.toString() })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Nil" })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: failedStudents ? failedStudents.toString() : "Nil" })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "1" })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: passedStudents.toString() })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: passPercentage.toFixed(1) })] })] })
+      ]
     });
+  });
+  
+  // Create the table
+  return new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" }
+    },
+    rows: [headerRow, ...dataRows]
+  });
+}
 
-    html += `
-      </table>`;
-
-    // Add grade distribution data
-    html += `
-      <h2>Grade Distribution</h2>
-      <table>
-        <tr>
-          <th>Grade</th>
-          <th>Count</th>
-          <th>Percentage</th>
-        </tr>`;
-
-    analysis.gradeDistribution.forEach(grade => {
-      const percentage = analysis.totalGrades > 0 
-        ? ((grade.count / analysis.totalGrades) * 100).toFixed(1) 
-        : "0.0";
-      
-      html += `
-        <tr>
-          <td>${grade.name}</td>
-          <td>${grade.count}</td>
-          <td>${percentage}%</td>
-        </tr>`;
+// Helper function to create grade distribution table
+function createGradeDistributionTable(analysis: ResultAnalysis): Table {
+  // Create header row
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: [
+      "Grade", "Count", "Percentage"
+    ].map(header => 
+      new TableCell({
+        shading: {
+          fill: "e0e7ff"
+        },
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: header,
+                bold: true,
+                color: "1e40af"
+              })
+            ]
+          })
+        ]
+      })
+    )
+  });
+  
+  // Create data rows
+  const dataRows = analysis.gradeDistribution.map(grade => {
+    const percentage = analysis.totalGrades > 0 
+      ? ((grade.count / analysis.totalGrades) * 100).toFixed(1) 
+      : "0.0";
+    
+    return new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: grade.name })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: grade.count.toString() })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${percentage}%` })] })] })
+      ]
     });
+  });
+  
+  // Create the table
+  return new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" }
+    },
+    rows: [headerRow, ...dataRows]
+  });
+}
 
-    html += `
-      </table>`;
-
-    // Add top performers section
-    html += `
-      <h2>Top Performers</h2>
-      <table>
-        <tr>
-          <th>S.No</th>
-          <th>Registration Number</th>
-          <th>SGPA</th>
-        </tr>`;
-
-    analysis.topPerformers.forEach((student, index) => {
-      html += `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${student.id}</td>
-          <td>${student.sgpa.toFixed(2)}</td>
-        </tr>`;
+// Helper function to create top performers table
+function createTopPerformersTable(topPerformers: { id: string; sgpa: number; grade: string }[]): Table {
+  // Create header row
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: [
+      "S.No", "Registration Number", "SGPA"
+    ].map(header => 
+      new TableCell({
+        shading: {
+          fill: "e0e7ff"
+        },
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: header,
+                bold: true,
+                color: "1e40af"
+              })
+            ]
+          })
+        ]
+      })
+    )
+  });
+  
+  // Create data rows
+  const dataRows = topPerformers.map((student, index) => {
+    return new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString() })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: student.id })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: student.sgpa.toFixed(2) })] })] })
+      ]
     });
+  });
+  
+  // Create the table
+  return new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" }
+    },
+    rows: [headerRow, ...dataRows]
+  });
+}
 
-    html += `
-      </table>`;
+// Helper function to create CGPA rankings table
+function createCGPARankingsTable(studentCGPAs: { id: string; cgpa: number }[]): Table {
+  // Sort students by CGPA in descending order and take top 10
+  const topStudents = [...studentCGPAs]
+    .sort((a, b) => b.cgpa - a.cgpa)
+    .slice(0, 10);
+  
+  // Create header row
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: [
+      "S.No", "Registration Number", "CGPA"
+    ].map(header => 
+      new TableCell({
+        shading: {
+          fill: "e0e7ff"
+        },
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: header,
+                bold: true,
+                color: "1e40af"
+              })
+            ]
+          })
+        ]
+      })
+    )
+  });
+  
+  // Create data rows
+  const dataRows = topStudents.map((student, index) => {
+    return new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (index + 1).toString() })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: student.id })] })] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: student.cgpa.toFixed(2) })] })] })
+      ]
+    });
+  });
+  
+  // Create the table
+  return new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "cbd5e1" }
+    },
+    rows: [headerRow, ...dataRows]
+  });
+}
 
-    // Add CGPA rankings if multiple files
-    if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
-      html += `
-        <h2>CGPA Rankings</h2>
-        <table>
-          <tr>
-            <th>S.No</th>
-            <th>Registration Number</th>
-            <th>CGPA</th>
-          </tr>`;
-
-      analysis.cgpaAnalysis.studentCGPAs
-        .sort((a, b) => b.cgpa - a.cgpa)
-        .slice(0, 10)
-        .forEach((student, index) => {
-          html += `
-            <tr>
-              <td>${index + 1}</td>
-              <td>${student.id}</td>
-              <td>${student.cgpa.toFixed(2)}</td>
-            </tr>`;
-        });
-
-      html += `
-        </table>`;
-    }
-
-    // Add analysis chart placeholders
-    html += `
-      <h2>Visual Analysis</h2>
-      <div class="chart-placeholder">
-        <p>Pass/Fail Distribution Chart</p>
-        <p>To view charts, please refer to the analysis dashboard</p>
-      </div>
-      
-      <div class="chart-placeholder">
-        <p>Grade Distribution Chart</p>
-        <p>To view charts, please refer to the analysis dashboard</p>
-      </div>`;
-
-    // Add signature section
-    html += `
-      <h2>Signatures</h2>
-      <table class="signature-table">
-        <tr>
-          <td class="signature-cell">
-            <div class="signature-line">Faculty</div>
-          </td>
-          <td class="signature-cell">
-            <div class="signature-line">Class Advisor</div>
-          </td>
-          <td class="signature-cell">
-            <div class="signature-line">HoD</div>
-          </td>
-          <td class="signature-cell">
-            <div class="signature-line">Principal</div>
-          </td>
-        </tr>
-      </table>`;
-
-    // Close HTML document
-    html += `
-      </body>
-      </html>`;
-
-    // Create blob for HTML content
-    const blob = new Blob([html], { type: 'application/msword' });
-    
-    // Create download link
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'result-analysis-report.doc';
-    
-    // Trigger download
-    document.body.appendChild(link);
-    link.click();
-    
-    // Clean up
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error('Error generating HTML Word report:', error);
-    throw error;
-  }
-};
+// Helper function to create signature table
+function createSignatureTable(): Table {
+  return new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE
+    },
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.NONE }
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            children: [
+              new Paragraph({ 
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 600 },
+                children: [new TextRun({ text: "Faculty" })] 
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            children: [
+              new Paragraph({ 
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 600 },
+                children: [new TextRun({ text: "Class Advisor" })] 
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            children: [
+              new Paragraph({ 
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 600 },
+                children: [new TextRun({ text: "HoD" })] 
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: 25, type: WidthType.PERCENTAGE },
+            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            children: [
+              new Paragraph({ 
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 600 },
+                children: [new TextRun({ text: "Principal" })] 
+              })
+            ]
+          })
+        ]
+      })
+    ]
+  });
+}
