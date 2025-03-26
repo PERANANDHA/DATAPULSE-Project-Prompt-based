@@ -1,3 +1,4 @@
+
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
@@ -49,24 +50,24 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          /* Header image styling */
+          /* Header image styling - left aligned and smaller */
           .header-image {
             width: 100%;
             margin: 0 auto 20px;
             display: block;
-            text-align: center;
-            max-width: 800px;
+            text-align: left;
           }
           .header-image img {
-            width: 100%;
+            width: 40%;
             height: auto;
+            margin-left: 0;
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add the header image that is centered on the page
+    // Add the header image that is left-aligned on the page with smaller size
     const baseURL = window.location.origin;
     const headerImagePath = baseURL + "/lovable-uploads/6c555048-56f9-487c-a7a1-100babe97cd7.png";
     
