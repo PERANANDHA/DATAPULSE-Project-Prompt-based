@@ -101,7 +101,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word') {
-        const logoURL = "/lovable-uploads/131c8935-28ee-4722-bb34-6ee48d87f075.png";
+        const logoURL = "/lovable-uploads/1294f1db-a3af-4431-bc7f-eb6c51a2ebec.png";
         
         downloadWordReport(analysis!, studentRecords, {
           logoImagePath: logoURL,

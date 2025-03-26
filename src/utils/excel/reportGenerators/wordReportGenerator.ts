@@ -1,3 +1,4 @@
+
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
@@ -49,12 +50,57 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #000; }
-          .header-table td { padding: 8px; vertical-align: middle; border: 1px solid #000; }
-          .header-logo { width: 95%; max-width: 150px; height: auto; display: block; margin: 0 auto; }
-          .college-name { font-size: 16pt; text-align: center; font-weight: bold; }
-          .college-subtitle { font-size: 12pt; text-align: center; }
-          .result-analysis-cell { font-size: 14pt; text-align: center; font-weight: bold; }
+          /* Header table styling to exactly match the image */
+          .header-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 20px; 
+            border: 1px solid #000; 
+            table-layout: fixed;
+          }
+          .header-table td { 
+            padding: 0; 
+            vertical-align: middle; 
+            border: 1px solid #000; 
+            height: 55px; /* Fixed height to match image */
+          }
+          .header-logo-cell {
+            width: 15%;
+            text-align: center;
+            padding: 3px;
+          }
+          .header-logo { 
+            max-width: 90%; 
+            height: auto; 
+            display: block; 
+            margin: 0 auto;
+          }
+          .college-name-cell {
+            width: 65%;
+            text-align: center;
+            padding: 3px 10px;
+          }
+          .college-name { 
+            font-size: 14pt; 
+            text-align: center; 
+            font-weight: bold; 
+            margin: 0;
+            line-height: 1.3;
+          }
+          .college-subtitle { 
+            font-size: 11pt; 
+            text-align: center; 
+            margin: 0;
+            line-height: 1.3;
+          }
+          .result-analysis-cell { 
+            width: 20%; 
+            text-align: center; 
+            font-size: 12pt; 
+            font-weight: bold;
+            line-height: 1.3;
+            padding: 3px;
+          }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
@@ -63,22 +109,23 @@ export const downloadWordReport = (
     // Add header table with logo and college name exactly like the image
     if (options?.logoImagePath) {
       // Ensure we have an absolute path by using the document location object
-      // Get the base URL of the site
       const baseURL = window.location.origin;
       const absoluteLogoPath = baseURL + options.logoImagePath;
+      // Use the new image path for the logo
+      const newLogoPath = baseURL + "/lovable-uploads/1294f1db-a3af-4431-bc7f-eb6c51a2ebec.png";
       
       // Create header table with exact proportions as requested
       htmlContent += `
         <table class="header-table">
           <tr>
-            <td style="width: 15%; text-align: center;">
-              <img src="${absoluteLogoPath}" class="header-logo" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
+            <td class="header-logo-cell">
+              <img src="${newLogoPath}" class="header-logo" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
             </td>
-            <td style="width: 65%; text-align: center;">
+            <td class="college-name-cell">
               <div class="college-name">K.S.RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE – 637 215</div>
               <div class="college-subtitle">(An Autonomous Institute Affiliated to Anna University, Chennai)</div>
             </td>
-            <td style="width: 20%; text-align: center;" class="result-analysis-cell">
+            <td class="result-analysis-cell">
               RESULT<br>ANALYSIS
             </td>
           </tr>
