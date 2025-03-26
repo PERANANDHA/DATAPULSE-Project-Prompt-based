@@ -1,4 +1,3 @@
-
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
@@ -56,21 +55,19 @@ export const downloadWordReport = (
             border-collapse: collapse; 
             margin-bottom: 20px; 
             border: 1px solid #000; 
-            table-layout: fixed;
           }
           .header-table td { 
             padding: 0; 
             vertical-align: middle; 
-            border: 1px solid #000; 
-            height: 55px; /* Fixed height to match image */
+            border: 1px solid #000;
           }
           .header-logo-cell {
             width: 15%;
             text-align: center;
-            padding: 3px;
+            padding: 5px;
           }
           .header-logo { 
-            max-width: 90%; 
+            max-width: 100%; 
             height: auto; 
             display: block; 
             margin: 0 auto;
@@ -78,7 +75,7 @@ export const downloadWordReport = (
           .college-name-cell {
             width: 65%;
             text-align: center;
-            padding: 3px 10px;
+            padding: 5px;
           }
           .college-name { 
             font-size: 14pt; 
@@ -93,46 +90,39 @@ export const downloadWordReport = (
             margin: 0;
             line-height: 1.3;
           }
-          .result-analysis-cell { 
+          .industrial-visit-cell { 
             width: 20%; 
             text-align: center; 
             font-size: 12pt; 
             font-weight: bold;
             line-height: 1.3;
-            padding: 3px;
+            padding: 5px;
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add header table with logo and college name exactly like the image
-    if (options?.logoImagePath) {
-      // Ensure we have an absolute path by using the document location object
-      const baseURL = window.location.origin;
-      const absoluteLogoPath = baseURL + options.logoImagePath;
-      // Use the new image path for the logo
-      const newLogoPath = baseURL + "/lovable-uploads/1294f1db-a3af-4431-bc7f-eb6c51a2ebec.png";
-      
-      // Create header table with exact proportions as requested
-      htmlContent += `
-        <table class="header-table">
-          <tr>
-            <td class="header-logo-cell">
-              <img src="${newLogoPath}" class="header-logo" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
-            </td>
-            <td class="college-name-cell">
-              <div class="college-name">K.S.RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE – 637 215</div>
-              <div class="college-subtitle">(An Autonomous Institute Affiliated to Anna University, Chennai)</div>
-            </td>
-            <td class="result-analysis-cell">
-              RESULT<br>ANALYSIS
-            </td>
-          </tr>
-        </table>`;
-    }
+    // Add header table that exactly matches the provided image
+    const baseURL = window.location.origin;
+    const newLogoPath = baseURL + "/lovable-uploads/6b4428ad-8bcb-4262-a6e6-839da6e64d42.png";
     
-    // Continue with the rest of the document
+    htmlContent += `
+      <table class="header-table">
+        <tr>
+          <td class="header-logo-cell">
+            <img src="${newLogoPath}" class="header-logo" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
+          </td>
+          <td class="college-name-cell">
+            <div class="college-name">K. S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE – 637 215</div>
+            <div class="college-subtitle">(An Autonomous Institute Affiliated to Anna University, Chennai)</div>
+          </td>
+          <td class="industrial-visit-cell">
+            INDUSTRIAL<br>VISIT
+          </td>
+        </tr>
+      </table>`;
+    
     htmlContent += `
         <h2>College Information</h2>
         <table>
