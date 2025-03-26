@@ -47,61 +47,29 @@ export const downloadWordReport = (
           .category-table th, .category-table td { padding: 8px; }
           .signature-section { margin-top: 60px; text-align: center; }
           .signature-line { display: inline-block; border-top: 1px solid #000; width: 150px; margin: 0 30px; padding-top: 5px; }
-          /* Custom header table styling */
-          .custom-header-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 20px; 
-          }
-          .custom-header-table td {
-            border: 1px solid #000;
-            padding: 10px;
-            vertical-align: middle;
-          }
-          .custom-header-table .logo-cell {
-            width: 15%;
+          /* Header image styling */
+          .header-image {
+            width: 100%;
             text-align: center;
+            margin-bottom: 20px;
           }
-          .custom-header-table .title-cell {
-            width: 70%;
-            text-align: center;
-            font-weight: bold;
-          }
-          .custom-header-table .result-cell {
-            width: 15%;
-            text-align: center;
-            font-weight: bold;
-          }
-          .custom-header-table img {
-            max-width: 80px;
-            max-height: 80px;
+          .header-image img {
+            max-width: 100%;
+            height: auto;
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add custom header table instead of the image
+    // Add only the header image
     const baseURL = window.location.origin;
     const logoPath = baseURL + "/lovable-uploads/76cdb2e8-df2a-42ec-aabc-75bb5af6cf4d.png";
     
     htmlContent += `
-      <table class="custom-header-table">
-        <tr>
-          <td class="logo-cell">
-            <img src="${logoPath}" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
-          </td>
-          <td class="title-cell">
-            K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE – 637 215<br>
-            (An Autonomous Institute Affiliated to Anna University, Chennai)
-          </td>
-          <td class="result-cell">
-            RESULT<br>ANALYSIS
-          </td>
-        </tr>
-      </table>`;
-    
-    // Skip adding the heading since it's now in the header table
+      <div class="header-image">
+        <img src="${logoPath}" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
+      </div>`;
     
     htmlContent += `
         <h2>College Information</h2>
