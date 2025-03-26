@@ -10,12 +10,14 @@ interface FileUploaderProps {
   onRecordsUploaded: (records: StudentRecord[], subjects: string[]) => void;
   isUploading: boolean;
   setIsUploading: (status: boolean) => void;
+  calculationMode: 'sgpa' | 'cgpa' | null;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({ 
   onRecordsUploaded, 
   isUploading, 
-  setIsUploading 
+  setIsUploading,
+  calculationMode 
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const { toast } = useToast();
@@ -25,11 +27,22 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     
     if (!selectedFiles || selectedFiles.length === 0) return;
     
-    if (files.length + selectedFiles.length > 10) {
+    // For SGPA mode, only allow a single file
+    if (calculationMode === 'sgpa' && (files.length > 0 || selectedFiles.length > 1)) {
+      toast({
+        variant: "destructive",
+        title: "Only one file allowed",
+        description: "SGPA calculation mode only allows a single Excel file.",
+      });
+      return;
+    }
+    
+    // For CGPA mode, enforce the 10 file limit
+    if (calculationMode === 'cgpa' && files.length + selectedFiles.length > 10) {
       toast({
         variant: "destructive",
         title: "Too many files",
-        description: "You can upload a maximum of 10 Excel files at once.",
+        description: "You can upload a maximum of 10 Excel files at once for CGPA calculation.",
       });
       return;
     }
@@ -59,6 +72,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         variant: "destructive",
         title: "No files selected",
         description: "Please select at least one Excel file to upload.",
+      });
+      return;
+    }
+
+    // For SGPA, ensure only one file is uploaded
+    if (calculationMode === 'sgpa' && files.length > 1) {
+      toast({
+        variant: "destructive",
+        title: "Too many files",
+        description: "SGPA calculation mode only allows a single Excel file.",
       });
       return;
     }
@@ -96,16 +119,24 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     }
   };
 
+  const getUploadDescription = () => {
+    if (calculationMode === 'sgpa') {
+      return "Upload a single Excel file containing student results data for SGPA analysis.";
+    } else if (calculationMode === 'cgpa') {
+      return "Upload up to 10 Excel files containing student results data for CGPA analysis.";
+    }
+    return "Upload Excel files containing student results data for analysis.";
+  };
+
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5" />
-          Upload Excel Files
+          Upload Excel Files{calculationMode ? ` for ${calculationMode.toUpperCase()} Calculation` : ''}
         </CardTitle>
         <CardDescription>
-          Upload up to 10 Excel files containing student results data for analysis.
-          Each file should contain columns: SEM (Semester),
+          {getUploadDescription()} Each file should contain columns: SEM (Semester),
           REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
         </CardDescription>
       </CardHeader>
@@ -121,11 +152,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
               accept=".xlsx,.xls"
               className="hidden"
               onChange={handleFileChange}
-              multiple
+              multiple={calculationMode === 'cgpa'}
             />
             <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-4" />
             <p className="text-sm font-medium">Drag and drop your files here or click to browse</p>
-            <p className="text-xs text-muted-foreground mt-1">Supports multiple .xlsx and .xls files (max 10)</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {calculationMode === 'sgpa' 
+                ? "Supports a single .xlsx or .xls file" 
+                : "Supports multiple .xlsx and .xls files (max 10)"}
+            </p>
             
             {files.length > 0 && (
               <div className="mt-4 p-2 bg-secondary rounded-md w-full max-w-md">

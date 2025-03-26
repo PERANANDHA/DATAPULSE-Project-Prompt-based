@@ -12,9 +12,14 @@ import ReportDownloader from './ReportDownloader';
 interface ResultsDisplayProps {
   analysis: ResultAnalysis | null;
   studentRecords: StudentRecord[];
+  calculationMode: 'sgpa' | 'cgpa' | null;
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ analysis, studentRecords }) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ 
+  analysis, 
+  studentRecords,
+  calculationMode
+}) => {
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   if (!analysis) {
@@ -36,11 +41,22 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ analysis, studentRecord
       transition={{ duration: 0.5 }}
       className="space-y-6 bg-white p-6 rounded-lg shadow-md"
     >
-      <AnalysisOverview analysis={analysis} />
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold">
+          {calculationMode === 'sgpa' ? 'SGPA Analysis Results' : 'CGPA Analysis Results'}
+        </h2>
+        <p className="text-muted-foreground">
+          {calculationMode === 'sgpa' 
+            ? 'Semester Grade Point Average analysis for the uploaded semester data'
+            : 'Cumulative Grade Point Average analysis across multiple semesters'}
+        </p>
+      </div>
+      
+      <AnalysisOverview analysis={analysis} calculationMode={calculationMode} />
       <SubjectAnalysis analysis={analysis} />
       <StudentPerformance analysis={analysis} />
-      <StudentSGPATable analysis={analysis} />
-      <ReportDownloader analysis={analysis} studentRecords={studentRecords} />
+      <StudentSGPATable analysis={analysis} calculationMode={calculationMode} />
+      <ReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
     </motion.div>
   );
 };

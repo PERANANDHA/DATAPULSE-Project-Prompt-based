@@ -1,15 +1,19 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, BarChart4, Loader } from 'lucide-react';
+import { Upload, BarChart4, Loader, FileSpreadsheet, Calculator } from 'lucide-react';
 import { 
   analyzeResults, 
   type StudentRecord,
   type ResultAnalysis
 } from '@/utils/excelProcessor';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import SubjectCreditInput from '@/components/SubjectCreditInput';
 import ProfileButton from "@/components/ui/ProfileButton";
 import FileUploader from '@/components/dashboard/FileUploader';
@@ -28,8 +32,11 @@ interface ProfileInfo {
   college: string;
 }
 
+type CalculationMode = 'sgpa' | 'cgpa';
+
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('upload');
+  const [activeTab, setActiveTab] = useState('mode');
+  const [calculationMode, setCalculationMode] = useState<CalculationMode | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [resultsAvailable, setResultsAvailable] = useState(false);
@@ -48,6 +55,17 @@ const Dashboard = () => {
     role: "Associate Professor",
     department: "Computer Science and Engineering",
     college: "K. S. Rangasamy College of Technology"
+  };
+
+  const handleSelectMode = (mode: CalculationMode) => {
+    setCalculationMode(mode);
+    setActiveTab('upload');
+    toast({
+      title: `${mode.toUpperCase()} Calculation Mode Selected`,
+      description: mode === 'sgpa' 
+        ? "You can upload a single Excel file for SGPA calculation." 
+        : "You can upload multiple Excel files (up to 10) for CGPA calculation.",
+    });
   };
 
   const handleRecordsUploaded = (records: StudentRecord[], subjects: string[]) => {
@@ -98,7 +116,7 @@ const Dashboard = () => {
       
       toast({
         title: "Analysis complete!",
-        description: "Your results are now available for review."
+        description: `Your ${calculationMode?.toUpperCase()} results are now available for review.`
       });
       
     } catch (error) {
@@ -121,6 +139,17 @@ const Dashboard = () => {
     setTimeout(() => {
       navigate('/login');
     }, 1000);
+  };
+
+  const handleResetCalculation = () => {
+    setCalculationMode(null);
+    setActiveTab('mode');
+    setStudentRecords([]);
+    setUniqueSubjects([]);
+    setResultsAvailable(false);
+    setResultAnalysis(null);
+    setSubjectCredits([]);
+    setCreditsAssigned(false);
   };
 
   return (
@@ -146,19 +175,79 @@ const Dashboard = () => {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-semibold mb-1">Class Advisor Dashboard</h2>
-                <p className="text-muted-foreground">Upload and analyze student results</p>
+                <p className="text-muted-foreground">
+                  {calculationMode 
+                    ? `${calculationMode.toUpperCase()} Calculation and Analysis` 
+                    : "Select calculation mode to begin"}
+                </p>
               </div>
               <TabsList>
-                <TabsTrigger value="upload" className="flex items-center gap-1">
-                  <Upload className="h-4 w-4" />
-                  <span className="hidden sm:inline">Upload</span>
-                </TabsTrigger>
-                <TabsTrigger value="results" disabled={!resultsAvailable} className="flex items-center gap-1">
-                  <BarChart4 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Results</span>
-                </TabsTrigger>
+                {calculationMode && (
+                  <>
+                    <TabsTrigger value="mode" onClick={handleResetCalculation} className="flex items-center gap-1">
+                      <Calculator className="h-4 w-4" />
+                      <span className="hidden sm:inline">Select Mode</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="upload" className="flex items-center gap-1">
+                      <Upload className="h-4 w-4" />
+                      <span className="hidden sm:inline">Upload</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="results" disabled={!resultsAvailable} className="flex items-center gap-1">
+                      <BarChart4 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Results</span>
+                    </TabsTrigger>
+                  </>
+                )}
               </TabsList>
             </div>
+
+            <TabsContent value="mode" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5" />
+                      Calculate SGPA
+                    </CardTitle>
+                    <CardDescription>
+                      Upload a single Excel sheet to calculate Semester Grade Point Average (SGPA)
+                      for a specific semester.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={() => handleSelectMode('sgpa')}
+                      className="w-full"
+                    >
+                      <Calculator className="h-4 w-4 mr-2" />
+                      Select SGPA Mode
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5" />
+                      Calculate CGPA
+                    </CardTitle>
+                    <CardDescription>
+                      Upload multiple Excel sheets (up to 10) to calculate Cumulative Grade Point Average (CGPA)
+                      across multiple semesters.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={() => handleSelectMode('cgpa')}
+                      className="w-full"
+                    >
+                      <Calculator className="h-4 w-4 mr-2" />
+                      Select CGPA Mode
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
             <TabsContent value="upload" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -166,6 +255,7 @@ const Dashboard = () => {
                   onRecordsUploaded={handleRecordsUploaded}
                   isUploading={isUploading}
                   setIsUploading={setIsUploading}
+                  calculationMode={calculationMode}
                 />
 
                 <SubjectCreditInput 
@@ -179,7 +269,8 @@ const Dashboard = () => {
             <TabsContent value="results" className="space-y-6">
               <ResultsDisplay 
                 analysis={resultAnalysis} 
-                studentRecords={studentRecords} 
+                studentRecords={studentRecords}
+                calculationMode={calculationMode} 
               />
             </TabsContent>
           </Tabs>
