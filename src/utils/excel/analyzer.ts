@@ -1,4 +1,3 @@
-
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
@@ -40,7 +39,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
-  // Calculate CGPA if multiple files - enhanced for accuracy
+  // Calculate CGPA if multiple files - each file is treated as a separate semester
   let cgpaAnalysis;
   if (fileCount > 1) {
     const studentIds = [...new Set(records.map(record => record.REGNO))];
@@ -189,7 +188,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     }));
   });
   
-  // Classification table calculations
+  // Classification table calculations - these follow the specified rules
   const singleFileClassification = calculateSingleFileClassification(records, studentSgpaDetails);
   const multipleFileClassification = fileCount > 1 
     ? calculateMultipleFileClassification(records, fileGroups, cgpaAnalysis)
@@ -234,7 +233,7 @@ const calculateSingleFileClassification = (
     passPercentage: 0
   };
   
-  // Process each student
+  // Process each student according to the specified rules
   studentSgpaDetails.forEach(student => {
     if (student.hasArrears) {
       // Students with arrears
@@ -298,7 +297,7 @@ const calculateMultipleFileClassification = (
   const studentIds = [...new Set(records.map(record => record.REGNO))];
   classification.totalStudents = studentIds.length;
   
-  // Process each student
+  // Process each student according to the specified rules for multiple files
   studentIds.forEach(studentId => {
     // Check if student has arrears in ANY semester
     const hasArrearsInAnySemester = Object.keys(fileGroups).some(fileName => {

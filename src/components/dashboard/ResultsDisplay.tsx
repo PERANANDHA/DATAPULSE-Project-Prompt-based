@@ -53,8 +53,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       </div>
       
       <AnalysisOverview analysis={analysis} calculationMode={calculationMode} />
-      <SubjectAnalysis analysis={analysis} />
-      <StudentPerformance analysis={analysis} />
+      
+      {/* Only show subject analysis when in SGPA mode */}
+      {calculationMode === 'sgpa' && <SubjectAnalysis analysis={analysis} />}
+      
+      <StudentPerformance analysis={analysis} calculationMode={calculationMode} />
       <StudentSGPATable analysis={analysis} calculationMode={calculationMode} />
       <ReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
     </motion.div>

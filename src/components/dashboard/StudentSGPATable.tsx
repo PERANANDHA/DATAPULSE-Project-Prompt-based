@@ -1,8 +1,12 @@
 
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { ResultAnalysis } from '@/utils/excelProcessor';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface StudentSGPATableProps {
   analysis: ResultAnalysis;
@@ -10,87 +14,88 @@ interface StudentSGPATableProps {
 }
 
 const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculationMode }) => {
-  // Sort students by SGPA descending
-  const sortedStudents = [...(analysis.studentSgpaDetails || [])].sort((a, b) => b.sgpa - a.sgpa);
+  const [searchQuery, setSearchQuery] = useState('');
+  const isCgpaMode = calculationMode === 'cgpa';
   
+  // Get the appropriate student data based on calculation mode
+  const studentData = isCgpaMode && analysis.cgpaAnalysis?.studentCGPAs 
+    ? analysis.cgpaAnalysis.studentCGPAs.map(student => ({
+        id: student.id,
+        gpa: student.cgpa,
+        // We don't have arrears info for CGPA directly, so omit it
+        hasArrears: false
+      }))
+    : analysis.studentSgpaDetails || [];
+  
+  const filteredStudents = studentData.filter(student => 
+    student.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <Card className="overflow-hidden">
-      <CardHeader>
-        <CardTitle>Student-wise {calculationMode === 'sgpa' ? 'SGPA' : 'CGPA'} Analysis</CardTitle>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">
+          {isCgpaMode ? 'Student CGPA Details' : 'Student SGPA Details'}
+        </CardTitle>
         <CardDescription>
-          {calculationMode === 'sgpa' 
-            ? 'SGPA calculation for each student' 
-            : 'CGPA calculation for each student across multiple semesters'}
+          {isCgpaMode 
+            ? 'Cumulative Grade Point Average for all students across semesters'
+            : 'Semester Grade Point Average for all students'}
         </CardDescription>
+        <div className="relative mt-2">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by registration number..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto border rounded-md">
+        <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16 text-center">Rank</TableHead>
+                <TableHead className="w-[50px]">S.No</TableHead>
                 <TableHead>Registration Number</TableHead>
-                <TableHead className="w-24 text-center">SGPA</TableHead>
-                {analysis.cgpaAnalysis && (
-                  <TableHead className="w-24 text-center">CGPA</TableHead>
-                )}
-                <TableHead>Status</TableHead>
+                <TableHead className="text-right">{isCgpaMode ? 'CGPA' : 'SGPA'}</TableHead>
+                {!isCgpaMode && <TableHead className="text-right">Status</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedStudents.map((student, index) => {
-                // Find CGPA if available
-                let cgpa = undefined;
-                if (analysis.cgpaAnalysis?.studentCGPAs) {
-                  const cgpaInfo = analysis.cgpaAnalysis.studentCGPAs.find(s => s.id === student.id);
-                  cgpa = cgpaInfo?.cgpa;
-                }
-                
-                // Determine status based on SGPA and arrears
-                const getStatusText = () => {
-                  if (student.hasArrears) {
-                    return <span className="text-red-600 text-sm font-medium">Has Arrears</span>;
-                  } else if (student.sgpa >= 8.5) {
-                    return <span className="text-emerald-600 text-sm font-medium">Distinction</span>;
-                  } else if (student.sgpa >= 6.5) {
-                    return <span className="text-blue-600 text-sm font-medium">First Class</span>;
-                  } else {
-                    return <span className="text-amber-600 text-sm font-medium">Second Class</span>;
-                  }
-                };
-                
-                // Apply different background colors based on status
-                const getRowClass = () => {
-                  if (student.hasArrears) {
-                    return "bg-red-50";
-                  } else if (student.sgpa >= 8.5) {
-                    return "bg-emerald-50";
-                  } else if (student.sgpa >= 6.5) {
-                    return "bg-blue-50";
-                  } else {
-                    return "bg-amber-50";
-                  }
-                };
-                
-                return (
-                  <TableRow 
-                    key={index} 
-                    className={getRowClass()}
-                  >
-                    <TableCell className="text-center font-medium">{index + 1}</TableCell>
+              {filteredStudents.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={isCgpaMode ? 3 : 4} className="h-24 text-center">
+                    No results found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredStudents.map((student, index) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{index + 1}</TableCell>
                     <TableCell>{student.id}</TableCell>
-                    <TableCell className="text-center font-semibold">{student.sgpa.toFixed(2)}</TableCell>
-                    {analysis.cgpaAnalysis && (
-                      <TableCell className="text-center font-semibold">
-                        {cgpa !== undefined ? cgpa.toFixed(2) : "-"}
+                    <TableCell className="text-right font-medium">{student.gpa.toFixed(2)}</TableCell>
+                    {!isCgpaMode && (
+                      <TableCell className="text-right">
+                        {student.hasArrears ? (
+                          <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
+                            Has Arrears
+                          </Badge>
+                        ) : student.gpa < 6.5 ? (
+                          <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700">
+                            Below 6.5
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                            Good Standing
+                          </Badge>
+                        )}
                       </TableCell>
                     )}
-                    <TableCell>
-                      {getStatusText()}
-                    </TableCell>
                   </TableRow>
-                );
-              })}
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

@@ -1,41 +1,66 @@
 
 import React from 'react';
-import { User } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { ResultAnalysis } from '@/utils/excelProcessor';
 
 interface StudentPerformanceProps {
   analysis: ResultAnalysis;
+  calculationMode?: 'sgpa' | 'cgpa';
 }
 
-const StudentPerformance: React.FC<StudentPerformanceProps> = ({ analysis }) => {
+const StudentPerformance: React.FC<StudentPerformanceProps> = ({ 
+  analysis,
+  calculationMode = 'sgpa'
+}) => {
+  // Use CGPA data when available and in CGPA mode
+  const topStudents = calculationMode === 'cgpa' && analysis.cgpaAnalysis?.toppersList 
+    ? analysis.cgpaAnalysis.toppersList.slice(0, 6).map(student => ({
+        id: student.id,
+        value: student.cgpa,
+        label: 'CGPA'
+      }))
+    : analysis.topPerformers.map(student => ({
+        id: student.id,
+        value: student.sgpa,
+        label: 'SGPA',
+        grade: student.grade
+      }));
+
+  // For improvement needed students, use SGPA data (not available in CGPA format)
+  // Hide this section entirely in CGPA mode
+  const showImprovementSection = calculationMode === 'sgpa';
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <User className="h-5 w-5 mr-2" />
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">
             Top Performers
           </CardTitle>
-          <CardDescription>Students with highest SGPA (Top 6)</CardDescription>
+          <CardDescription>
+            {calculationMode === 'sgpa' 
+              ? 'Students with highest SGPA in the semester' 
+              : 'Students with highest CGPA across all semesters'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {analysis.topPerformers.map((student, index) => (
-              <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
-                <div>
-                  <p className="font-medium">Student</p>
-                  <p className="text-xs text-muted-foreground">ID: {student.id}</p>
-                </div>
-                <div className="flex items-center">
-                  <span className={`px-2 py-1 rounded-full text-xs mr-2 ${
-                    student.grade === "O" ? "bg-primary/10 text-primary" :
-                    student.grade === "A+" ? "bg-green-100 text-green-800" :
-                    "bg-blue-100 text-blue-800"
-                  }`}>
-                    {student.grade}
+            {topStudents.map((student, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold">
+                    {index + 1}
                   </span>
-                  <span className="font-semibold">{student.sgpa.toFixed(2)}</span>
+                  <span className="font-medium">{student.id}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{student.value.toFixed(2)}</span>
+                  {student.grade && (
+                    <Badge variant="outline" className="bg-emerald-50 border-emerald-200 text-emerald-700">
+                      {student.grade}
+                    </Badge>
+                  )}
                 </div>
               </div>
             ))}
@@ -43,35 +68,35 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({ analysis }) => 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <User className="h-5 w-5 mr-2" />
-            Needs Improvement
-          </CardTitle>
-          <CardDescription>Students with SGPA below 6.5 or with arrears</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {analysis.needsImprovement.length > 0 ? (
-              analysis.needsImprovement.map((student, index) => (
-                <div key={index} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
-                  <div>
-                    <p className="font-medium">Student</p>
-                    <p className="text-xs text-muted-foreground">ID: {student.id}</p>
+      {showImprovementSection && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Needs Improvement</CardTitle>
+            <CardDescription>Students with low SGPA or arrears</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {analysis.needsImprovement.slice(0, 6).map((student, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex-1 max-w-[60%]">
+                    <p className="font-medium truncate">{student.id}</p>
+                    {student.subjects && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        Arrears: {student.subjects}
+                      </p>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-destructive">{student.sgpa.toFixed(2)}</span>
-                    <p className="text-xs text-muted-foreground">{student.subjects}</p>
+                  <div>
+                    <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
+                      {student.sgpa.toFixed(2)} SGPA
+                    </Badge>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground text-center">No students with SGPA below 6.5 or with arrears</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
