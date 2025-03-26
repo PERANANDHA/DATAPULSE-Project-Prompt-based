@@ -49,8 +49,19 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          .logo-container { text-align: center; margin-bottom: 20px; }
-          .college-logo { max-width: 350px; height: auto; }
+          .logo-container { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            width: 100%; 
+          }
+          .college-logo { 
+            max-width: 350px; 
+            height: auto; 
+            margin: 0 auto; 
+          }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
