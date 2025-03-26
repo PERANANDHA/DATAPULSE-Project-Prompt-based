@@ -55,14 +55,14 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          .logo-container { text-align: center; margin-bottom: 20px; }
-          .college-logo { width: 590px; height: 174px; }
+          .logo-container { text-align: left; margin-bottom: 20px; padding-left: 10px; }
+          .college-logo { width: 150px; height: 150px; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add logo directly at the top with a direct reference to the image
+    // Add logo directly at the top left with the specified dimensions
     if (options?.logoImagePath) {
       htmlContent += `
         <div class="logo-container">
@@ -93,7 +93,7 @@ export const downloadWordReport = (
             <td>${analysis.fileCount || 1}</td>
           </tr>
         </table>`;
-        
+    
     htmlContent += `
         <h2>Performance Summary</h2>
         <div class="summary">
