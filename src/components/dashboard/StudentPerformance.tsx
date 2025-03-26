@@ -41,9 +41,17 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
         grade: student.grade
       }));
 
-  // For improvement needed students, use SGPA data (not available in CGPA format)
-  // Hide this section entirely in CGPA mode
-  const showImprovementSection = calculationMode === 'sgpa';
+  // Generate needs improvement data based on calculation mode
+  const needsImprovementData = calculationMode === 'cgpa' && analysis.cgpaAnalysis
+    ? analysis.cgpaAnalysis.studentCGPAs
+        .filter(student => student.cgpa < 6.5)
+        .slice(0, 6)
+        .map(student => ({
+          id: student.id,
+          value: student.cgpa,
+          label: 'CGPA'
+        }))
+    : analysis.needsImprovement.slice(0, 6);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -82,35 +90,51 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
         </CardContent>
       </Card>
 
-      {showImprovementSection && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Needs Improvement</CardTitle>
-            <CardDescription>Students with low SGPA or arrears</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {analysis.needsImprovement.slice(0, 6).map((student, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex-1 max-w-[60%]">
-                    <p className="font-medium truncate">{student.id}</p>
-                    {student.subjects && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        Arrears: {student.subjects}
-                      </p>
-                    )}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Needs Improvement</CardTitle>
+          <CardDescription>
+            {calculationMode === 'sgpa'
+              ? 'Students with low SGPA or arrears'
+              : 'Students with low CGPA across all semesters'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {calculationMode === 'cgpa'
+              ? needsImprovementData.map((student, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex-1 max-w-[60%]">
+                      <p className="font-medium truncate">{student.id}</p>
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
+                        {student.value.toFixed(2)} {student.label}
+                      </Badge>
+                    </div>
                   </div>
-                  <div>
-                    <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
-                      {student.sgpa.toFixed(2)} SGPA
-                    </Badge>
+                ))
+              : analysis.needsImprovement.slice(0, 6).map((student, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex-1 max-w-[60%]">
+                      <p className="font-medium truncate">{student.id}</p>
+                      {student.subjects && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          Arrears: {student.subjects}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
+                        {student.sgpa.toFixed(2)} SGPA
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                ))
+            }
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
