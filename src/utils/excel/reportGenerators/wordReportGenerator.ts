@@ -49,22 +49,18 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          /* Header table styling to exactly match the image */
+          /* Header table styling with just the logo */
           .header-table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-bottom: 20px; 
-            border: 1px solid #000; 
-          }
-          .header-table td { 
-            padding: 0; 
-            vertical-align: middle; 
-            border: 1px solid #000;
+            margin-bottom: 20px;
+            border: none;
           }
           .header-logo-cell {
             width: 15%;
             text-align: center;
             padding: 5px;
+            border: none;
           }
           .header-logo { 
             max-width: 100%; 
@@ -72,53 +68,20 @@ export const downloadWordReport = (
             display: block; 
             margin: 0 auto;
           }
-          .college-name-cell {
-            width: 65%;
-            text-align: center;
-            padding: 5px;
-          }
-          .college-name { 
-            font-size: 14pt; 
-            text-align: center; 
-            font-weight: bold; 
-            margin: 0;
-            line-height: 1.3;
-          }
-          .college-subtitle { 
-            font-size: 11pt; 
-            text-align: center; 
-            margin: 0;
-            line-height: 1.3;
-          }
-          .industrial-visit-cell { 
-            width: 20%; 
-            text-align: center; 
-            font-size: 12pt; 
-            font-weight: bold;
-            line-height: 1.3;
-            padding: 5px;
-          }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add header table that exactly matches the provided image
+    // Add only the logo in the header
     const baseURL = window.location.origin;
-    const newLogoPath = baseURL + "/lovable-uploads/6b4428ad-8bcb-4262-a6e6-839da6e64d42.png";
+    const logoPath = baseURL + "/lovable-uploads/6b4428ad-8bcb-4262-a6e6-839da6e64d42.png";
     
     htmlContent += `
       <table class="header-table">
         <tr>
           <td class="header-logo-cell">
-            <img src="${newLogoPath}" class="header-logo" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
-          </td>
-          <td class="college-name-cell">
-            <div class="college-name">K. S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE – 637 215</div>
-            <div class="college-subtitle">(An Autonomous Institute Affiliated to Anna University, Chennai)</div>
-          </td>
-          <td class="industrial-visit-cell">
-            INDUSTRIAL<br>VISIT
+            <img src="${logoPath}" class="header-logo" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
           </td>
         </tr>
       </table>`;
