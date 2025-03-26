@@ -49,26 +49,39 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          .logo-container { text-align: center; margin-bottom: 20px; }
-          .college-logo { max-width: 350px; height: auto; }
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .header-table td { padding: 0; vertical-align: middle; }
+          .header-logo { width: 150px; height: auto; }
+          .college-name { font-size: 16pt; text-align: center; font-weight: bold; }
+          .college-subtitle { font-size: 12pt; text-align: center; }
+          .result-analysis-cell { font-size: 14pt; text-align: center; font-weight: bold; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add logo directly at the top with a direct reference to the image
+    // Add header table with logo and college name as per the image
     if (options?.logoImagePath) {
       const absoluteLogoPath = window.location.origin + options.logoImagePath;
-      htmlContent = htmlContent.slice(0, htmlContent.indexOf('<body>') + 6) + `
-        <div class="logo-container">
-          <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
-        </div>` + htmlContent.slice(htmlContent.indexOf('<body>') + 6);
+      htmlContent += `
+        <table class="header-table" border="1">
+          <tr>
+            <td style="width: 15%; text-align: center; padding: 8px;">
+              <img src="${absoluteLogoPath}" class="header-logo" alt="College Logo">
+            </td>
+            <td style="width: 65%; text-align: center; padding: 8px;">
+              <div class="college-name">K.S.RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE – 637 215</div>
+              <div class="college-subtitle">(An Autonomous Institute Affiliated to Anna University, Chennai)</div>
+            </td>
+            <td style="width: 20%; text-align: center; padding: 8px;" class="result-analysis-cell">
+              RESULT<br>ANALYSIS
+            </td>
+          </tr>
+        </table>`;
     }
     
-    // Continue with the rest of the document
+    // Continue with the rest of the document - no need for the existing h1 title since it's in the header table now
     htmlContent += `
-        <h1>Result Analysis Report</h1>
-        
         <h2>College Information</h2>
         <table>
           <tr>

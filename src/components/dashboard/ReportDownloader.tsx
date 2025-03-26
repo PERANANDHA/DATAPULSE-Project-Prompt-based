@@ -101,9 +101,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word') {
-        // Use the KSR logo from our uploads folder with the correct path
-        // Using the college logo added to public/lovable-uploads
-        const logoPath = '/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png';
+        const logoPath = '/lovable-uploads/6728f7a4-0458-447c-8891-6918b79b4da7.png';
         
         downloadWordReport(analysis!, studentRecords, {
           logoImagePath: logoPath,
