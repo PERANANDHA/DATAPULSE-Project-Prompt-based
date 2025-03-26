@@ -49,42 +49,31 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          /* Header table styling with just the logo */
-          .header-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 20px;
-            border: none;
-          }
-          .header-logo-cell {
-            width: 15%;
+          /* Header image styling */
+          .header-image {
+            width: 100%;
+            margin: 0 auto 20px;
+            display: block;
             text-align: center;
-            padding: 5px;
-            border: none;
+            max-width: 800px;
           }
-          .header-logo { 
-            max-width: 100%; 
-            height: auto; 
-            display: block; 
-            margin: 0 auto;
+          .header-image img {
+            width: 100%;
+            height: auto;
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add only the logo in the header
+    // Add the header image that is centered on the page
     const baseURL = window.location.origin;
-    const logoPath = baseURL + "/lovable-uploads/6b4428ad-8bcb-4262-a6e6-839da6e64d42.png";
+    const headerImagePath = baseURL + "/lovable-uploads/6c555048-56f9-487c-a7a1-100babe97cd7.png";
     
     htmlContent += `
-      <table class="header-table">
-        <tr>
-          <td class="header-logo-cell">
-            <img src="${logoPath}" class="header-logo" alt="College Logo" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Logo failed to load');">
-          </td>
-        </tr>
-      </table>`;
+      <div class="header-image">
+        <img src="${headerImagePath}" alt="College Header" onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='; console.error('Header image failed to load');">
+      </div>`;
     
     htmlContent += `
         <h2>College Information</h2>

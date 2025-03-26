@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -102,10 +101,10 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word') {
-        const logoURL = "/lovable-uploads/6b4428ad-8bcb-4262-a6e6-839da6e64d42.png";
+        const headerImagePath = "/lovable-uploads/6c555048-56f9-487c-a7a1-100babe97cd7.png";
         
         downloadWordReport(analysis!, studentRecords, {
-          logoImagePath: logoURL,
+          logoImagePath: headerImagePath,
           department: departmentCode,
           departmentFullName: departmentFullName
         });
