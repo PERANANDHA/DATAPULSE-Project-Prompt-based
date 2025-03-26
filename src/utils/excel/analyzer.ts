@@ -189,6 +189,12 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     }));
   });
   
+  // Classification table calculations
+  const singleFileClassification = calculateSingleFileClassification(records, studentSgpaDetails);
+  const multipleFileClassification = fileCount > 1 
+    ? calculateMultipleFileClassification(records, fileGroups, cgpaAnalysis)
+    : singleFileClassification; // Fallback to single file data if no multiple files
+  
   return {
     totalStudents,
     averageCGPA,
@@ -205,6 +211,136 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     fileCount,
     filesProcessed,
     fileWiseAnalysis,
-    cgpaAnalysis
+    cgpaAnalysis,
+    singleFileClassification,
+    multipleFileClassification
   };
+};
+
+// Calculate classification data for single file
+const calculateSingleFileClassification = (
+  records: StudentRecord[],
+  studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[]
+) => {
+  // Initialize counters
+  const classification = {
+    distinction: 0,
+    firstClassWOA: 0, // Without arrears
+    firstClassWA: 0,  // With arrears
+    secondClassWOA: 0, // Without arrears
+    secondClassWA: 0,  // With arrears
+    fail: 0,
+    totalStudents: studentSgpaDetails.length,
+    passPercentage: 0
+  };
+  
+  // Process each student
+  studentSgpaDetails.forEach(student => {
+    if (student.hasArrears) {
+      // Students with arrears
+      if (student.sgpa >= 6.5) {
+        classification.firstClassWA++;
+      } else if (student.sgpa >= 5.0) {
+        classification.secondClassWA++;
+      } else {
+        classification.fail++;
+      }
+    } else {
+      // Students without arrears
+      if (student.sgpa >= 8.5) {
+        classification.distinction++;
+      } else if (student.sgpa >= 6.5) {
+        classification.firstClassWOA++;
+      } else {
+        classification.secondClassWOA++;
+      }
+    }
+  });
+  
+  // Count U grades for fail column
+  const failGradeCount = records.filter(record => record.GR === 'U').length;
+  classification.fail = failGradeCount;
+  
+  // Calculate pass percentage
+  const totalGrades = records.length;
+  const passGrades = records.filter(record => record.GR !== 'U').length;
+  
+  classification.passPercentage = totalGrades > 0 ? 
+    formatTo2Decimals((passGrades / totalGrades) * 100) : 0;
+  
+  return classification;
+};
+
+// Calculate classification data for multiple files
+const calculateMultipleFileClassification = (
+  records: StudentRecord[],
+  fileGroups: { [fileName: string]: StudentRecord[] },
+  cgpaAnalysis?: {
+    studentCGPAs: { id: string; cgpa: number }[];
+    averageCGPA: number;
+    highestCGPA: number;
+    lowestCGPA: number;
+  }
+) => {
+  // Initialize counters
+  const classification = {
+    distinction: 0,
+    firstClassWOA: 0,
+    firstClassWA: 0,
+    secondClassWOA: 0,
+    secondClassWA: 0,
+    fail: 0,
+    totalStudents: 0,
+    passPercentage: 0
+  };
+  
+  // Get unique student IDs
+  const studentIds = [...new Set(records.map(record => record.REGNO))];
+  classification.totalStudents = studentIds.length;
+  
+  // Process each student
+  studentIds.forEach(studentId => {
+    // Check if student has arrears in ANY semester
+    const hasArrearsInAnySemester = Object.keys(fileGroups).some(fileName => {
+      const fileRecords = fileGroups[fileName];
+      return hasArrears(fileRecords, studentId);
+    });
+    
+    // Get student's CGPA
+    const cgpaInfo = cgpaAnalysis?.studentCGPAs.find(s => s.id === studentId);
+    const cgpa = cgpaInfo?.cgpa || 0;
+    
+    if (hasArrearsInAnySemester) {
+      // Students with arrears in any semester
+      if (cgpa >= 6.5) {
+        classification.firstClassWA++;
+      } else if (cgpa >= 5.0) {
+        classification.secondClassWA++;
+      } else {
+        classification.fail++;
+      }
+    } else {
+      // Students without arrears in any semester
+      if (cgpa >= 8.5) {
+        classification.distinction++;
+      } else if (cgpa >= 6.5) {
+        classification.firstClassWOA++;
+      } else {
+        classification.secondClassWOA++;
+      }
+    }
+  });
+  
+  // Count U grades across all semesters for fail column
+  const failGradeCount = records.filter(record => record.GR === 'U').length;
+  classification.fail = failGradeCount;
+  
+  // Calculate overall pass percentage across all semesters
+  const totalGrades = records.length;
+  const passGrades = records.filter(record => record.GR !== 'U').length;
+  
+  classification.passPercentage = totalGrades > 0 ? 
+    formatTo2Decimals((passGrades / totalGrades) * 100) : 0;
+  
+  return classification;
 };

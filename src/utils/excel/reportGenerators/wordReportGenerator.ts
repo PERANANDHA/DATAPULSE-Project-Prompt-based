@@ -1,3 +1,4 @@
+
 import { ResultAnalysis, StudentRecord } from '../types';
 
 interface WordReportOptions {
@@ -254,127 +255,28 @@ export const downloadWordReport = (
             <th>WA</th>
           </tr>`;
     
-    const getStudentCounts = () => {
-      // For current semester
-      const currentData = {
-        distinction: 0,
-        firstClassWOA: 0,
-        firstClassWA: 0,
-        secondClassWOA: 0,
-        secondClassWA: 0,
-        fail: 0
-      };
-      
-      // For up to this semester (CGPA)
-      const cumulativeData = {
-        distinction: 0,
-        firstClassWOA: 0,
-        firstClassWA: 0,
-        secondClassWOA: 0,
-        secondClassWA: 0,
-        fail: 0
-      };
-      
-      // Process current semester data
-      (analysis.studentSgpaDetails || []).forEach(student => {
-        if (student.hasArrears) {
-          // With arrears
-          if (student.sgpa >= 6.5) {
-            currentData.firstClassWA++;
-          } else {
-            currentData.secondClassWA++;
-          }
-        } else {
-          // Without arrears
-          if (student.sgpa >= 8.5) {
-            currentData.distinction++;
-          } else if (student.sgpa >= 6.5) {
-            currentData.firstClassWOA++;
-          } else if (student.sgpa > 0) {
-            currentData.secondClassWOA++;
-          } else {
-            currentData.fail++;
-          }
-        }
-      });
-      
-      // Process CGPA data if available
-      if (analysis.cgpaAnalysis?.studentCGPAs) {
-        analysis.cgpaAnalysis.studentCGPAs.forEach(cgpaData => {
-          const student = analysis.studentSgpaDetails?.find(s => s.id === cgpaData.id);
-          const hasArrears = student?.hasArrears || false;
-          
-          if (hasArrears) {
-            // With arrears
-            if (cgpaData.cgpa >= 6.5) {
-              cumulativeData.firstClassWA++;
-            } else {
-              cumulativeData.secondClassWA++;
-            }
-          } else {
-            // Without arrears
-            if (cgpaData.cgpa >= 8.5) {
-              cumulativeData.distinction++;
-            } else if (cgpaData.cgpa >= 6.5) {
-              cumulativeData.firstClassWOA++;
-            } else if (cgpaData.cgpa > 0) {
-              cumulativeData.secondClassWOA++;
-            } else {
-              cumulativeData.fail++;
-            }
-          }
-        });
-      } else {
-        // If no CGPA data, use current semester data
-        Object.assign(cumulativeData, currentData);
-      }
-      
-      return { currentData, cumulativeData };
-    };
+    // Use the calculated classification data for single file (current semester)
+    const currentSemData = analysis.singleFileClassification;
     
-    const { currentData, cumulativeData } = getStudentCounts();
-    
-    // Calculate total and pass percentage
-    const currentTotal = 
-      currentData.distinction + 
-      currentData.firstClassWOA + 
-      currentData.firstClassWA + 
-      currentData.secondClassWOA + 
-      currentData.secondClassWA + 
-      currentData.fail;
-    
-    const cumulativeTotal = 
-      cumulativeData.distinction + 
-      cumulativeData.firstClassWOA + 
-      cumulativeData.firstClassWA + 
-      cumulativeData.secondClassWOA + 
-      cumulativeData.secondClassWA + 
-      cumulativeData.fail;
-    
-    const currentPassPercentage = currentTotal > 0 
-      ? Math.round(((currentTotal - currentData.fail) / currentTotal) * 100) 
-      : 0;
-    
-    const cumulativePassPercentage = cumulativeTotal > 0 
-      ? Math.round(((cumulativeTotal - cumulativeData.fail) / cumulativeTotal) * 100) 
-      : 0;
+    // Use the calculated classification data for multiple files (up to this semester)
+    const uptoThisSemData = analysis.multipleFileClassification;
     
     htmlContent += `
           <tr>
-            <td>${currentData.distinction}</td>
-            <td>${currentData.firstClassWOA}</td>
-            <td>${currentData.firstClassWA}</td>
-            <td>${currentData.secondClassWOA}</td>
-            <td>${currentData.secondClassWA}</td>
-            <td>${currentData.fail}</td>
-            <td>${currentPassPercentage}</td>
-            <td>${cumulativeData.distinction}</td>
-            <td>${cumulativeData.firstClassWOA}</td>
-            <td>${cumulativeData.firstClassWA}</td>
-            <td>${cumulativeData.secondClassWOA}</td>
-            <td>${cumulativeData.secondClassWA}</td>
-            <td>${cumulativeData.fail}</td>
-            <td>${cumulativePassPercentage}</td>
+            <td>${currentSemData.distinction}</td>
+            <td>${currentSemData.firstClassWOA}</td>
+            <td>${currentSemData.firstClassWA}</td>
+            <td>${currentSemData.secondClassWOA}</td>
+            <td>${currentSemData.secondClassWA}</td>
+            <td>${currentSemData.fail}</td>
+            <td>${currentSemData.passPercentage.toFixed(1)}</td>
+            <td>${uptoThisSemData.distinction}</td>
+            <td>${uptoThisSemData.firstClassWOA}</td>
+            <td>${uptoThisSemData.firstClassWA}</td>
+            <td>${uptoThisSemData.secondClassWOA}</td>
+            <td>${uptoThisSemData.secondClassWA}</td>
+            <td>${uptoThisSemData.fail}</td>
+            <td>${uptoThisSemData.passPercentage.toFixed(1)}</td>
           </tr>
         </table>`;
     

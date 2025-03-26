@@ -12,6 +12,17 @@ export interface StudentRecord {
   fileSource?: string; // To track which file the record came from
 }
 
+export interface ClassificationData {
+  distinction: number;
+  firstClassWOA: number; // Without arrears
+  firstClassWA: number;  // With arrears
+  secondClassWOA: number; // Without arrears
+  secondClassWA: number;  // With arrears
+  fail: number;
+  totalStudents: number;
+  passPercentage: number;
+}
+
 export interface ResultAnalysis {
   totalStudents: number;
   averageCGPA: number;
@@ -41,6 +52,8 @@ export interface ResultAnalysis {
     lowestCGPA: number;
     toppersList?: { id: string; cgpa: number }[]; // Added for toppers list
   }; // CGPA analysis when multiple files
+  singleFileClassification: ClassificationData; // Classification for single file/semester
+  multipleFileClassification: ClassificationData; // Classification for multiple files/semesters
 }
 
 // Re-export JsPDF with the autotable extension for use in other files
