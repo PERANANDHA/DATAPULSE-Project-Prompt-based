@@ -6,17 +6,22 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 
 interface StudentSGPATableProps {
   analysis: ResultAnalysis;
+  calculationMode: 'sgpa' | 'cgpa' | null;
 }
 
-const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis }) => {
+const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculationMode }) => {
   // Sort students by SGPA descending
   const sortedStudents = [...(analysis.studentSgpaDetails || [])].sort((a, b) => b.sgpa - a.sgpa);
   
   return (
     <Card className="overflow-hidden">
       <CardHeader>
-        <CardTitle>Student-wise SGPA Analysis</CardTitle>
-        <CardDescription>SGPA calculation for each student</CardDescription>
+        <CardTitle>Student-wise {calculationMode === 'sgpa' ? 'SGPA' : 'CGPA'} Analysis</CardTitle>
+        <CardDescription>
+          {calculationMode === 'sgpa' 
+            ? 'SGPA calculation for each student' 
+            : 'CGPA calculation for each student across multiple semesters'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto border rounded-md">

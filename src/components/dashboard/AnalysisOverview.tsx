@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { FileSpreadsheet } from 'lucide-react';
@@ -21,9 +20,10 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 
 interface AnalysisOverviewProps {
   analysis: ResultAnalysis;
+  calculationMode: 'sgpa' | 'cgpa' | null;
 }
 
-const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis }) => {
+const AnalysisOverview: React.FC<AnalysisOverviewProps> = ({ analysis, calculationMode }) => {
   return (
     <>
       {analysis.fileCount && analysis.fileCount > 1 && analysis.filesProcessed && (

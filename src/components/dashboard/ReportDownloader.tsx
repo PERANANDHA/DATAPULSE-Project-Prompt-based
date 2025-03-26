@@ -16,9 +16,10 @@ import { Progress } from '@/components/ui/progress';
 interface ReportDownloaderProps {
   analysis: ResultAnalysis | null;
   studentRecords: StudentRecord[];
+  calculationMode: 'sgpa' | 'cgpa' | null;
 }
 
-const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRecords }) => {
+const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRecords, calculationMode }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [departmentCode, setDepartmentCode] = useState('CSE');
   const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
