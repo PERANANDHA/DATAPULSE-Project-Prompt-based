@@ -13,6 +13,19 @@ interface StudentSGPATableProps {
   calculationMode: 'sgpa' | 'cgpa' | null;
 }
 
+// Define interfaces for student data
+interface SgpaStudentData {
+  id: string;
+  sgpa: number;
+  hasArrears: boolean;
+}
+
+interface CgpaStudentData {
+  id: string;
+  cgpa: number;
+  hasArrears: boolean;
+}
+
 const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculationMode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const isCgpaMode = calculationMode === 'cgpa';
@@ -21,7 +34,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
   const studentData = isCgpaMode && analysis.cgpaAnalysis?.studentCGPAs 
     ? analysis.cgpaAnalysis.studentCGPAs.map(student => ({
         id: student.id,
-        gpa: student.cgpa,
+        cgpa: student.cgpa,
         // We don't have arrears info for CGPA directly, so omit it
         hasArrears: false
       }))
@@ -75,14 +88,18 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">{index + 1}</TableCell>
                     <TableCell>{student.id}</TableCell>
-                    <TableCell className="text-right font-medium">{student.gpa.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {isCgpaMode ? 
+                        ('cgpa' in student ? student.cgpa.toFixed(2) : 0) : 
+                        ('sgpa' in student ? student.sgpa.toFixed(2) : 0)}
+                    </TableCell>
                     {!isCgpaMode && (
                       <TableCell className="text-right">
                         {student.hasArrears ? (
                           <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
                             Has Arrears
                           </Badge>
-                        ) : student.gpa < 6.5 ? (
+                        ) : ('sgpa' in student && student.sgpa < 6.5) ? (
                           <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700">
                             Below 6.5
                           </Badge>

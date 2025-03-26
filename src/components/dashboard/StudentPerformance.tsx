@@ -9,12 +9,26 @@ interface StudentPerformanceProps {
   calculationMode?: 'sgpa' | 'cgpa';
 }
 
+// Define types for student performance data
+interface SgpaStudent {
+  id: string;
+  value: number;
+  label: string;
+  grade?: string;
+}
+
+interface CgpaStudent {
+  id: string;
+  value: number;
+  label: string;
+}
+
 const StudentPerformance: React.FC<StudentPerformanceProps> = ({ 
   analysis,
   calculationMode = 'sgpa'
 }) => {
   // Use CGPA data when available and in CGPA mode
-  const topStudents = calculationMode === 'cgpa' && analysis.cgpaAnalysis?.toppersList 
+  const topStudents: (SgpaStudent | CgpaStudent)[] = calculationMode === 'cgpa' && analysis.cgpaAnalysis?.toppersList 
     ? analysis.cgpaAnalysis.toppersList.slice(0, 6).map(student => ({
         id: student.id,
         value: student.cgpa,
@@ -56,7 +70,7 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{student.value.toFixed(2)}</span>
-                  {student.grade && (
+                  {'grade' in student && student.grade && (
                     <Badge variant="outline" className="bg-emerald-50 border-emerald-200 text-emerald-700">
                       {student.grade}
                     </Badge>
