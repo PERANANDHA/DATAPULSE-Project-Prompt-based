@@ -46,9 +46,7 @@ export const downloadWordReport = (
           .category-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
           .category-table th, .category-table td { padding: 8px; }
           .signature-section { margin-top: 60px; text-align: center; }
-          .signature-table { width: 100%; border: none; }
-          .signature-cell { width: 25%; text-align: center; border: none; }
-          .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
+          .signature-line { display: inline-block; border-top: 1px solid #000; width: 150px; margin: 0 30px; padding-top: 5px; }
           /* Header image styling - wider container with controlled image size */
           .header-image {
             width: 100%;
@@ -517,22 +515,12 @@ export const downloadWordReport = (
     // Simplify signatures section to be just text
     htmlContent += `
         <div class="signature-section">
-          <table class="signature-table">
-            <tr>
-              <td class="signature-cell">
-                <span class="signature-line">Class Advisor</span>
-              </td>
-              <td class="signature-cell">
-                <span class="signature-line">HoD/${options?.department || 'CSE'}</span>
-              </td>
-              <td class="signature-cell">
-                <span class="signature-line">Dean – Academics</span>
-              </td>
-              <td class="signature-cell">
-                <span class="signature-line">Principal</span>
-              </td>
-            </tr>
-          </table>
+          <div>
+            <span class="signature-line">Class Advisor</span>
+            <span class="signature-line">HoD/${options?.department || 'CSE'}</span>
+            <span class="signature-line">Dean – Academics</span>
+            <span class="signature-line">Principal</span>
+          </div>
         </div>`;
     
     htmlContent += `
