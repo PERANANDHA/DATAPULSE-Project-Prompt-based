@@ -39,6 +39,10 @@ const generateHtmlWordReport = (
   options: WordReportOptions
 ): void => {
   try {
+    // Extract options with defaults
+    const department = options.department || 'CSE';
+    const departmentFullName = options.departmentFullName || 'Computer Science and Engineering';
+    
     // Create HTML content for the Word document
     let html = `
       <!DOCTYPE html>
@@ -196,7 +200,7 @@ const generateHtmlWordReport = (
           <td>${subject}</td>
           <td>Subject ${index + 1}</td>
           <td></td>
-          <td>${options.department || department}</td>
+          <td>${department}</td>
           <td>${totalStudents}</td>
           <td>Nil</td>
           <td>${failedStudents || 'Nil'}</td>
