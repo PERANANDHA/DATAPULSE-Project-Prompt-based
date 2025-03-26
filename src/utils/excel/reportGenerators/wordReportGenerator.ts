@@ -22,8 +22,41 @@ export const downloadWordReport = (
         <title>Result Analysis Report</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-          h1 { text-align: center; color: #2F3770; font-size: 24px; margin-bottom: 30px; }
-          h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }
+          .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+          }
+          .header-logo {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 20px;
+          }
+          .logo-image {
+            height: 100px;
+            width: auto;
+          }
+          .college-title {
+            display: flex;
+            flex-direction: column;
+          }
+          .college-name {
+            color: #2F5597;
+            font-size: 24px;
+            font-weight: bold;
+          }
+          .college-subtitle {
+            color: #ED7D31;
+            font-size: 16px;
+          }
+          h1 { 
+            text-align: center; 
+            color: #2F3770; 
+            font-size: 24px; 
+            margin-bottom: 30px; 
+          }
           table { border-collapse: collapse; width: 100%; margin: 15px 0; page-break-inside: avoid; }
           th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11pt; }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
@@ -65,12 +98,19 @@ export const downloadWordReport = (
       </head>
       <body>`;
     
-    // Add logo at the top of the document before the heading
+    // Add logo and header as per the image
     if (options?.logoImagePath) {
       const absoluteLogoPath = window.location.origin + options.logoImagePath;
       htmlContent += `
-        <div class="logo-container">
-          <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
+        <div class="header-container">
+          <div class="header-logo">
+            <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="logo-image">
+            <div class="college-title">
+              <div class="college-name">K.S.RANGASAMY</div>
+              <div class="college-subtitle">COLLEGE OF TECHNOLOGY</div>
+              <div class="college-subtitle">AUTONOMOUS | TIRUCHENGODE</div>
+            </div>
+          </div>
         </div>
         <h1>Result Analysis Report</h1>`;
     } else {
