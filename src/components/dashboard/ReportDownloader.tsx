@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -107,7 +108,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         downloadWordReport(analysis!, studentRecords, {
           logoImagePath: headerImagePath,
           department: departmentCode,
-          departmentFullName: departmentFullName
+          departmentFullName: departmentFullName,
+          calculationMode: calculationMode || 'sgpa'
         });
       }
       

@@ -1,3 +1,4 @@
+
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
@@ -43,6 +44,11 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   let cgpaAnalysis;
   if (fileCount > 1) {
     const studentIds = [...new Set(records.map(record => record.REGNO))];
+    
+    // Create a sorted filesProcessed array to ensure the first uploaded file 
+    // (which should be the current semester) is always processed first
+    const sortedFilesProcessed = [...filesProcessed];
+    
     const studentCGPAs = studentIds.map(id => ({
       id,
       cgpa: calculateCGPA(records, id, fileGroups)
@@ -57,7 +63,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
       averageCGPA: cgpaValues.length > 0 ? formatTo2Decimals(cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length) : 0,
       highestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.max(...cgpaValues)) : 0,
       lowestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.min(...cgpaValues)) : 0,
-      toppersList: studentCGPAs.slice(0, 10) // Get top 10 students
+      toppersList: studentCGPAs.slice(0, 10), // Get top 10 students
+      currentSemesterFile: filesProcessed[0] // The first file is the current semester
     };
   }
   
@@ -189,7 +196,18 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   });
   
   // Classification table calculations - these follow the specified rules
-  const singleFileClassification = calculateSingleFileClassification(records, studentSgpaDetails);
+  // For CGPA mode, current semester is the first uploaded file
+  const currentSemesterRecords = fileCount > 1 ? fileGroups[filesProcessed[0]] : records;
+  const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecords.map(record => record.REGNO))].map(studentId => {
+    const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+    return {
+      id: studentId,
+      sgpa: sgpa,
+      hasArrears: hasArrears(currentSemesterRecords, studentId)
+    };
+  });
+  
+  const singleFileClassification = calculateSingleFileClassification(currentSemesterRecords, currentSemesterStudentSgpaDetails);
   const multipleFileClassification = fileCount > 1 
     ? calculateMultipleFileClassification(records, fileGroups, cgpaAnalysis)
     : singleFileClassification; // Fallback to single file data if no multiple files
@@ -279,6 +297,7 @@ const calculateMultipleFileClassification = (
     averageCGPA: number;
     highestCGPA: number;
     lowestCGPA: number;
+    currentSemesterFile?: string;
   }
 ) => {
   // Initialize counters

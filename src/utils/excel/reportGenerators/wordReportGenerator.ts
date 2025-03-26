@@ -5,6 +5,7 @@ interface WordReportOptions {
   logoImagePath?: string;
   department?: string;
   departmentFullName?: string;
+  calculationMode?: 'sgpa' | 'cgpa';
 }
 
 // Function to download Word document (docx)
@@ -14,6 +15,8 @@ export const downloadWordReport = (
   options?: WordReportOptions
 ): void => {
   try {
+    const isInCgpaMode = options?.calculationMode === 'cgpa';
+    
     // Create HTML content for Word document
     let htmlContent = `
       <!DOCTYPE html>
@@ -91,22 +94,29 @@ export const downloadWordReport = (
             <td style="font-weight: bold;">Files Processed</td>
             <td>${analysis.fileCount || 1}</td>
           </tr>
+          <tr>
+            <td style="font-weight: bold;">Calculation Mode</td>
+            <td>${isInCgpaMode ? 'CGPA (Cumulative Grade Point Average)' : 'SGPA (Semester Grade Point Average)'}</td>
+          </tr>
         </table>`;
         
     htmlContent += `
         <h2>Performance Summary</h2>
-        <div class="summary">
+        <div class="summary">`;
+          
+    // Use CGPA information if in CGPA mode
+    if (isInCgpaMode && analysis.cgpaAnalysis) {
+      htmlContent += `
+          <p><strong>Average CGPA:</strong> ${analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</p>
+          <p><strong>Highest CGPA:</strong> ${analysis.cgpaAnalysis.highestCGPA.toFixed(2)}</p>
+          <p><strong>Lowest CGPA:</strong> ${analysis.cgpaAnalysis.lowestCGPA.toFixed(2)}</p>
+          <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>`;
+    } else {
+      htmlContent += `
           <p><strong>Average SGPA:</strong> ${analysis.averageCGPA.toFixed(2)}</p>
           <p><strong>Highest SGPA:</strong> ${analysis.highestSGPA.toFixed(2)}</p>
           <p><strong>Lowest SGPA:</strong> ${analysis.lowestSGPA.toFixed(2)}</p>
           <p><strong>Pass Percentage:</strong> ${analysis.passFailData[0].value.toFixed(2)}%</p>`;
-          
-    // Add CGPA information if multiple files were processed
-    if (analysis.cgpaAnalysis) {
-      htmlContent += `
-          <p><strong>Average CGPA (Multiple Semesters):</strong> ${analysis.cgpaAnalysis.averageCGPA.toFixed(2)}</p>
-          <p><strong>Highest CGPA:</strong> ${analysis.cgpaAnalysis.highestCGPA.toFixed(2)}</p>
-          <p><strong>Lowest CGPA:</strong> ${analysis.cgpaAnalysis.lowestCGPA.toFixed(2)}</p>`;
     }
     
     htmlContent += `
@@ -120,17 +130,20 @@ export const downloadWordReport = (
             <th>Students</th>
             <th>Average SGPA</th>
             <th>Semester</th>
+            ${isInCgpaMode ? '<th>Note</th>' : ''}
           </tr>`;
     
     // Add file analysis data
     if (analysis.fileWiseAnalysis) {
-      Object.entries(analysis.fileWiseAnalysis).forEach(([fileName, fileData]) => {
+      Object.entries(analysis.fileWiseAnalysis).forEach(([fileName, fileData], index) => {
+        const isCurrentSemester = index === 0 && isInCgpaMode;
         htmlContent += `
           <tr>
             <td>${fileName}</td>
             <td>${fileData.students}</td>
             <td>${fileData.averageSGPA.toFixed(2)}</td>
             <td>${fileData.semesterName || ''}</td>
+            ${isInCgpaMode ? `<td>${isCurrentSemester ? 'Current Semester' : 'Previous Semester'}</td>` : ''}
           </tr>`;
       });
     } else {
@@ -141,6 +154,7 @@ export const downloadWordReport = (
           <td>${analysis.totalStudents}</td>
           <td>${analysis.averageCGPA.toFixed(2)}</td>
           <td></td>
+          ${isInCgpaMode ? '<td>Current Semester</td>' : ''}
         </tr>`;
     }
     
@@ -255,10 +269,8 @@ export const downloadWordReport = (
             <th>WA</th>
           </tr>`;
     
-    // Use the calculated classification data for single file (current semester)
+    // Use the calculated classification data
     const currentSemData = analysis.singleFileClassification;
-    
-    // Use the calculated classification data for multiple files (up to this semester)
     const uptoThisSemData = analysis.multipleFileClassification;
     
     htmlContent += `
@@ -364,8 +376,8 @@ export const downloadWordReport = (
           <tr>
             <th style="width: 5%;">S.No</th>
             <th style="width: 20%;">Register Number</th>
-            <th style="width: 15%;">SGPA</th>
-            ${analysis.cgpaAnalysis ? '<th style="width: 15%;">CGPA</th>' : ''}
+            ${isInCgpaMode ? '' : '<th style="width: 15%;">SGPA</th>'}
+            ${isInCgpaMode || analysis.cgpaAnalysis ? '<th style="width: 15%;">CGPA</th>' : ''}
             <th>Status</th>
           </tr>`;
     
@@ -381,24 +393,43 @@ export const downloadWordReport = (
           }
         }
         
-        // Determine status
+        // Determine status based on relevant metric (CGPA in CGPA mode, SGPA otherwise)
         let status = 'Good Standing';
-        if (student.hasArrears) {
-          status = 'Has Arrears';
-        } else if (student.sgpa < 6.5) {
-          status = 'Second Class';
-        } else if (student.sgpa >= 8.5) {
-          status = 'Distinction';
+        if (isInCgpaMode && cgpa) {
+          const cgpaValue = parseFloat(cgpa);
+          if (student.hasArrears) {
+            if (cgpaValue >= 6.5) {
+              status = 'First Class with Arrears';
+            } else if (cgpaValue >= 5.0) {
+              status = 'Second Class with Arrears';
+            } else {
+              status = 'Has Arrears';
+            }
+          } else if (cgpaValue >= 8.5) {
+            status = 'Distinction';
+          } else if (cgpaValue >= 6.5) {
+            status = 'First Class';
+          } else {
+            status = 'Second Class';
+          }
         } else {
-          status = 'First Class';
+          if (student.hasArrears) {
+            status = 'Has Arrears';
+          } else if (student.sgpa < 6.5) {
+            status = 'Second Class';
+          } else if (student.sgpa >= 8.5) {
+            status = 'Distinction';
+          } else {
+            status = 'First Class';
+          }
         }
         
         htmlContent += `
           <tr>
             <td style="text-align: center;">${index + 1}</td>
             <td>${student.id}</td>
-            <td style="text-align: center;">${student.sgpa.toFixed(2)}</td>
-            ${analysis.cgpaAnalysis ? `<td style="text-align: center;">${cgpa}</td>` : ''}
+            ${isInCgpaMode ? '' : `<td style="text-align: center;">${student.sgpa.toFixed(2)}</td>`}
+            ${isInCgpaMode || analysis.cgpaAnalysis ? `<td style="text-align: center;">${cgpa}</td>` : ''}
             <td>${status}</td>
           </tr>`;
       });
