@@ -1,10 +1,16 @@
 import { ResultAnalysis, StudentRecord } from '../types';
+import { hasArrears } from '../gradeUtils';
 
 interface WordReportOptions {
   logoImagePath?: string;
   department?: string;
   departmentFullName?: string;
 }
+
+// Helper function to check if a student has had any arrears in any semester
+const hasEverHadArrears = (records: StudentRecord[], studentId: string): boolean => {
+  return records.some(record => record.REGNO === studentId && record.GR === 'U');
+};
 
 // Function to download Word document (docx)
 export const downloadWordReport = (
@@ -22,41 +28,8 @@ export const downloadWordReport = (
         <title>Result Analysis Report</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-          .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-          }
-          .header-logo {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            gap: 20px;
-          }
-          .logo-image {
-            height: 100px;
-            width: auto;
-          }
-          .college-title {
-            display: flex;
-            flex-direction: column;
-          }
-          .college-name {
-            color: #2F5597;
-            font-size: 24px;
-            font-weight: bold;
-          }
-          .college-subtitle {
-            color: #ED7D31;
-            font-size: 16px;
-          }
-          h1 { 
-            text-align: center; 
-            color: #2F3770; 
-            font-size: 24px; 
-            margin-bottom: 30px; 
-          }
+          h1 { text-align: center; color: #2F3770; font-size: 24px; margin-bottom: 30px; }
+          h2 { color: #2F3770; font-size: 18px; margin-top: 30px; margin-bottom: 15px; }
           table { border-collapse: collapse; width: 100%; margin: 15px 0; page-break-inside: avoid; }
           th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11pt; }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
@@ -82,43 +55,25 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          .logo-container { 
-            text-align: center; 
-            margin: 20px auto 30px auto;
-            width: 100%;
-          }
-          .college-logo { 
-            width: 250px; 
-            height: auto; 
-            display: block;
-            margin: 0 auto;
-          }
+          .logo-container { text-align: center; margin-bottom: 20px; }
+          .college-logo { width: 590px; height: 174px; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add logo and header as per the image
+    // Add logo directly at the top with a direct reference to the image
     if (options?.logoImagePath) {
-      const absoluteLogoPath = window.location.origin + options.logoImagePath;
       htmlContent += `
-        <div class="header-container">
-          <div class="header-logo">
-            <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="logo-image">
-            <div class="college-title">
-              <div class="college-name">K.S.RANGASAMY</div>
-              <div class="college-subtitle">COLLEGE OF TECHNOLOGY</div>
-              <div class="college-subtitle">AUTONOMOUS | TIRUCHENGODE</div>
-            </div>
-          </div>
-        </div>
-        <h1>Result Analysis Report</h1>`;
-    } else {
-      htmlContent += `<h1>Result Analysis Report</h1>`;
+        <div class="logo-container">
+          <img src="${window.location.origin}${options.logoImagePath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
+        </div>`;
     }
     
     // Continue with the rest of the document
     htmlContent += `
+        <h1>Result Analysis Report</h1>
+        
         <h2>College Information</h2>
         <table>
           <tr>
@@ -328,8 +283,10 @@ export const downloadWordReport = (
           // With arrears
           if (student.sgpa >= 6.5) {
             currentData.firstClassWA++;
-          } else {
+          } else if (student.sgpa > 0) {
             currentData.secondClassWA++;
+          } else {
+            currentData.fail++;
           }
         } else {
           // Without arrears
@@ -348,18 +305,20 @@ export const downloadWordReport = (
       // Process CGPA data if available
       if (analysis.cgpaAnalysis?.studentCGPAs) {
         analysis.cgpaAnalysis.studentCGPAs.forEach(cgpaData => {
-          const student = analysis.studentSgpaDetails?.find(s => s.id === cgpaData.id);
-          const hasArrears = student?.hasArrears || false;
+          // Check if student has ever had arrears in any semester
+          const hasAnyArrears = hasEverHadArrears(records, cgpaData.id);
           
-          if (hasArrears) {
-            // With arrears
+          if (hasAnyArrears) {
+            // With arrears (present or past)
             if (cgpaData.cgpa >= 6.5) {
               cumulativeData.firstClassWA++;
-            } else {
+            } else if (cgpaData.cgpa > 0) {
               cumulativeData.secondClassWA++;
+            } else {
+              cumulativeData.fail++;
             }
           } else {
-            // Without arrears
+            // Without arrears in any semester
             if (cgpaData.cgpa >= 8.5) {
               cumulativeData.distinction++;
             } else if (cgpaData.cgpa >= 6.5) {
@@ -443,20 +402,16 @@ export const downloadWordReport = (
             <th style="width: 17%;">CGPA</th>
           </tr>`;
     
-    // Add top 3 students by SGPA for current semester
+    // Add top 3 students by SGPA for current semester - exclude students with arrears
     const topThreeSGPA = [...(analysis.studentSgpaDetails || [])]
       .filter(s => !s.hasArrears)  // Filter out students with arrears
       .sort((a, b) => b.sgpa - a.sgpa)
       .slice(0, 3);
     
-    // Add top 3 students by CGPA if available
+    // Add top 3 students by CGPA if available - exclude students who have ever had arrears
     const topThreeCGPA = analysis.cgpaAnalysis?.studentCGPAs 
       ? [...analysis.cgpaAnalysis.studentCGPAs]
-          .filter(s => {
-            // Filter out students with arrears
-            const studentRecord = analysis.studentSgpaDetails?.find(sd => sd.id === s.id);
-            return !(studentRecord?.hasArrears);
-          })
+          .filter(s => !hasEverHadArrears(records, s.id)) // Filter out students who ever had arrears
           .sort((a, b) => b.cgpa - a.cgpa)
           .slice(0, 3) 
       : [];
@@ -519,10 +474,14 @@ export const downloadWordReport = (
       analysis.studentSgpaDetails.forEach((student, index) => {
         // Find CGPA if available
         let cgpa = '';
+        let hasAnyPastArrears = false;
+        
         if (analysis.cgpaAnalysis) {
           const studentCgpa = analysis.cgpaAnalysis.studentCGPAs.find(s => s.id === student.id);
           if (studentCgpa) {
             cgpa = studentCgpa.cgpa.toFixed(2);
+            // Check if student has arrears in any semester
+            hasAnyPastArrears = hasEverHadArrears(records, student.id);
           }
         }
         
@@ -530,6 +489,13 @@ export const downloadWordReport = (
         let status = 'Good Standing';
         if (student.hasArrears) {
           status = 'Has Arrears';
+        } else if (hasAnyPastArrears) {
+          // If student had arrears in previous semesters
+          if (student.sgpa >= 6.5) {
+            status = 'First Class (with history of arrears)';
+          } else {
+            status = 'Second Class (with history of arrears)';
+          }
         } else if (student.sgpa < 6.5) {
           status = 'Second Class';
         } else if (student.sgpa >= 8.5) {
