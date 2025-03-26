@@ -49,24 +49,25 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          /* Header image styling - wider container with controlled image size */
+          /* Header image styling - positioned within ruler limit 1 to 6.5 inches */
           .header-image {
             width: 100%;
             margin: 0 auto 20px;
             display: block;
-            text-align: left;
+            position: relative;
           }
           .header-image img {
-            width: 30%;
+            width: 25%;
             height: auto;
-            margin-left: 0;
+            margin-left: 1in; /* Start at 1 inch mark */
+            max-width: 5.5in; /* Ensure image width stays within 5.5 inches (6.5 - 1) */
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add the header image that is left-aligned with controlled size
+    // Add the header image positioned within the ruler limits
     const baseURL = window.location.origin;
     const headerImagePath = baseURL + "/lovable-uploads/6c555048-56f9-487c-a7a1-100babe97cd7.png";
     
