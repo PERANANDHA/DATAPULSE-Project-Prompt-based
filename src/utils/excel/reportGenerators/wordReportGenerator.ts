@@ -51,7 +51,7 @@ export const downloadWordReport = (
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
           .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
           .header-table td { padding: 0; vertical-align: middle; }
-          .header-logo { width: 150px; height: auto; }
+          .header-logo { width: 150px; height: 150px; }
           .college-name { font-size: 16pt; text-align: center; font-weight: bold; }
           .college-subtitle { font-size: 12pt; text-align: center; }
           .result-analysis-cell { font-size: 14pt; text-align: center; font-weight: bold; }
@@ -60,7 +60,7 @@ export const downloadWordReport = (
       </head>
       <body>`;
     
-    // Add header table with logo and college name as per the image
+    // Add header table with logo and college name exactly like the image
     if (options?.logoImagePath) {
       const absoluteLogoPath = window.location.origin + options.logoImagePath;
       htmlContent += `

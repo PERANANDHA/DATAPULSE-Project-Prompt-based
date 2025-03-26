@@ -101,7 +101,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word') {
-        const logoPath = '/lovable-uploads/6728f7a4-0458-447c-8891-6918b79b4da7.png';
+        const logoPath = '/lovable-uploads/131c8935-28ee-4722-bb34-6ee48d87f075.png';
         
         downloadWordReport(analysis!, studentRecords, {
           logoImagePath: logoPath,
