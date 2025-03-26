@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -102,8 +101,9 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word') {
-        // Use the newly uploaded logo with the correct path
-        const logoPath = '/lovable-uploads/94d00467-07bd-491c-826f-986013ff0059.png';
+        // Use the KSR logo from our uploads folder with the correct path
+        // Using the college logo added to public/lovable-uploads
+        const logoPath = '/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png';
         
         downloadWordReport(analysis!, studentRecords, {
           logoImagePath: logoPath,

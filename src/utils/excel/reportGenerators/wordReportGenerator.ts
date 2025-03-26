@@ -1,16 +1,10 @@
 import { ResultAnalysis, StudentRecord } from '../types';
-import { hasArrears } from '../gradeUtils';
 
 interface WordReportOptions {
   logoImagePath?: string;
   department?: string;
   departmentFullName?: string;
 }
-
-// Helper function to check if a student has had any arrears in any semester
-const hasEverHadArrears = (records: StudentRecord[], studentId: string): boolean => {
-  return records.some(record => record.REGNO === studentId && record.GR === 'U');
-};
 
 // Function to download Word document (docx)
 export const downloadWordReport = (
@@ -55,19 +49,20 @@ export const downloadWordReport = (
           .signature-table { width: 100%; border: none; }
           .signature-cell { width: 25%; text-align: center; border: none; }
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
-          .logo-container { text-align: left; margin-bottom: 20px; padding-left: 10px; }
-          .college-logo { width: 150px; height: 150px; }
+          .logo-container { text-align: center; margin-bottom: 20px; }
+          .college-logo { max-width: 350px; height: auto; }
           @page { size: landscape; margin: 0.5in; }
         </style>
       </head>
       <body>`;
     
-    // Add logo directly at the top left with the specified dimensions
+    // Add logo directly at the top with a direct reference to the image
     if (options?.logoImagePath) {
-      htmlContent += `
+      const absoluteLogoPath = window.location.origin + options.logoImagePath;
+      htmlContent = htmlContent.slice(0, htmlContent.indexOf('<body>') + 6) + `
         <div class="logo-container">
-          <img src="${window.location.origin}${options.logoImagePath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
-        </div>`;
+          <img src="${absoluteLogoPath}" alt="K.S.Rangasamy College of Technology" class="college-logo">
+        </div>` + htmlContent.slice(htmlContent.indexOf('<body>') + 6);
     }
     
     // Continue with the rest of the document
@@ -93,7 +88,7 @@ export const downloadWordReport = (
             <td>${analysis.fileCount || 1}</td>
           </tr>
         </table>`;
-    
+        
     htmlContent += `
         <h2>Performance Summary</h2>
         <div class="summary">
@@ -283,10 +278,8 @@ export const downloadWordReport = (
           // With arrears
           if (student.sgpa >= 6.5) {
             currentData.firstClassWA++;
-          } else if (student.sgpa > 0) {
-            currentData.secondClassWA++;
           } else {
-            currentData.fail++;
+            currentData.secondClassWA++;
           }
         } else {
           // Without arrears
@@ -305,20 +298,18 @@ export const downloadWordReport = (
       // Process CGPA data if available
       if (analysis.cgpaAnalysis?.studentCGPAs) {
         analysis.cgpaAnalysis.studentCGPAs.forEach(cgpaData => {
-          // Check if student has ever had arrears in any semester
-          const hasAnyArrears = hasEverHadArrears(records, cgpaData.id);
+          const student = analysis.studentSgpaDetails?.find(s => s.id === cgpaData.id);
+          const hasArrears = student?.hasArrears || false;
           
-          if (hasAnyArrears) {
-            // With arrears (present or past)
+          if (hasArrears) {
+            // With arrears
             if (cgpaData.cgpa >= 6.5) {
               cumulativeData.firstClassWA++;
-            } else if (cgpaData.cgpa > 0) {
-              cumulativeData.secondClassWA++;
             } else {
-              cumulativeData.fail++;
+              cumulativeData.secondClassWA++;
             }
           } else {
-            // Without arrears in any semester
+            // Without arrears
             if (cgpaData.cgpa >= 8.5) {
               cumulativeData.distinction++;
             } else if (cgpaData.cgpa >= 6.5) {
@@ -402,16 +393,20 @@ export const downloadWordReport = (
             <th style="width: 17%;">CGPA</th>
           </tr>`;
     
-    // Add top 3 students by SGPA for current semester - exclude students with arrears
+    // Add top 3 students by SGPA for current semester
     const topThreeSGPA = [...(analysis.studentSgpaDetails || [])]
       .filter(s => !s.hasArrears)  // Filter out students with arrears
       .sort((a, b) => b.sgpa - a.sgpa)
       .slice(0, 3);
     
-    // Add top 3 students by CGPA if available - exclude students who have ever had arrears
+    // Add top 3 students by CGPA if available
     const topThreeCGPA = analysis.cgpaAnalysis?.studentCGPAs 
       ? [...analysis.cgpaAnalysis.studentCGPAs]
-          .filter(s => !hasEverHadArrears(records, s.id)) // Filter out students who ever had arrears
+          .filter(s => {
+            // Filter out students with arrears
+            const studentRecord = analysis.studentSgpaDetails?.find(sd => sd.id === s.id);
+            return !(studentRecord?.hasArrears);
+          })
           .sort((a, b) => b.cgpa - a.cgpa)
           .slice(0, 3) 
       : [];
@@ -474,14 +469,10 @@ export const downloadWordReport = (
       analysis.studentSgpaDetails.forEach((student, index) => {
         // Find CGPA if available
         let cgpa = '';
-        let hasAnyPastArrears = false;
-        
         if (analysis.cgpaAnalysis) {
           const studentCgpa = analysis.cgpaAnalysis.studentCGPAs.find(s => s.id === student.id);
           if (studentCgpa) {
             cgpa = studentCgpa.cgpa.toFixed(2);
-            // Check if student has arrears in any semester
-            hasAnyPastArrears = hasEverHadArrears(records, student.id);
           }
         }
         
@@ -489,13 +480,6 @@ export const downloadWordReport = (
         let status = 'Good Standing';
         if (student.hasArrears) {
           status = 'Has Arrears';
-        } else if (hasAnyPastArrears) {
-          // If student had arrears in previous semesters
-          if (student.sgpa >= 6.5) {
-            status = 'First Class (with history of arrears)';
-          } else {
-            status = 'Second Class (with history of arrears)';
-          }
         } else if (student.sgpa < 6.5) {
           status = 'Second Class';
         } else if (student.sgpa >= 8.5) {
