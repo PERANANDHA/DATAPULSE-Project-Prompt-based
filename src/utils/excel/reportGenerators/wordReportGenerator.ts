@@ -51,11 +51,14 @@ export const downloadWordReport = (
           .signature-line { display: inline-block; border-top: 1px solid #000; padding-top: 5px; min-width: 150px; }
           .logo-container { 
             text-align: center; 
-            margin-bottom: 20px; 
+            margin: 20px auto 30px auto;
+            width: 100%;
           }
           .college-logo { 
-            max-width: 100%; 
+            width: 250px; 
             height: auto; 
+            display: block;
+            margin: 0 auto;
           }
           @page { size: landscape; margin: 0.5in; }
         </style>
