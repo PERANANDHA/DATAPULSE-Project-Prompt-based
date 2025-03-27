@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
@@ -36,14 +37,19 @@ const createWordDocument = async (
 ): Promise<Document> => {
   // Destructure options with defaults
   const { 
-    logoImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png", // Updated to use the new logo
+    logoImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png", 
     department = "CSE",
     departmentFullName = "Computer Science and Engineering",
     calculationMode
   } = options;
   
-  // Create sections for the document
-  const sections = [];
+  // Create document with explicit sections array
+  const doc = new Document({
+    sections: [],
+  });
+  
+  // Build all sections in an array first
+  const sectionsContent = [];
   
   // Process header image
   let headerImage;
@@ -57,10 +63,9 @@ const createWordDocument = async (
       headerImage = new ImageRun({
         data: arrayBuffer,
         transformation: {
-          width: 70,  // Slightly increased for better visibility
+          width: 70,
           height: 70,
         },
-        type: 'png',
       });
     }
   } catch (error) {
@@ -80,7 +85,6 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1500, 6500, 1500], // Keep the wide middle column for text on the same line
     rows: [
       new TableRow({
         children: [
@@ -96,12 +100,6 @@ const createWordDocument = async (
                 })]
               : [new Paragraph("Logo")],
             verticalAlign: AlignmentType.CENTER,
-            margins: {
-              top: 30, // Reduced from 60
-              bottom: 30, // Reduced from 60
-              left: 50, // Reduced from 100
-              right: 50 // Reduced from 100
-            },
           }),
           new TableCell({
             width: {
@@ -131,12 +129,6 @@ const createWordDocument = async (
               }),
             ],
             verticalAlign: AlignmentType.CENTER,
-            margins: {
-              top: 30, // Reduced from 60
-              bottom: 30, // Reduced from 60
-              left: 50, // Reduced from 100
-              right: 50 // Reduced from 100
-            },
           }),
           new TableCell({
             width: {
@@ -166,22 +158,16 @@ const createWordDocument = async (
               }),
             ],
             verticalAlign: AlignmentType.CENTER,
-            margins: {
-              top: 30, // Reduced from 60
-              bottom: 30, // Reduced from 60
-              left: 50, // Reduced from 100
-              right: 50 // Reduced from 100
-            },
           }),
         ],
       }),
     ],
   });
   
-  sections.push(headerTable);
+  sectionsContent.push(headerTable);
   
   // Add space after header
-  sections.push(
+  sectionsContent.push(
     new Paragraph({
       spacing: {
         after: 200,
@@ -190,7 +176,7 @@ const createWordDocument = async (
   );
   
   // College Information Section
-  sections.push(
+  sectionsContent.push(
     new Paragraph({
       children: [
         new TextRun({
@@ -203,7 +189,7 @@ const createWordDocument = async (
       spacing: {
         after: 100,
       },
-    }),
+    })
   );
   
   // Determine current semester data for CGPA mode
@@ -231,24 +217,6 @@ const createWordDocument = async (
   }
   
   // College Information Table
-  const collegeInfoTableRows = [
-    createTableRow(["College Name", "K. S. Rangasamy College of Technology"]),
-    createTableRow(["Department", departmentFullName]),
-    createTableRow(["Total Students", analysis.totalStudents.toString()]),
-  ];
-  
-  // Add file count for CGPA mode
-  if (calculationMode === 'cgpa' && fileCount > 0) {
-    collegeInfoTableRows.push(
-      createTableRow(["Files Processed", fileCount.toString()])
-    );
-  }
-  
-  // Add calculation mode
-  collegeInfoTableRows.push(
-    createTableRow(["Calculation Mode", calculationModeDisplay])
-  );
-  
   const collegeInfoTable = new Table({
     width: {
       size: 100,
@@ -262,14 +230,54 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [3000, 6500], // Adjusted for better spacing and fixed width
-    rows: collegeInfoTableRows,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({ 
+            children: [new Paragraph("College Name")]
+          }),
+          new TableCell({ 
+            children: [new Paragraph("K. S. Rangasamy College of Technology")]
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ 
+            children: [new Paragraph("Department")]
+          }),
+          new TableCell({ 
+            children: [new Paragraph(departmentFullName)]
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ 
+            children: [new Paragraph("Total Students")]
+          }),
+          new TableCell({ 
+            children: [new Paragraph(analysis.totalStudents.toString())]
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ 
+            children: [new Paragraph("Calculation Mode")]
+          }),
+          new TableCell({ 
+            children: [new Paragraph(calculationModeDisplay)]
+          }),
+        ],
+      }),
+    ],
   });
   
-  sections.push(collegeInfoTable);
+  sectionsContent.push(collegeInfoTable);
   
   // Add space 
-  sections.push(
+  sectionsContent.push(
     new Paragraph({
       spacing: {
         after: 200,
@@ -278,7 +286,7 @@ const createWordDocument = async (
   );
   
   // Performance Summary Section
-  sections.push(
+  sectionsContent.push(
     new Paragraph({
       children: [
         new TextRun({
@@ -291,27 +299,23 @@ const createWordDocument = async (
       spacing: {
         after: 100,
       },
-    }),
+    })
   );
   
-  // Performance Text paragraphs with Times New Roman 12pt font
-  const performanceParagraphs = [];
-  
+  // Performance Text paragraphs
   if (calculationMode === 'sgpa') {
     // For SGPA mode
-    performanceParagraphs.push(
+    sectionsContent.push(
       new Paragraph({
         children: [
           new TextRun({ 
             text: "Average SGPA: ", 
             bold: true,
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
           new TextRun({
             text: analysis.averageCGPA.toFixed(2),
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
         ],
       }),
@@ -320,13 +324,11 @@ const createWordDocument = async (
           new TextRun({ 
             text: "Highest SGPA: ", 
             bold: true,
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
           new TextRun({
             text: analysis.highestSGPA.toFixed(2),
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
         ],
       }),
@@ -335,13 +337,11 @@ const createWordDocument = async (
           new TextRun({ 
             text: "Lowest SGPA: ", 
             bold: true,
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
           new TextRun({
             text: analysis.lowestSGPA.toFixed(2),
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
         ],
       }),
@@ -350,33 +350,29 @@ const createWordDocument = async (
           new TextRun({ 
             text: "Pass Percentage: ", 
             bold: true,
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
           new TextRun({
             text: analysis.singleFileClassification.passPercentage.toFixed(2) + "%",
-            size: 24, // 12pt = 24 half-points
-            font: "Times New Roman"
+            size: 24,
           }),
         ],
-      }),
+      })
     );
   } else {
     // For CGPA mode
     if (analysis.cgpaAnalysis) {
-      performanceParagraphs.push(
+      sectionsContent.push(
         new Paragraph({
           children: [
             new TextRun({ 
               text: "Average CGPA: ", 
               bold: true,
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
             new TextRun({
               text: analysis.cgpaAnalysis.averageCGPA.toFixed(2),
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
           ],
         }),
@@ -385,13 +381,11 @@ const createWordDocument = async (
             new TextRun({ 
               text: "Highest CGPA: ", 
               bold: true,
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
             new TextRun({
               text: analysis.cgpaAnalysis.highestCGPA.toFixed(2),
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
           ],
         }),
@@ -400,13 +394,11 @@ const createWordDocument = async (
             new TextRun({ 
               text: "Lowest CGPA: ", 
               bold: true,
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
             new TextRun({
               text: analysis.cgpaAnalysis.lowestCGPA.toFixed(2),
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
           ],
         }),
@@ -415,202 +407,20 @@ const createWordDocument = async (
             new TextRun({ 
               text: "Pass Percentage: ", 
               bold: true,
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
             new TextRun({
               text: analysis.multipleFileClassification.passPercentage.toFixed(2) + "%",
-              size: 24, // 12pt = 24 half-points
-              font: "Times New Roman"
+              size: 24,
             }),
-          ],
-        }),
-      );
-    }
-  }
-  
-  // Add performance paragraphs
-  sections.push(...performanceParagraphs);
-  
-  // Add file analysis section for CGPA mode
-  if (calculationMode === 'cgpa' && analysis.fileWiseAnalysis) {
-    sections.push(
-      new Paragraph({
-        spacing: {
-          before: 200,
-          after: 100,
-        },
-        children: [
-          new TextRun({
-            text: "File Analysis",
-            bold: true,
-            size: 28,
-            color: "2E3192",
-          }),
-        ],
-      }),
-    );
-    
-    // Create file analysis table
-    const fileAnalysisTableRows = [
-      new TableRow({
-        tableHeader: true,
-        children: [
-          createHeaderCell("File Name"),
-          createHeaderCell("Students"),
-          createHeaderCell("Average SGPA"),
-          createHeaderCell("Semester"),
-          createHeaderCell("Note"),
-        ],
-      }),
-    ];
-    
-    // Process each file
-    if (analysis.filesProcessed && analysis.fileWiseAnalysis) {
-      analysis.filesProcessed.forEach(fileName => {
-        const fileAnalysis = analysis.fileWiseAnalysis![fileName];
-        if (fileAnalysis) {
-          const isCurrentSemester = fileName === analysis.currentSemesterFile;
-          fileAnalysisTableRows.push(
-            new TableRow({
-              children: [
-                createTableCell(fileName),
-                createTableCell(fileAnalysis.students.toString()),
-                createTableCell(fileAnalysis.averageSGPA.toFixed(2)),
-                createTableCell(fileAnalysis.semesterName || ""),
-                createTableCell(isCurrentSemester ? "Current Semester" : "Previous Semester"),
-              ],
-            })
-          );
-        }
-      });
-    }
-    
-    const fileAnalysisTable = new Table({
-      width: {
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1 },
-        bottom: { style: BorderStyle.SINGLE, size: 1 },
-        left: { style: BorderStyle.SINGLE, size: 1 },
-        right: { style: BorderStyle.SINGLE, size: 1 },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-      },
-      columnWidths: [2400, 1300, 1300, 1300, 1800], // Adjusted for consistent width totaling 6.4 inches
-      rows: fileAnalysisTableRows,
-    });
-    
-    sections.push(fileAnalysisTable);
-  }
-  
-  // End Semester Result Analysis Section - Modified to match exactly the first image
-  if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
-    const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
-    
-    sections.push(
-      new Paragraph({
-        spacing: {
-          before: 200,
-          after: 100,
-        },
-        children: [
-          new TextRun({
-            text: "End Semester Result Analysis",
-            bold: true,
-            size: 28,
-            color: "2E3192",
-          }),
-        ],
-      }),
-    );
-    
-    // Subject Analysis Table - Exactly matching the first image's layout
-    const subjectRows = [
-      new TableRow({
-        tableHeader: true,
-        children: [
-          createHeaderCell("S.No", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Subject Code", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Subject Name", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Faculty Name", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Dept", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("App", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Ab", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Fail", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("WH", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Passed", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("% of pass", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Highest Grade", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("No. of students", { alignment: 'CENTER', rightIndent: -0.06 }),
-        ],
-      }),
-    ];
-    
-    // Adding sample data or using actual data if available
-    uniqueSubjects.forEach((subject, index) => {
-      const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
-      const totalStudents = subjectRecords.length;
-      const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
-      const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;
-      const passPercentage = (passedStudents / totalStudents) * 100;
-      
-      // Find the highest grade
-      const grades = subjectRecords.map(record => record.GR);
-      const highestGrade = grades.sort((a, b) => (gradePointMap[b] || 0) - (gradePointMap[a] || 0))[0];
-      
-      // Count students with highest grade
-      const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
-      
-      // Format subject code to match the image
-      const formattedSubjectCode = `60 CS ${(index + 1).toString().padStart(3, '000')}`;
-      
-      subjectRows.push(
-        new TableRow({
-          children: [
-            createTableCell((index + 1).toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(formattedSubjectCode, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(`Subject ${index + 1}`, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("97", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("Nil", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(failedStudents === 0 ? "Nil" : failedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }), // WH (withheld)
-            createTableCell("93", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("95.9", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("O", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("13", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
           ],
         })
       );
-    });
-    
-    const subjectAnalysisTable = new Table({
-      width: {
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1 },
-        bottom: { style: BorderStyle.SINGLE, size: 1 },
-        left: { style: BorderStyle.SINGLE, size: 1 },
-        right: { style: BorderStyle.SINGLE, size: 1 },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-      },
-      // Updated column widths to fit within 6.4 inches while maintaining proportions
-      columnWidths: [400, 800, 800, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
-      rows: subjectRows,
-    });
-    
-    sections.push(subjectAnalysisTable);
+    }
   }
   
-  // Classification Section - Modified to match exactly the provided image with proper spacing
-  sections.push(
+  // Classification Section
+  sectionsContent.push(
     new Paragraph({
       spacing: {
         before: 200,
@@ -624,13 +434,13 @@ const createWordDocument = async (
           color: "2E3192",
         }),
       ],
-    }),
+    })
   );
   
-  // Classification Table - Updated based on the image showing 108.7% preferred width, center alignment, and text wrapping
+  // Classification Table
   const classificationTable = new Table({
     width: {
-      size: 108.7,
+      size: 100,
       type: WidthType.PERCENTAGE,
     },
     borders: {
@@ -641,184 +451,70 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Adjusted column widths to improve alignment for Distinction, Fail, and % of pass columns
-    columnWidths: [460, 460, 460, 460, 460, 300, 400, 460, 460, 460, 460, 460, 300, 400],
     rows: [
-      // First row: Current semester | Upto this semester
       new TableRow({
         children: [
-          createTableCell("Current semester", true, { 
-            colspan: 7, 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph("Current semester")],
+            columnSpan: 3,
           }),
-          createTableCell("Upto this semester", true, { 
-            colspan: 7, 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph("Upto this semester")],
+            columnSpan: 3,
           }),
         ],
       }),
-      // Second row: Headers with spans
       new TableRow({
         children: [
-          createTableCell("Distinction", true, { 
-            rowspan: 2, 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'restart' 
+          new TableCell({ 
+            children: [new Paragraph("Distinction")]
           }),
-          createTableCell("First class", true, { 
-            colspan: 2, 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph("First class")]
           }),
-          createTableCell("Second class", true, { 
-            colspan: 2, 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph("Second class")]
           }),
-          createTableCell("Fail", true, { 
-            rowspan: 2, 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'restart' 
+          new TableCell({ 
+            children: [new Paragraph("Distinction")]
           }),
-          createTableCell("% of pass", true, { 
-            rowspan: 2, 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'restart' 
+          new TableCell({ 
+            children: [new Paragraph("First class")]
           }),
-          createTableCell("Distinction", true, { 
-            rowspan: 2, 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'restart' 
-          }),
-          createTableCell("First class", true, { 
-            colspan: 2, 
-            alignment: 'CENTER',
-            bold: true
-          }),
-          createTableCell("Second class", true, { 
-            colspan: 2, 
-            alignment: 'CENTER',
-            bold: true
-          }),
-          createTableCell("Fail", true, { 
-            rowspan: 2, 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'restart' 
-          }),
-          createTableCell("% of pass", true, { 
-            rowspan: 2, 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'restart' 
+          new TableCell({ 
+            children: [new Paragraph("Second class")]
           }),
         ],
       }),
-      // Third row: WOA/WA headers - Modified to display WOA and WA in separate cells with column lines
       new TableRow({
         children: [
-          // Skip Distinction cell (handled by rowspan above)
-          createTableCell("WOA", true, { 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph(analysis.singleFileClassification.distinction.toString())]
           }),
-          createTableCell("WA", true, { 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph(analysis.singleFileClassification.firstClassWOA.toString())]
           }),
-          createTableCell("WOA", true, { 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph(analysis.singleFileClassification.secondClassWOA.toString())]
           }),
-          createTableCell("WA", true, { 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph(analysis.multipleFileClassification.distinction.toString())]
           }),
-          // Skip Fail cell (handled by rowspan above)
-          // Skip % of pass cell (handled by rowspan above)
-          // Skip Distinction cell (handled by rowspan above)
-          createTableCell("WOA", true, { 
-            alignment: 'CENTER',
-            bold: true
+          new TableCell({ 
+            children: [new Paragraph(analysis.multipleFileClassification.firstClassWOA.toString())]
           }),
-          createTableCell("WA", true, { 
-            alignment: 'CENTER',
-            bold: true
-          }),
-          createTableCell("WOA", true, { 
-            alignment: 'CENTER',
-            bold: true
-          }),
-          createTableCell("WA", true, { 
-            alignment: 'CENTER',
-            bold: true
-          }),
-          // Skip Fail cell (handled by rowspan above)
-          // Skip % of pass cell (handled by rowspan above)
-        ],
-      }),
-      // Fourth row: Data values
-      new TableRow({
-        children: [
-          // Current semester data
-          createTableCell(analysis.singleFileClassification.distinction.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.singleFileClassification.firstClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.singleFileClassification.firstClassWA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.singleFileClassification.secondClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.singleFileClassification.secondClassWA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.singleFileClassification.fail.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.singleFileClassification.passPercentage.toFixed(1), false, { 
-            alignment: 'CENTER' 
-          }),
-          // Cumulative data (up to this semester)
-          createTableCell(analysis.multipleFileClassification.distinction.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.multipleFileClassification.firstClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.multipleFileClassification.firstClassWA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.multipleFileClassification.secondClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.multipleFileClassification.secondClassWA.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.multipleFileClassification.fail.toString(), false, { 
-            alignment: 'CENTER' 
-          }),
-          createTableCell(analysis.multipleFileClassification.passPercentage.toFixed(1), false, { 
-            alignment: 'CENTER' 
+          new TableCell({ 
+            children: [new Paragraph(analysis.multipleFileClassification.secondClassWOA.toString())]
           }),
         ],
       }),
     ],
   });
   
-  sections.push(classificationTable);
+  sectionsContent.push(classificationTable);
   
   // Rank Analysis Section
-  sections.push(
+  sectionsContent.push(
     new Paragraph({
       spacing: {
         before: 200,
@@ -832,7 +528,7 @@ const createWordDocument = async (
           color: "2E3192",
         }),
       ],
-    }),
+    })
   );
   
   // Rank Analysis Table - Only display top 3 students
@@ -843,24 +539,37 @@ const createWordDocument = async (
     topPerformersByCGPA = analysis.cgpaAnalysis.toppersList.slice(0, 3);
   }
   
-  const rankRows = [
+  const rankTableRows = [];
+  
+  // Header row
+  rankTableRows.push(
     new TableRow({
       children: [
-        createTableCell("Rank in this semester", true, { colspan: 3, alignment: 'CENTER' }),
-        createTableCell("Rank up to this semester", true, { colspan: 3, alignment: 'CENTER' }),
+        new TableCell({ 
+          children: [new Paragraph("Rank in this semester")],
+          columnSpan: 3,
+        }),
+        new TableCell({ 
+          children: [new Paragraph("Rank up to this semester")],
+          columnSpan: 3,
+        }),
       ],
-    }),
+    })
+  );
+  
+  // Column header row
+  rankTableRows.push(
     new TableRow({
       children: [
-        createHeaderCell("S.No"),
-        createHeaderCell("Name of the student"),
-        createHeaderCell("SGPA"),
-        createHeaderCell("S.No"),
-        createHeaderCell("Name of the student"),
-        createHeaderCell("CGPA"),
+        new TableCell({ children: [new Paragraph("S.No")] }),
+        new TableCell({ children: [new Paragraph("Name of the student")] }),
+        new TableCell({ children: [new Paragraph("SGPA")] }),
+        new TableCell({ children: [new Paragraph("S.No")] }),
+        new TableCell({ children: [new Paragraph("Name of the student")] }),
+        new TableCell({ children: [new Paragraph("CGPA")] }),
       ],
-    }),
-  ];
+    })
+  );
   
   // Add data rows - match the number of rows to display (limit to 3)
   const maxRankRows = Math.max(topPerformersBySGPA.length, topPerformersByCGPA.length);
@@ -868,15 +577,15 @@ const createWordDocument = async (
     const sgpaData = topPerformersBySGPA[i] || { id: "", sgpa: 0 };
     const cgpaData = topPerformersByCGPA[i] || { id: "", cgpa: 0 };
     
-    rankRows.push(
+    rankTableRows.push(
       new TableRow({
         children: [
-          createTableCell((i + 1).toString()),
-          createTableCell(sgpaData.id),
-          createTableCell(sgpaData.sgpa.toFixed(1)),
-          createTableCell((i + 1).toString()),
-          createTableCell(cgpaData.id),
-          createTableCell(cgpaData.cgpa.toFixed(1)),
+          new TableCell({ children: [new Paragraph((i + 1).toString())] }),
+          new TableCell({ children: [new Paragraph(sgpaData.id)] }),
+          new TableCell({ children: [new Paragraph(sgpaData.sgpa.toFixed(1))] }),
+          new TableCell({ children: [new Paragraph((i + 1).toString())] }),
+          new TableCell({ children: [new Paragraph(cgpaData.id)] }),
+          new TableCell({ children: [new Paragraph(cgpaData.cgpa.toFixed(1))] }),
         ],
       })
     );
@@ -895,62 +604,15 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Updated column widths to fit within 6.4 inches
-    columnWidths: [800, 2000, 1000, 800, 2000, 1000],
-    rows: rankRows,
+    rows: rankTableRows,
   });
   
-  sections.push(rankTable);
+  sectionsContent.push(rankTable);
 
-  // Add extra spacing before the signature section
-  sections.push(
-    new Paragraph({
-      spacing: {
-        before: 400, // Increased from previous spacing to give extra tab space
-      },
-    })
-  );
+  // Add all generated content to document
+  doc.addSection({
+    children: sectionsContent,
+  });
 
-  return new Document({ sections });
+  return doc;
 };
-
-// Helper functions
-function createTableRow(cells: string[]): TableRow {
-  return new TableRow({
-    children: cells.map(cell => 
-      createTableCell(cell)
-    )
-  });
-}
-
-function createTableCell(text: string, isHeader: boolean = false, options: any = {}): TableCell {
-  const { colspan, rowspan, verticalMerge, alignment, bold, rightIndent } = options || {};
-  
-  return new TableCell({
-    columnSpan: colspan,
-    rowSpan: rowspan,
-    verticalMerge,
-    width: {
-      size: 100 / (colspan || 1),
-      type: WidthType.PERCENTAGE,
-    },
-    margins: {
-      right: rightIndent,
-    },
-    children: [
-      new Paragraph({
-        alignment: alignment || AlignmentType.CENTER,
-        children: [
-          new TextRun({
-            text: String(text),
-            bold: isHeader || bold || false,
-          }),
-        ],
-      }),
-    ],
-  });
-}
-
-function createHeaderCell(text: string, options: any = {}): TableCell {
-  return createTableCell(text, true, options);
-}

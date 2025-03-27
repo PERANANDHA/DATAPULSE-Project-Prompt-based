@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu,
@@ -27,6 +27,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'word' | 'pdf' | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const dropdownRef = useRef<HTMLButtonElement>(null);
   const { toast } = useToast();
 
   const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
@@ -39,6 +40,11 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       return;
     }
     
+    // Prevent multiple simultaneous downloads
+    if (isDownloading) {
+      return;
+    }
+    
     if (format === 'word') {
       setSelectedFormat('word');
       setIsDepartmentDialogOpen(true);
@@ -47,6 +53,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     setIsDownloading(true);
     setDownloadProgress(0);
+    setSelectedFormat(format);
     
     const progressInterval = startProgressSimulation();
     
@@ -88,6 +95,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       });
       setIsDownloading(false);
       setDownloadProgress(0);
+      setSelectedFormat(null);
     }, 500);
   };
 
@@ -113,7 +121,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word' && analysis) {
-        // Updated to use the new logo image path
+        // Get a fresh reference to the logo image
         const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
         
         await downloadWordReport(analysis, studentRecords, {
@@ -144,7 +152,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         )}
         <div className="flex justify-end">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild disabled={isDownloading} ref={dropdownRef}>
               <Button disabled={isDownloading}>
                 {isDownloading ? (
                   <>
