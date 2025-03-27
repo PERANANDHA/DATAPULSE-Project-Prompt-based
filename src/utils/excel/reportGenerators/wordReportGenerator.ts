@@ -591,19 +591,19 @@ const createWordDocument = async (
       new TableRow({
         tableHeader: true,
         children: [
-          createHeaderCell("S.No", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Subject Code", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Subject Name", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Faculty Name", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Dept", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("App", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Ab", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Fail", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("WH", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Passed", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("% of pass", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Highest Grade", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("No. of students", { alignment: 'CENTER', rightIndent: -0.06 }),
+          createHeaderCell("S.No", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Subject Code", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Subject Name", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Faculty Name", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Dept", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("App", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Ab", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Fail", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("WH", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Passed", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("% of pass", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("Highest Grade", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+          createHeaderCell("No. of students", { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
         ],
       }),
     ];
@@ -629,19 +629,19 @@ const createWordDocument = async (
       subjectRows.push(
         new TableRow({
           children: [
-            createTableCell((index + 1).toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(formattedSubjectCode, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(`Subject ${index + 1}`, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("97", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("Nil", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(failedStudents === 0 ? "Nil" : failedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }), // WH (withheld)
-            createTableCell("93", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("95.9", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("O", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("13", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
+            createTableCell((index + 1).toString(), false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+            createTableCell(formattedSubjectCode, false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+            createTableCell(`Subject ${index + 1}`, false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+            createTableCell("", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+            createTableCell(department, false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+            createTableCell("97", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }), 
+            createTableCell("Nil", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }), 
+            createTableCell(failedStudents === 0 ? "Nil" : failedStudents.toString(), false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }),
+            createTableCell("0", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }), // WH (withheld)
+            createTableCell("93", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }), 
+            createTableCell("95.9", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }), 
+            createTableCell("O", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }), 
+            createTableCell("13", false, { alignment: AlignmentType.CENTER, rightIndent: -0.06 }), 
           ],
         })
       );
@@ -708,12 +708,12 @@ const createWordDocument = async (
         children: [
           createTableCell("Current semester", true, { 
             colspan: 7, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("Upto this semester", true, { 
             colspan: 7, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
         ],
@@ -723,57 +723,57 @@ const createWordDocument = async (
         children: [
           createTableCell("Distinction", true, { 
             rowspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true,
             verticalMerge: 'restart' 
           }),
           createTableCell("First class", true, { 
             colspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("Second class", true, { 
             colspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("Fail", true, { 
             rowspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true,
             verticalMerge: 'restart' 
           }),
           createTableCell("% of pass", true, { 
             rowspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true,
             verticalMerge: 'restart' 
           }),
           createTableCell("Distinction", true, { 
             rowspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true,
             verticalMerge: 'restart' 
           }),
           createTableCell("First class", true, { 
             colspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("Second class", true, { 
             colspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("Fail", true, { 
             rowspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true,
             verticalMerge: 'restart' 
           }),
           createTableCell("% of pass", true, { 
             rowspan: 2, 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true,
             verticalMerge: 'restart' 
           }),
@@ -784,38 +784,38 @@ const createWordDocument = async (
         children: [
           // Skip Distinction cell (handled by rowspan above)
           createTableCell("WOA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("WA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("WOA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("WA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           // Skip Fail cell (handled by rowspan above)
           // Skip % of pass cell (handled by rowspan above)
           // Skip Distinction cell (handled by rowspan above)
           createTableCell("WOA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("WA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("WOA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           createTableCell("WA", true, { 
-            alignment: 'CENTER',
+            alignment: AlignmentType.CENTER,
             bold: true
           }),
           // Skip Fail cell (handled by rowspan above)
@@ -827,47 +827,47 @@ const createWordDocument = async (
         children: [
           // Current semester data
           createTableCell(analysis.singleFileClassification.distinction.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.singleFileClassification.firstClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.singleFileClassification.firstClassWA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.singleFileClassification.secondClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.singleFileClassification.secondClassWA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.singleFileClassification.fail.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.singleFileClassification.passPercentage.toFixed(1), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           // Cumulative data (up to this semester)
           createTableCell(analysis.multipleFileClassification.distinction.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.multipleFileClassification.firstClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.multipleFileClassification.firstClassWA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.multipleFileClassification.secondClassWOA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.multipleFileClassification.secondClassWA.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.multipleFileClassification.fail.toString(), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
           createTableCell(analysis.multipleFileClassification.passPercentage.toFixed(1), false, { 
-            alignment: 'CENTER' 
+            alignment: AlignmentType.CENTER 
           }),
         ],
       }),
@@ -905,8 +905,8 @@ const createWordDocument = async (
   const rankRows = [
     new TableRow({
       children: [
-        createTableCell("Rank in this semester", true, { colspan: 3, alignment: 'CENTER' }),
-        createTableCell("Rank up to this semester", true, { colspan: 3, alignment: 'CENTER' }),
+        createTableCell("Rank in this semester", true, { colspan: 3, alignment: AlignmentType.CENTER }),
+        createTableCell("Rank up to this semester", true, { colspan: 3, alignment: AlignmentType.CENTER }),
       ],
     }),
     new TableRow({
