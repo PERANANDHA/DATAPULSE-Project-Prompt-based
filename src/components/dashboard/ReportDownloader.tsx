@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -8,7 +7,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Download, Loader, File, FileText, FileSpreadsheetIcon } from 'lucide-react';
-import { ResultAnalysis, StudentRecord, downloadCSVReport, downloadExcelReport, downloadWordReport, downloadPdfReport } from '@/utils/excelProcessor';
+import { ResultAnalysis, StudentRecord, downloadCSVReport, downloadExcelReport, downloadPdfReport } from '@/utils/excelProcessor';
+import { downloadWordReport } from '@/utils/excel/reportGenerators/tempWordReportGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -103,7 +103,6 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (selectedFormat === 'word' && analysis) {
-        // Updated to use the new logo image path
         const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
         
         downloadWordReport(analysis, studentRecords, {
