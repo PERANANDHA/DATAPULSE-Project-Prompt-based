@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -43,7 +42,7 @@ const createTableCell = (
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: 'LEFT' | 'CENTER' | 'RIGHT';
+    alignment?: AlignmentType;
     bold?: boolean;
     verticalMerge?: 'restart' | 'continue';
     rightIndent?: number;
@@ -52,15 +51,11 @@ const createTableCell = (
   const {
     colspan,
     rowspan,
-    alignment = 'LEFT',
+    alignment = AlignmentType.LEFT,
     bold = false,
     verticalMerge,
     rightIndent
   } = options;
-  
-  let alignmentValue = AlignmentType.LEFT;
-  if (alignment === 'CENTER') alignmentValue = AlignmentType.CENTER;
-  if (alignment === 'RIGHT') alignmentValue = AlignmentType.RIGHT;
   
   return new TableCell({
     children: [
@@ -72,7 +67,7 @@ const createTableCell = (
             size: 22, // 11pt = 22 half-points
           }),
         ],
-        alignment: alignmentValue,
+        alignment: alignment,
         ...(rightIndent ? { indent: { right: rightIndent } } : {}),
       }),
     ],
@@ -87,13 +82,13 @@ const createTableCell = (
 const createHeaderCell = (
   text: string, 
   options: {
-    alignment?: 'LEFT' | 'CENTER' | 'RIGHT';
+    alignment?: AlignmentType;
     rightIndent?: number;
   } = {}
 ) => {
   return createTableCell(text, true, { 
     ...options,
-    alignment: options.alignment || 'CENTER',
+    alignment: options.alignment || AlignmentType.CENTER,
     bold: true
   });
 };
