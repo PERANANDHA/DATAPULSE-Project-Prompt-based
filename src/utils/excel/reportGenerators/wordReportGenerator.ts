@@ -280,7 +280,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Performance Text paragraphs - UPDATED TO SIZE 12
+  // Performance Text paragraphs - UPDATED WITH LARGER SIZE TO MATCH HEADERS BUT NOT BOLD
   const performanceParagraphs = [];
   
   if (calculationMode === 'sgpa') {
@@ -288,26 +288,26 @@ const createWordDocument = async (
     performanceParagraphs.push(
       new Paragraph({
         children: [
-          new TextRun({ text: "Average SGPA: ", bold: true, size: 12 }),
-          new TextRun({ text: analysis.averageCGPA.toFixed(2), size: 12 }),
+          new TextRun({ text: "Average SGPA: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.averageCGPA.toFixed(2), size: 28 }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Highest SGPA: ", bold: true, size: 12 }),
-          new TextRun({ text: analysis.highestSGPA.toFixed(2), size: 12 }),
+          new TextRun({ text: "Highest SGPA: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.highestSGPA.toFixed(2), size: 28 }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Lowest SGPA: ", bold: true, size: 12 }),
-          new TextRun({ text: analysis.lowestSGPA.toFixed(2), size: 12 }),
+          new TextRun({ text: "Lowest SGPA: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.lowestSGPA.toFixed(2), size: 28 }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Pass Percentage: ", bold: true, size: 12 }),
-          new TextRun({ text: analysis.singleFileClassification.passPercentage.toFixed(2) + "%", size: 12 }),
+          new TextRun({ text: "Pass Percentage: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.singleFileClassification.passPercentage.toFixed(2) + "%", size: 28 }),
         ],
       }),
     );
@@ -317,26 +317,26 @@ const createWordDocument = async (
       performanceParagraphs.push(
         new Paragraph({
           children: [
-            new TextRun({ text: "Average CGPA: ", bold: true, size: 12 }),
-            new TextRun({ text: analysis.cgpaAnalysis.averageCGPA.toFixed(2), size: 12 }),
+            new TextRun({ text: "Average CGPA: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.cgpaAnalysis.averageCGPA.toFixed(2), size: 28 }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Highest CGPA: ", bold: true, size: 12 }),
-            new TextRun({ text: analysis.cgpaAnalysis.highestCGPA.toFixed(2), size: 12 }),
+            new TextRun({ text: "Highest CGPA: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.cgpaAnalysis.highestCGPA.toFixed(2), size: 28 }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Lowest CGPA: ", bold: true, size: 12 }),
-            new TextRun({ text: analysis.cgpaAnalysis.lowestCGPA.toFixed(2), size: 12 }),
+            new TextRun({ text: "Lowest CGPA: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.cgpaAnalysis.lowestCGPA.toFixed(2), size: 28 }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Pass Percentage: ", bold: true, size: 12 }),
-            new TextRun({ text: analysis.multipleFileClassification.passPercentage.toFixed(2) + "%", size: 12 }),
+            new TextRun({ text: "Pass Percentage: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.multipleFileClassification.passPercentage.toFixed(2) + "%", size: 28 }),
           ],
         }),
       );
