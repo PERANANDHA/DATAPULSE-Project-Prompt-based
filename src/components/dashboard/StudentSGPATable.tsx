@@ -45,12 +45,12 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
   );
 
   return (
-    <Card className="w-full" style={{ maxWidth: '700px' }}>
+    <Card className="w-full mx-auto" style={{ maxWidth: '700px' }}>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">
+        <CardTitle className="text-lg text-center">
           {isCgpaMode ? 'Student CGPA Details' : 'Student SGPA Details'}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-center">
           {isCgpaMode 
             ? 'Cumulative Grade Point Average for all students across semesters'
             : 'Semester Grade Point Average for all students'}
@@ -65,8 +65,8 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
           />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-md border overflow-hidden" style={{ minWidth: '650px' }}>
+      <CardContent className="flex justify-center">
+        <div className="rounded-md border overflow-hidden" style={{ minWidth: '650px', width: '100%' }}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -86,7 +86,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
               ) : (
                 filteredStudents.map((student, index) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                    <TableCell className="font-medium text-center">{index + It's}  1}</TableCell>
                     <TableCell className="text-center">{student.id}</TableCell>
                     <TableCell className="text-center font-medium">
                       {isCgpaMode ? 

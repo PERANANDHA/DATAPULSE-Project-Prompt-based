@@ -52,9 +52,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="space-y-6 bg-white p-6 rounded-lg shadow-md"
+      className="space-y-6 bg-white p-6 rounded-lg shadow-md flex flex-col items-center"
     >
-      <div className="mb-4">
+      <div className="mb-4 text-center w-full">
         <h2 className="text-xl font-semibold">
           {calculationMode === 'sgpa' ? 'SGPA Analysis Results' : 'CGPA Analysis Results'}
         </h2>
@@ -65,18 +65,28 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         </p>
       </div>
       
-      <AnalysisOverview analysis={analysis} calculationMode={calculationMode} />
+      <div className="w-full flex justify-center">
+        <AnalysisOverview analysis={analysis} calculationMode={calculationMode} />
+      </div>
       
       {/* Show subject analysis in SGPA mode or for the current semester in CGPA mode */}
       {showSubjectAnalysis && (
-        <SubjectAnalysis 
-          analysis={analysis} 
-          title={calculationMode === 'cgpa' ? `Current ${semesterLabel} Subject Performance` : undefined}
-        />
+        <div className="w-full flex justify-center">
+          <SubjectAnalysis 
+            analysis={analysis} 
+            title={calculationMode === 'cgpa' ? `Current ${semesterLabel} Subject Performance` : undefined}
+          />
+        </div>
       )}
       
-      <StudentPerformance analysis={analysis} calculationMode={calculationMode} />
-      <StudentSGPATable analysis={analysis} calculationMode={calculationMode} />
+      <div className="w-full flex justify-center">
+        <StudentPerformance analysis={analysis} calculationMode={calculationMode} />
+      </div>
+      
+      <div className="w-full flex justify-center">
+        <StudentSGPATable analysis={analysis} calculationMode={calculationMode} />
+      </div>
+      
       <ReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
     </motion.div>
   );
