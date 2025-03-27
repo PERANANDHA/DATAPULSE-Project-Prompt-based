@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -42,7 +43,7 @@ const createTableCell = (
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: AlignmentType;
+    alignment?: typeof AlignmentType[keyof typeof AlignmentType];
     bold?: boolean;
     verticalMerge?: 'restart' | 'continue';
     rightIndent?: number;
@@ -82,7 +83,7 @@ const createTableCell = (
 const createHeaderCell = (
   text: string, 
   options: {
-    alignment?: AlignmentType;
+    alignment?: typeof AlignmentType[keyof typeof AlignmentType];
     rightIndent?: number;
   } = {}
 ) => {
