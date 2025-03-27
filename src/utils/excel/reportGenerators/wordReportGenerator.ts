@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -522,8 +521,8 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Updated column widths based on provided image for End Semester Result Analysis
-      columnWidths: [500, 900, 1000, 900, 500, 450, 450, 450, 450, 650, 650, 650, 650],
+      // Fine-tuned column widths to prevent text wrapping - precise measurements
+      columnWidths: [400, 1000, 1800, 1600, 600, 400, 400, 400, 400, 600, 700, 700, 900],
       rows: subjectRows,
     });
     
@@ -565,8 +564,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Updated column widths based on provided image for Classification table
-    columnWidths: [850, 650, 650, 650, 650, 500, 650, 850, 650, 650, 650, 650, 500, 650],
+    // Fine-tuned column widths for classification table to prevent text wrapping
+    columnWidths: [700, 550, 550, 550, 550, 450, 600, 700, 550, 550, 550, 550, 450, 600],
     rows: [
       new TableRow({
         children: [
@@ -1027,11 +1026,12 @@ function createTableCell(
     columnSpan: colspan,
     rowSpan: rowspan,
     margins: {
-      top: 100,       // Adjusted top margin
-      bottom: 100,     // Adjusted bottom margin
-      left: 100,       // Adjusted left margin
-      right: 100       // Adjusted right margin
+      top: 80,      // Reduced top margin
+      bottom: 80,   // Reduced bottom margin
+      left: 100,    // Left margin
+      right: 100    // Right margin
     },
+    verticalAlign: AlignmentType.CENTER, // Added to center content vertically
   });
 }
 
@@ -1073,11 +1073,12 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
           }),
         ],
         margins: {
-          top: 100,      // Adjusted top margin
-          bottom: 100,    // Adjusted bottom margin
-          left: 100,      // Adjusted left margin
-          right: 100      // Adjusted right margin
+          top: 80,       // Reduced top margin
+          bottom: 80,    // Reduced bottom margin
+          left: 100,     // Left margin
+          right: 100     // Right margin
         },
+        verticalAlign: AlignmentType.CENTER, // Added to center content vertically
       })
     ),
   });
