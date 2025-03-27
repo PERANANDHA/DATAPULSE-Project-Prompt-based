@@ -87,6 +87,7 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
+    columnWidths: [1500, 5500, 2500], // Added explicit column widths for better spacing
     rows: [
       new TableRow({
         children: [
@@ -102,6 +103,12 @@ const createWordDocument = async (
                 })]
               : [new Paragraph("Logo")],
             verticalAlign: AlignmentType.CENTER,
+            margins: {
+              top: 100,
+              bottom: 100,
+              left: 150,
+              right: 150
+            },
           }),
           new TableCell({
             width: {
@@ -129,6 +136,12 @@ const createWordDocument = async (
               }),
             ],
             verticalAlign: AlignmentType.CENTER,
+            margins: {
+              top: 100,
+              bottom: 100,
+              left: 150, 
+              right: 150
+            },
           }),
           new TableCell({
             width: {
@@ -147,6 +160,12 @@ const createWordDocument = async (
               }),
             ],
             verticalAlign: AlignmentType.CENTER,
+            margins: {
+              top: 100,
+              bottom: 100,
+              left: 150,
+              right: 150
+            },
           }),
         ],
       }),
@@ -237,6 +256,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
+    columnWidths: [3000, 6500], // Added explicit column widths for better spacing
     rows: collegeInfoTableRows,
   });
   
@@ -401,6 +421,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
+      columnWidths: [3000, 1500, 1500, 1500, 2000], // Added explicit column widths for better spacing
       rows: fileAnalysisTableRows,
     });
     
@@ -501,6 +522,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
+      columnWidths: [800, 1200, 1700, 1500, 800, 700, 600, 700, 600, 850, 900, 950, 1000], // Added explicit column widths for better spacing
       rows: subjectRows,
     });
     
@@ -542,6 +564,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
+    columnWidths: [900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900], // Added explicit column widths for better spacing
     rows: [
       new TableRow({
         children: [
@@ -616,12 +639,12 @@ const createWordDocument = async (
     }),
   );
   
-  // Rank Analysis Table - MODIFIED: Only display top 3 students
-  const topPerformersBySGPA = analysis.topPerformers.slice(0, 3); // Changed from 10 to 3
+  // Rank Analysis Table - Only display top 3 students
+  const topPerformersBySGPA = analysis.topPerformers.slice(0, 3);
   let topPerformersByCGPA: { id: string; cgpa: number }[] = [];
   
   if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.toppersList) {
-    topPerformersByCGPA = analysis.cgpaAnalysis.toppersList.slice(0, 3); // Changed from 10 to 3
+    topPerformersByCGPA = analysis.cgpaAnalysis.toppersList.slice(0, 3);
   }
   
   const rankRows = [
@@ -676,6 +699,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
+    columnWidths: [800, 2000, 1000, 800, 2000, 1000], // Added explicit column widths for better spacing
     rows: rankRows,
   });
   
@@ -713,6 +737,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
+    columnWidths: [3000, 5500], // Added explicit column widths for better spacing
     rows: [
       new TableRow({
         children: [
@@ -805,7 +830,7 @@ const createWordDocument = async (
   
   // Add student rows
   studentPerformanceData.forEach((student, index) => {
-    // Determine status based on GP value and arrears - MODIFIED to show "First Class With Arrear"
+    // Determine status based on GP value and arrears
     let status = "";
     
     if (student.hasArrears) {
@@ -853,6 +878,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
+    columnWidths: [1000, 3000, 1500, 3000], // Added explicit column widths for better spacing
     rows: studentRows,
   });
   
@@ -879,6 +905,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.NONE },
         insideVertical: { style: BorderStyle.NONE },
       },
+      columnWidths: [2000, 2000, 2000, 2000], // Added explicit column widths for better spacing
       rows: [
         new TableRow({
           children: [
@@ -997,6 +1024,12 @@ function createTableCell(
     ],
     columnSpan: colspan,
     rowSpan: rowspan,
+    margins: {
+      top: 80,
+      bottom: 80,
+      left: 100,
+      right: 100
+    },
   });
 }
 
@@ -1037,7 +1070,14 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
             ],
           }),
         ],
+        margins: {
+          top: 80,
+          bottom: 80,
+          left: 100,
+          right: 100
+        },
       })
     ),
   });
 };
+
