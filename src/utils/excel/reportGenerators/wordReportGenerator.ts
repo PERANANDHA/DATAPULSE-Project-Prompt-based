@@ -74,7 +74,7 @@ const createWordDocument = async (
     // Continue without the image if there's an error
   }
   
-  // Create the header table with exact sizing - fixed width to 6.4 inches (6144 twips)
+  // Create the header table with exact sizing - updated to match the image exactly
   const headerTable = new Table({
     width: {
       size: 100,
@@ -86,13 +86,13 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1200, 6000, 2300], // Column widths while ensuring 6.4 inches total width
+    columnWidths: [1500, 6000, 2000], // Column widths adjusted to match the image
     rows: [
       new TableRow({
         children: [
           new TableCell({
             width: {
-              size: 12,
+              size: 15,
               type: WidthType.PERCENTAGE,
             },
             children: headerImage 
@@ -111,7 +111,7 @@ const createWordDocument = async (
           }),
           new TableCell({
             width: {
-              size: 66,
+              size: 60,
               type: WidthType.PERCENTAGE,
             },
             children: [
@@ -119,9 +119,9 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215, CHENNAI",
+                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY,",
                     bold: true,
-                    size: 24, // Increased size for better visibility
+                    size: 24, 
                   }),
                 ],
               }),
@@ -129,9 +129,19 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "(An Autonomous Institute Affiliated to Anna University)",
+                    text: "TIRUCHENGODE - 637 215",
+                    bold: true,
+                    size: 24, 
+                  }),
+                ],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "(An Autonomous Institute Affiliated to Anna University, Chennai)",
                     bold: false,
-                    size: 22, // Increased size for better visibility
+                    size: 22, 
                   }),
                 ],
               }),
@@ -146,7 +156,7 @@ const createWordDocument = async (
           }),
           new TableCell({
             width: {
-              size: 22,
+              size: 25,
               type: WidthType.PERCENTAGE,
             },
             children: [
@@ -154,9 +164,19 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "RESULT ANALYSIS",
+                    text: "RESULT",
                     bold: true,
-                    size: 22, // Increased size for better visibility
+                    size: 22, 
+                  }),
+                ],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "ANALYSIS",
+                    bold: true,
+                    size: 22, 
                   }),
                 ],
               }),
@@ -290,7 +310,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Performance Text paragraphs - MODIFIED: Changed font size to 12pt and font to Times New Roman
+  // Performance Text paragraphs with Times New Roman 12pt font
   const performanceParagraphs = [];
   
   if (calculationMode === 'sgpa') {
