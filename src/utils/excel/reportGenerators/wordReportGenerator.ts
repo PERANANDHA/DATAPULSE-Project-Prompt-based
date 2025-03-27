@@ -14,14 +14,19 @@ export const downloadWordReport = async (
   records: StudentRecord[],
   options: WordReportOptions
 ): Promise<void> => {
-  const doc = await createWordDocument(analysis, records, options);
-  
-  // Save the document using file-saver instead of the native download approach
-  const buffer = await Packer.toBuffer(doc);
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-  saveAs(blob, options.calculationMode === 'sgpa' 
-    ? 'sgpa-analysis-report.docx' 
-    : 'cgpa-analysis-report.docx');
+  try {
+    const doc = await createWordDocument(analysis, records, options);
+    
+    // Save the document using file-saver
+    const buffer = await Packer.toBuffer(doc);
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    saveAs(blob, options.calculationMode === 'sgpa' 
+      ? 'sgpa-analysis-report.docx' 
+      : 'cgpa-analysis-report.docx');
+  } catch (error) {
+    console.error("Error generating Word document:", error);
+    throw error;
+  }
 };
 
 const createWordDocument = async (

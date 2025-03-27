@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -10,7 +11,7 @@ import { Download, Loader, File, FileText, FileSpreadsheetIcon } from 'lucide-re
 import { ResultAnalysis, StudentRecord, downloadCSVReport, downloadExcelReport, downloadWordReport, downloadPdfReport } from '@/utils/excelProcessor';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 
 interface ReportDownloaderProps {
@@ -52,33 +53,16 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     try {
       if (format === 'csv') {
         downloadCSVReport(analysis, studentRecords);
+        finishDownload(progressInterval, format);
       } else if (format === 'excel') {
         downloadExcelReport(analysis, studentRecords);
+        finishDownload(progressInterval, format);
       } else if (format === 'pdf') {
         await downloadPdfReport('dashboard-content');
+        finishDownload(progressInterval, format);
       }
-      
-      clearInterval(progressInterval);
-      setDownloadProgress(100);
-      
-      setTimeout(() => {
-        toast({
-          title: "Report downloaded",
-          description: `Your analysis report has been downloaded as ${format.toUpperCase()}.`,
-        });
-        setIsDownloading(false);
-        setDownloadProgress(0);
-      }, 500);
     } catch (error) {
-      clearInterval(progressInterval);
-      console.error("Download error:", error);
-      toast({
-        variant: "destructive",
-        title: "Download failed",
-        description: "There was a problem generating your report. Please try again.",
-      });
-      setIsDownloading(false);
-      setDownloadProgress(0);
+      handleDownloadError(progressInterval, error);
     }
   };
 
@@ -93,7 +77,34 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     }, 150);
   };
 
-  const handleConfirmDepartment = () => {
+  const finishDownload = (progressInterval: NodeJS.Timeout, format: string) => {
+    clearInterval(progressInterval);
+    setDownloadProgress(100);
+    
+    setTimeout(() => {
+      toast({
+        title: "Report downloaded",
+        description: `Your analysis report has been downloaded as ${format.toUpperCase()}.`,
+      });
+      setIsDownloading(false);
+      setDownloadProgress(0);
+    }, 500);
+  };
+
+  const handleDownloadError = (progressInterval: NodeJS.Timeout, error: any) => {
+    clearInterval(progressInterval);
+    console.error("Download error:", error);
+    toast({
+      variant: "destructive",
+      title: "Download failed",
+      description: "There was a problem generating your report. Please try again.",
+    });
+    setIsDownloading(false);
+    setDownloadProgress(0);
+    setSelectedFormat(null);
+  };
+
+  const handleConfirmDepartment = async () => {
     setIsDepartmentDialogOpen(false);
     setIsDownloading(true);
     setDownloadProgress(0);
@@ -105,48 +116,17 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         // Updated to use the new logo image path
         const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
         
-        downloadWordReport(analysis, studentRecords, {
+        await downloadWordReport(analysis, studentRecords, {
           logoImagePath: headerImagePath,
           department: departmentCode,
           departmentFullName: departmentFullName,
           calculationMode: calculationMode || 'sgpa'
-        }).then(() => {
-          clearInterval(progressInterval);
-          setDownloadProgress(100);
-          
-          setTimeout(() => {
-            toast({
-              title: "Report downloaded",
-              description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
-            });
-            setIsDownloading(false);
-            setDownloadProgress(0);
-            setSelectedFormat(null);
-          }, 500);
-        }).catch((error) => {
-          clearInterval(progressInterval);
-          console.error("Download error:", error);
-          toast({
-            variant: "destructive",
-            title: "Download failed",
-            description: "There was a problem generating your report. Please try again.",
-          });
-          setIsDownloading(false);
-          setDownloadProgress(0);
-          setSelectedFormat(null);
         });
+        
+        finishDownload(progressInterval, 'word');
       }
     } catch (error) {
-      clearInterval(progressInterval);
-      console.error("Download error:", error);
-      toast({
-        variant: "destructive",
-        title: "Download failed",
-        description: "There was a problem generating your report. Please try again.",
-      });
-      setIsDownloading(false);
-      setDownloadProgress(0);
-      setSelectedFormat(null);
+      handleDownloadError(progressInterval, error);
     }
   };
 
@@ -205,6 +185,9 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Department Information</DialogTitle>
+            <DialogDescription>
+              Enter department details for the report
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
