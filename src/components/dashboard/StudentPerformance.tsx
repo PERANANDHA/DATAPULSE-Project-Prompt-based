@@ -54,13 +54,13 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
     : analysis.needsImprovement.slice(0, 6);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ maxWidth: '650px', width: '100%' }}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full" style={{ maxWidth: '650px', width: '100%' }}>
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">
+          <CardTitle className="text-lg text-center">
             Top Performers
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-center">
             {calculationMode === 'sgpa' 
               ? 'Students with highest SGPA in the semester' 
               : 'Students with highest CGPA across all semesters'}
@@ -92,8 +92,8 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Needs Improvement</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-lg text-center">Needs Improvement</CardTitle>
+          <CardDescription className="text-center">
             {calculationMode === 'sgpa'
               ? 'Students with low SGPA or arrears'
               : 'Students with low CGPA across all semesters'}

@@ -87,7 +87,9 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         <StudentSGPATable analysis={analysis} calculationMode={calculationMode} />
       </div>
       
-      <ReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
+      <div className="w-full flex justify-center">
+        <ReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
+      </div>
     </motion.div>
   );
 };

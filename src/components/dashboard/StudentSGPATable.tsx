@@ -86,7 +86,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
               ) : (
                 filteredStudents.map((student, index) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium text-center">{index + It's}  1}</TableCell>
+                    <TableCell className="font-medium text-center">{index + 1}</TableCell>
                     <TableCell className="text-center">{student.id}</TableCell>
                     <TableCell className="text-center font-medium">
                       {isCgpaMode ? 

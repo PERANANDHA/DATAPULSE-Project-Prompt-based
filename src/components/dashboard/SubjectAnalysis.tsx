@@ -21,16 +21,16 @@ interface SubjectAnalysisProps {
 
 const SubjectAnalysis: React.FC<SubjectAnalysisProps> = ({ analysis, title }) => {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden w-full" style={{ maxWidth: '800px' }}>
       <CardHeader>
-        <CardTitle>{title || 'Subject Performance Analysis'}</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-center">{title || 'Subject Performance Analysis'}</CardTitle>
+        <CardDescription className="text-center">
           Analyzing pass/fail rates and grade distribution across all subjects
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="performance" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex justify-center w-full">
             <TabsTrigger value="performance">Pass/Fail Performance</TabsTrigger>
             <TabsTrigger value="grades">Grade Distribution</TabsTrigger>
           </TabsList>
@@ -66,7 +66,7 @@ const SubjectAnalysis: React.FC<SubjectAnalysisProps> = ({ analysis, title }) =>
               {Object.entries(analysis.subjectGradeDistribution).map(([subject, grades]) => (
                 <Card key={subject} className="overflow-hidden">
                   <CardHeader className="p-4">
-                    <CardTitle className="text-sm">{subject}</CardTitle>
+                    <CardTitle className="text-sm text-center">{subject}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
                     <ResponsiveContainer width="100%" height={200}>
