@@ -86,7 +86,7 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1500, 6500, 1500], // Keep the wide middle column for "Chennai" on the same line
+    columnWidths: [1500, 6500, 1500], // Keep the wide middle column for text on the same line
     rows: [
       new TableRow({
         children: [
@@ -103,10 +103,10 @@ const createWordDocument = async (
               : [new Paragraph("Logo")],
             verticalAlign: AlignmentType.CENTER,
             margins: {
-              top: 60, // Reduced from 100
-              bottom: 60, // Reduced from 100
-              left: 100, // Reduced from 150
-              right: 100 // Reduced from 150
+              top: 30, // Reduced from 60
+              bottom: 30, // Reduced from 60
+              left: 50, // Reduced from 100
+              right: 50 // Reduced from 100
             },
           }),
           new TableCell({
@@ -119,17 +119,7 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY,",
-                    bold: true,
-                    size: 24, 
-                  }),
-                ],
-              }),
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: "TIRUCHENGODE - 637 215",
+                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215",
                     bold: true,
                     size: 24, 
                   }),
@@ -148,10 +138,10 @@ const createWordDocument = async (
             ],
             verticalAlign: AlignmentType.CENTER,
             margins: {
-              top: 60, // Reduced from 100
-              bottom: 60, // Reduced from 100
-              left: 100, // Reduced from 150
-              right: 100 // Reduced from 150
+              top: 30, // Reduced from 60
+              bottom: 30, // Reduced from 60
+              left: 50, // Reduced from 100
+              right: 50 // Reduced from 100
             },
           }),
           new TableCell({
@@ -183,10 +173,10 @@ const createWordDocument = async (
             ],
             verticalAlign: AlignmentType.CENTER,
             margins: {
-              top: 60, // Reduced from 100
-              bottom: 60, // Reduced from 100
-              left: 100, // Reduced from 150
-              right: 100 // Reduced from 150
+              top: 30, // Reduced from 60
+              bottom: 30, // Reduced from 60
+              left: 50, // Reduced from 100
+              right: 50 // Reduced from 100
             },
           }),
         ],
@@ -917,3 +907,17 @@ const createWordDocument = async (
   });
   
   sections.push(rankTable);
+
+  // Add extra spacing before the signature section
+  sections.push(
+    new Paragraph({
+      spacing: {
+        before: 400, // Increased from previous spacing to give extra tab space
+      },
+    })
+  );
+
+  return new Document({ sections });
+};
+
+// Helper function to create table
