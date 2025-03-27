@@ -45,7 +45,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
   );
 
   return (
-    <Card className="w-full" style={{ maxWidth: '650px' }}>
+    <Card className="w-full" style={{ maxWidth: '700px' }}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">
           {isCgpaMode ? 'Student CGPA Details' : 'Student SGPA Details'}
@@ -66,14 +66,14 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border overflow-hidden" style={{ minWidth: '600px' }}>
+        <div className="rounded-md border overflow-hidden" style={{ minWidth: '650px' }}>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">S.No</TableHead>
-                <TableHead>Registration Number</TableHead>
-                <TableHead className="text-right">{isCgpaMode ? 'CGPA' : 'SGPA'}</TableHead>
-                {!isCgpaMode && <TableHead className="text-right">Status</TableHead>}
+                <TableHead className="w-[50px] text-center">S.No</TableHead>
+                <TableHead className="text-center">Registration Number</TableHead>
+                <TableHead className="text-center">{isCgpaMode ? 'CGPA' : 'SGPA'}</TableHead>
+                {!isCgpaMode && <TableHead className="text-center">Status</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,15 +86,15 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
               ) : (
                 filteredStudents.map((student, index) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium">{index + 1}</TableCell>
-                    <TableCell>{student.id}</TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                    <TableCell className="text-center">{student.id}</TableCell>
+                    <TableCell className="text-center font-medium">
                       {isCgpaMode ? 
                         ('cgpa' in student ? student.cgpa.toFixed(2) : 0) : 
                         ('sgpa' in student ? student.sgpa.toFixed(2) : 0)}
                     </TableCell>
                     {!isCgpaMode && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         {student.hasArrears ? (
                           <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
                             Has Arrears
