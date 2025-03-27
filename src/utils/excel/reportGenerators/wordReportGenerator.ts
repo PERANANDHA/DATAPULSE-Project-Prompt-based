@@ -86,7 +86,7 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1500, 5500, 2500], // Added explicit column widths for better spacing
+    columnWidths: [1500, 5500, 2500], // Explicit column widths for header table
     rows: [
       new TableRow({
         children: [
@@ -255,7 +255,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [3000, 6500], // Added explicit column widths for better spacing
+    columnWidths: [3500, 6000], // Adjusted for better spacing
     rows: collegeInfoTableRows,
   });
   
@@ -521,7 +521,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      columnWidths: [600, 1000, 1800, 1500, 700, 600, 500, 600, 500, 700, 1000, 1000, 1100],
+      columnWidths: [650, 1200, 2000, 1700, 800, 650, 550, 650, 550, 850, 1050, 1050, 1300], // Significantly adjusted column widths for better spacing
       rows: subjectRows,
     });
     
@@ -563,7 +563,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [750, 750, 750, 750, 750, 750, 800, 750, 750, 750, 750, 750, 750, 800],
+    columnWidths: [800, 800, 800, 800, 800, 800, 900, 800, 800, 800, 800, 800, 800, 900], // Adjusted column widths for better spacing in classification table
     rows: [
       new TableRow({
         children: [
@@ -698,7 +698,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [800, 2000, 1000, 800, 2000, 1000],
+    columnWidths: [900, 2200, 1100, 900, 2200, 1100],
     rows: rankRows,
   });
   
@@ -736,7 +736,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [3000, 5500],
+    columnWidths: [3500, 6000],
     rows: [
       new TableRow({
         children: [
@@ -877,7 +877,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1000, 3000, 1500, 3000],
+    columnWidths: [1100, 3300, 1600, 3500],
     rows: studentRows,
   });
   
@@ -1024,10 +1024,10 @@ function createTableCell(
     columnSpan: colspan,
     rowSpan: rowspan,
     margins: {
-      top: 120,
-      bottom: 120,
-      left: 180,
-      right: 180
+      top: 150,       // Increased top margin
+      bottom: 150,     // Increased bottom margin
+      left: 220,       // Significantly increased left margin
+      right: 220       // Significantly increased right margin
     },
   });
 }
@@ -1070,10 +1070,10 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
           }),
         ],
         margins: {
-          top: 100,
-          bottom: 100,
-          left: 150,
-          right: 150
+          top: 150,      // Increased top margin
+          bottom: 150,    // Increased bottom margin
+          left: 220,      // Significantly increased left margin
+          right: 220      // Significantly increased right margin
         },
       })
     ),
