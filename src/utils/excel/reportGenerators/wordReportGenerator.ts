@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
+import { calculateSGPA } from '../gradeUtils';
 
 interface WordReportOptions {
   logoImagePath?: string;
@@ -749,17 +750,53 @@ const createWordDocument = async (
   );
   
   // Rank Analysis Table - Using actual data for top performers
-  const topPerformersBySGPA = analysis.studentSgpaDetails 
-    ? [...analysis.studentSgpaDetails].sort((a, b) => b.sgpa - a.sgpa).slice(0, 3)
-    : [];
-    
-  let topPerformersByCGPA: { id: string; cgpa: number }[] = [];
+  // For current semester, only use data from current semester file
+  // For "up to this semester", use data from all files
   
-  if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
-    topPerformersByCGPA = [...analysis.cgpaAnalysis.studentCGPAs]
-      .sort((a, b) => b.cgpa - a.cgpa)
-      .slice(0, 3);
+  let currentSemesterStudents: { id: string; sgpa: number }[] = [];
+  let cumulativeStudents: { id: string; cgpa: number }[] = [];
+  
+  // Determine current semester files and records
+  if (calculationMode === 'cgpa' && analysis.fileCount && analysis.fileCount > 1 && analysis.currentSemesterFile) {
+    // For CGPA mode with multiple files
+    const currentSemesterRecords = records.filter(record => 
+      record.fileSource === analysis.currentSemesterFile
+    );
+    
+    // Calculate SGPA for each student in current semester only
+    const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+    currentSemesterStudents = studentIds.map(id => ({
+      id,
+      sgpa: calculateSGPA(currentSemesterRecords, id)
+    }));
+  } else {
+    // For SGPA mode or single file
+    currentSemesterStudents = analysis.studentSgpaDetails 
+      ? analysis.studentSgpaDetails.map(student => ({
+          id: student.id,
+          sgpa: student.sgpa
+        }))
+      : [];
   }
+  
+  // For cumulative data, use either CGPA data or SGPA data depending on mode
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    cumulativeStudents = analysis.cgpaAnalysis.studentCGPAs;
+  } else {
+    // For SGPA mode, cumulative is the same as current semester
+    cumulativeStudents = currentSemesterStudents.map(student => ({
+      id: student.id,
+      cgpa: student.sgpa
+    }));
+  }
+  
+  // Sort both arrays by grades (descending)
+  currentSemesterStudents.sort((a, b) => b.sgpa - a.sgpa);
+  cumulativeStudents.sort((a, b) => b.cgpa - a.cgpa);
+  
+  // Take top 3 from each for the table
+  const topCurrentSemester = currentSemesterStudents.slice(0, 3);
+  const topCumulative = cumulativeStudents.slice(0, 3);
   
   const rankRows = [
     new TableRow({
@@ -781,20 +818,20 @@ const createWordDocument = async (
   ];
   
   // Add data rows using actual calculated top performers
-  const maxRankRows = Math.max(topPerformersBySGPA.length, topPerformersByCGPA.length, 3); // Ensure at least 3 rows
+  const maxRankRows = Math.max(topCurrentSemester.length, topCumulative.length, 3); // Ensure at least 3 rows
   for (let i = 0; i < maxRankRows; i++) {
-    const sgpaData = topPerformersBySGPA[i] || { id: "-", sgpa: 0 };
-    const cgpaData = topPerformersByCGPA[i] || { id: "-", cgpa: 0 };
+    const currentData = topCurrentSemester[i] || { id: "-", sgpa: 0 };
+    const cumulativeData = topCumulative[i] || { id: "-", cgpa: 0 };
     
     rankRows.push(
       new TableRow({
         children: [
           createTableCell((i + 1).toString()),
-          createTableCell(sgpaData.id),
-          createTableCell(sgpaData.sgpa.toFixed(2)),
+          createTableCell(currentData.id),
+          createTableCell(currentData.sgpa.toFixed(2)),
           createTableCell((i + 1).toString()),
-          createTableCell(cgpaData.id),
-          createTableCell(cgpaData.cgpa.toFixed(2)),
+          createTableCell(cumulativeData.id),
+          createTableCell(cumulativeData.cgpa.toFixed(2)),
         ],
       })
     );
@@ -1124,7 +1161,7 @@ function createTableCell(
     alignment?: keyof typeof AlignmentType;
     rightIndent?: number;
     bold?: boolean;
-    verticalMerge?: 'restart' | 'continue'; // Removed 'skip' as it's not a valid value for verticalMerge
+    verticalMerge?: 'restart' | 'continue' | 'skip'; // Added 'skip' as a valid value for verticalMerge
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
