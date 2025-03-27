@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -87,7 +86,7 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1200, 6000, 2300], // Column widths while ensuring 6.4 inches total width
+    columnWidths: [1200, 6400, 2300], // Increased middle column width to accommodate longer text
     rows: [
       new TableRow({
         children: [
@@ -120,19 +119,9 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215",
+                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215 (An Autonomous Institute Affiliated to Anna University, Chennai)",
                     bold: true,
                     size: 24, // Increased size for better visibility
-                  }),
-                ],
-              }),
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: "(An Autonomous Institute Affiliated to Anna University, Chennai)",
-                    bold: false,
-                    size: 22, // Increased size for better visibility
                   }),
                 ],
               }),
@@ -291,7 +280,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Performance Text paragraphs 
+  // Performance Text paragraphs - UPDATED TO SIZE 12
   const performanceParagraphs = [];
   
   if (calculationMode === 'sgpa') {
@@ -299,26 +288,26 @@ const createWordDocument = async (
     performanceParagraphs.push(
       new Paragraph({
         children: [
-          new TextRun({ text: "Average SGPA: ", bold: true }),
-          new TextRun(analysis.averageCGPA.toFixed(2)),
+          new TextRun({ text: "Average SGPA: ", bold: true, size: 12 }),
+          new TextRun({ text: analysis.averageCGPA.toFixed(2), size: 12 }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Highest SGPA: ", bold: true }),
-          new TextRun(analysis.highestSGPA.toFixed(2)),
+          new TextRun({ text: "Highest SGPA: ", bold: true, size: 12 }),
+          new TextRun({ text: analysis.highestSGPA.toFixed(2), size: 12 }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Lowest SGPA: ", bold: true }),
-          new TextRun(analysis.lowestSGPA.toFixed(2)),
+          new TextRun({ text: "Lowest SGPA: ", bold: true, size: 12 }),
+          new TextRun({ text: analysis.lowestSGPA.toFixed(2), size: 12 }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Pass Percentage: ", bold: true }),
-          new TextRun(analysis.singleFileClassification.passPercentage.toFixed(2) + "%"),
+          new TextRun({ text: "Pass Percentage: ", bold: true, size: 12 }),
+          new TextRun({ text: analysis.singleFileClassification.passPercentage.toFixed(2) + "%", size: 12 }),
         ],
       }),
     );
@@ -328,26 +317,26 @@ const createWordDocument = async (
       performanceParagraphs.push(
         new Paragraph({
           children: [
-            new TextRun({ text: "Average CGPA: ", bold: true }),
-            new TextRun(analysis.cgpaAnalysis.averageCGPA.toFixed(2)),
+            new TextRun({ text: "Average CGPA: ", bold: true, size: 12 }),
+            new TextRun({ text: analysis.cgpaAnalysis.averageCGPA.toFixed(2), size: 12 }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Highest CGPA: ", bold: true }),
-            new TextRun(analysis.cgpaAnalysis.highestCGPA.toFixed(2)),
+            new TextRun({ text: "Highest CGPA: ", bold: true, size: 12 }),
+            new TextRun({ text: analysis.cgpaAnalysis.highestCGPA.toFixed(2), size: 12 }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Lowest CGPA: ", bold: true }),
-            new TextRun(analysis.cgpaAnalysis.lowestCGPA.toFixed(2)),
+            new TextRun({ text: "Lowest CGPA: ", bold: true, size: 12 }),
+            new TextRun({ text: analysis.cgpaAnalysis.lowestCGPA.toFixed(2), size: 12 }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Pass Percentage: ", bold: true }),
-            new TextRun(analysis.multipleFileClassification.passPercentage.toFixed(2) + "%"),
+            new TextRun({ text: "Pass Percentage: ", bold: true, size: 12 }),
+            new TextRun({ text: analysis.multipleFileClassification.passPercentage.toFixed(2) + "%", size: 12 }),
           ],
         }),
       );
@@ -357,7 +346,7 @@ const createWordDocument = async (
   // Add performance paragraphs
   sections.push(...performanceParagraphs);
   
-  // Add file analysis section for CGPA mode
+  // File Analysis section for CGPA mode
   if (calculationMode === 'cgpa' && analysis.fileWiseAnalysis) {
     sections.push(
       new Paragraph({
