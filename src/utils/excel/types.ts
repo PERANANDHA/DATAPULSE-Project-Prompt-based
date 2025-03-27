@@ -1,3 +1,4 @@
+
 import JsPDF from 'jspdf';
 
 // Export interfaces for use in other components
