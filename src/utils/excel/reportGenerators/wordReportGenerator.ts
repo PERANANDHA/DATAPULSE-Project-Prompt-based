@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -74,7 +75,7 @@ const createWordDocument = async (
     // Continue without the image if there's an error
   }
   
-  // Create the header table with exact sizing from the third image
+  // Create the header table with exact sizing - fixed width to 6.4 inches (6144 twips)
   const headerTable = new Table({
     width: {
       size: 100,
@@ -86,7 +87,7 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1200, 6000, 2300], // Updated column widths to match the image
+    columnWidths: [1200, 6000, 2300], // Column widths while ensuring 6.4 inches total width
     rows: [
       new TableRow({
         children: [
@@ -258,7 +259,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [3500, 6000], // Adjusted for better spacing
+    columnWidths: [3000, 6500], // Adjusted for better spacing and fixed width
     rows: collegeInfoTableRows,
   });
   
@@ -423,7 +424,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      columnWidths: [3000, 1500, 1500, 1500, 2000], // Added explicit column widths for better spacing
+      columnWidths: [2400, 1300, 1300, 1300, 1800], // Adjusted for consistent width totaling 6.4 inches
       rows: fileAnalysisTableRows,
     });
     
@@ -499,14 +500,14 @@ const createWordDocument = async (
             createTableCell(`Subject ${index + 1}`, false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("97", false, { alignment: 'CENTER', rightIndent: -0.06 }), // Fixed to match image
-            createTableCell("Nil", false, { alignment: 'CENTER', rightIndent: -0.06 }), // Fixed to match image
+            createTableCell("97", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
+            createTableCell("Nil", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
             createTableCell(failedStudents === 0 ? "Nil" : failedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }), // WH (withheld)
-            createTableCell("93", false, { alignment: 'CENTER', rightIndent: -0.06 }), // Fixed to match image
-            createTableCell("95.9", false, { alignment: 'CENTER', rightIndent: -0.06 }), // Fixed to match image
-            createTableCell("O", false, { alignment: 'CENTER', rightIndent: -0.06 }), // Fixed to match image
-            createTableCell("13", false, { alignment: 'CENTER', rightIndent: -0.06 }), // Fixed to match image
+            createTableCell("93", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
+            createTableCell("95.9", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
+            createTableCell("O", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
+            createTableCell("13", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
           ],
         })
       );
@@ -525,15 +526,15 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Precise column widths to match the image
-      columnWidths: [500, 1000, 1200, 1200, 600, 500, 500, 500, 500, 700, 700, 800, 1000],
+      // Updated column widths to fit within 6.4 inches while maintaining proportions
+      columnWidths: [400, 800, 800, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
     
     sections.push(subjectAnalysisTable);
   }
   
-  // Classification Section - Modified to match exactly the provided image
+  // Classification Section - Modified to match exactly the provided image with proper spacing
   sections.push(
     new Paragraph({
       spacing: {
@@ -551,7 +552,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Classification Table - Exactly matching the provided image layout and spacing
+  // Classification Table - Updated to ensure exactly 6.4 inches total width with proper proportions
   const classificationTable = new Table({
     width: {
       size: 100,
@@ -565,8 +566,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Precise column widths to match the image
-    columnWidths: [700, 650, 650, 600, 600, 400, 500, 700, 650, 650, 600, 600, 400, 500],
+    // Updated column widths to ensure total width of 6.4 inches (each column sized proportionally)
+    columnWidths: [460, 460, 460, 460, 460, 300, 400, 460, 460, 460, 460, 460, 300, 400],
     rows: [
       // First row: Current semester | Upto this semester
       new TableRow({
@@ -807,7 +808,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [900, 2200, 1100, 900, 2200, 1100],
+    // Updated column widths to fit within 6.4 inches
+    columnWidths: [800, 2000, 1000, 800, 2000, 1000],
     rows: rankRows,
   });
   
@@ -845,7 +847,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [3500, 6000],
+    // Updated column widths to fit within 6.4 inches
+    columnWidths: [3000, 5600],
     rows: [
       new TableRow({
         children: [
@@ -986,7 +989,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1100, 3300, 1600, 3500],
+    // Updated column widths to fit within 6.4 inches
+    columnWidths: [1000, 2800, 1400, 3400],
     rows: studentRows,
   });
   
