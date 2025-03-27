@@ -40,14 +40,29 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     };
   });
   
+  // Determine the current semester file by finding the file with the highest semester number
+  let currentSemesterFile = filesProcessed[0]; // Default to first file
+  let highestSemValue = -1;
+  
+  // If multiple files, find the one with the highest semester number
+  if (fileCount > 1) {
+    filesProcessed.forEach(fileName => {
+      const fileRecords = fileGroups[fileName];
+      if (fileRecords.length > 0) {
+        // Extract semester value, convert to number for comparison
+        const semValue = parseInt(fileRecords[0]?.SEM || '0', 10);
+        if (!isNaN(semValue) && semValue > highestSemValue) {
+          highestSemValue = semValue;
+          currentSemesterFile = fileName;
+        }
+      }
+    });
+  }
+  
   // Calculate CGPA if multiple files - each file is treated as a separate semester
   let cgpaAnalysis;
   if (fileCount > 1) {
     const studentIds = [...new Set(records.map(record => record.REGNO))];
-    
-    // Create a sorted filesProcessed array to ensure the first uploaded file 
-    // (which should be the current semester) is always processed first
-    const sortedFilesProcessed = [...filesProcessed];
     
     const studentCGPAs = studentIds.map(id => ({
       id,
@@ -64,7 +79,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
       highestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.max(...cgpaValues)) : 0,
       lowestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.min(...cgpaValues)) : 0,
       toppersList: studentCGPAs.slice(0, 10), // Get top 10 students
-      currentSemesterFile: filesProcessed[0] // The first file is the current semester
+      currentSemesterFile: currentSemesterFile // Use the file with highest sem value as current semester
     };
   }
   
@@ -196,8 +211,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   });
   
   // Classification table calculations - these follow the specified rules
-  // For CGPA mode, current semester is the first uploaded file
-  const currentSemesterRecords = fileCount > 1 ? fileGroups[filesProcessed[0]] : records;
+  // For CGPA mode, current semester is the file with highest semester number
+  const currentSemesterRecords = fileCount > 1 ? fileGroups[currentSemesterFile] : records;
   const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecords.map(record => record.REGNO))].map(studentId => {
     const sgpa = calculateSGPA(currentSemesterRecords, studentId);
     return {
@@ -230,7 +245,8 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     fileWiseAnalysis,
     cgpaAnalysis,
     singleFileClassification,
-    multipleFileClassification
+    multipleFileClassification,
+    currentSemesterFile // Add this to the result object so we can use it elsewhere
   };
 };
 

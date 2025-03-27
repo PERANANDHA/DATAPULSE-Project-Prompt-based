@@ -1,4 +1,3 @@
-
 import JsPDF from 'jspdf';
 
 // Export interfaces for use in other components
@@ -51,9 +50,11 @@ export interface ResultAnalysis {
     highestCGPA: number;
     lowestCGPA: number;
     toppersList?: { id: string; cgpa: number }[]; // Added for toppers list
+    currentSemesterFile?: string; // File representing the current semester
   }; // CGPA analysis when multiple files
   singleFileClassification: ClassificationData; // Classification for single file/semester
   multipleFileClassification: ClassificationData; // Classification for multiple files/semesters
+  currentSemesterFile?: string; // Added for direct access to current semester file
 }
 
 // Re-export JsPDF with the autotable extension for use in other files

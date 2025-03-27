@@ -31,6 +31,19 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     );
   }
 
+  // For CGPA mode, determine if we're showing the current semester subjects
+  const showSubjectAnalysis = calculationMode === 'sgpa' || 
+    (calculationMode === 'cgpa' && analysis.currentSemesterFile);
+
+  // If in CGPA mode with multiple files, get the semester name for display
+  let semesterLabel = 'Semester';
+  if (calculationMode === 'cgpa' && analysis.currentSemesterFile && analysis.fileWiseAnalysis) {
+    const currentFileAnalysis = analysis.fileWiseAnalysis[analysis.currentSemesterFile];
+    if (currentFileAnalysis && currentFileAnalysis.semesterName) {
+      semesterLabel = `Semester ${currentFileAnalysis.semesterName}`;
+    }
+  }
+
   return (
     <motion.div 
       id="dashboard-content"
@@ -48,14 +61,19 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         <p className="text-muted-foreground">
           {calculationMode === 'sgpa' 
             ? 'Semester Grade Point Average analysis for the uploaded semester data'
-            : 'Cumulative Grade Point Average analysis across multiple semesters'}
+            : `Cumulative Grade Point Average analysis across multiple semesters (Current: ${semesterLabel})`}
         </p>
       </div>
       
       <AnalysisOverview analysis={analysis} calculationMode={calculationMode} />
       
-      {/* Only show subject analysis when in SGPA mode */}
-      {calculationMode === 'sgpa' && <SubjectAnalysis analysis={analysis} />}
+      {/* Show subject analysis in SGPA mode or for the current semester in CGPA mode */}
+      {showSubjectAnalysis && (
+        <SubjectAnalysis 
+          analysis={analysis} 
+          title={calculationMode === 'cgpa' ? `Current ${semesterLabel} Subject Performance` : undefined}
+        />
+      )}
       
       <StudentPerformance analysis={analysis} calculationMode={calculationMode} />
       <StudentSGPATable analysis={analysis} calculationMode={calculationMode} />

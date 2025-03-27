@@ -102,10 +102,10 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     const progressInterval = startProgressSimulation();
     
     try {
-      if (selectedFormat === 'word') {
+      if (selectedFormat === 'word' && analysis) {
         const headerImagePath = "/lovable-uploads/76cdb2e8-df2a-42ec-aabc-75bb5af6cf4d.png";
         
-        downloadWordReport(analysis!, studentRecords, {
+        downloadWordReport(analysis, studentRecords, {
           logoImagePath: headerImagePath,
           department: departmentCode,
           departmentFullName: departmentFullName,

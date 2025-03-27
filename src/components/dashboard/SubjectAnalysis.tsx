@@ -1,165 +1,107 @@
 
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ResultAnalysis } from '@/utils/excelProcessor';
+import React from 'react';
 import { 
-  ResponsiveContainer, 
   BarChart, 
   Bar, 
-  Cell, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip as RechartsTooltip,
-  Legend 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell 
 } from 'recharts';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ResultAnalysis } from '@/utils/excelProcessor';
 
 interface SubjectAnalysisProps {
   analysis: ResultAnalysis;
+  title?: string; // Optional custom title
 }
 
-const SubjectAnalysis: React.FC<SubjectAnalysisProps> = ({ analysis }) => {
-  const uniqueSubjects = Object.keys(analysis.subjectGradeDistribution);
-  const [activeSubjectTab, setActiveSubjectTab] = useState<string>(uniqueSubjects[0] || '');
-
+const SubjectAnalysis: React.FC<SubjectAnalysisProps> = ({ analysis, title }) => {
   return (
-    <>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Subject-wise Grade Distribution</CardTitle>
-          <CardDescription>Grade breakdown for each subject</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs 
-            value={activeSubjectTab} 
-            onValueChange={setActiveSubjectTab}
-            className="space-y-4"
-          >
-            <TabsList className="flex flex-wrap mb-4 h-auto">
-              {uniqueSubjects.map(subject => (
-                <TabsTrigger key={subject} value={subject}>
-                  {subject}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            
-            {uniqueSubjects.map(subject => (
-              <TabsContent key={subject} value={subject}>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={analysis.subjectGradeDistribution[subject]}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <RechartsTooltip 
-                        formatter={(value: any) => [`Count: ${value}`, 'Students']}
-                        labelFormatter={(label) => `Grade: ${label}`}
-                      />
-                      <Legend layout="horizontal" verticalAlign="top" align="center" />
-                      <Bar dataKey="count" name="Number of Students">
-                        {analysis.subjectGradeDistribution[subject].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="mt-6 border rounded-md overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Grade</TableHead>
-                        <TableHead>Number of Students</TableHead>
-                        <TableHead>Percentage</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {analysis.subjectGradeDistribution[subject].map((grade, index) => {
-                        const totalStudents = analysis.subjectGradeDistribution[subject].reduce(
-                          (sum, g) => sum + g.count, 0
-                        );
-                        const percentage = totalStudents > 0 
-                          ? ((grade.count / totalStudents) * 100).toFixed(1) 
-                          : "0.0";
-                          
-                        return (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{grade.name}</TableCell>
-                            <TableCell>{grade.count}</TableCell>
-                            <TableCell>{percentage}%</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Subject-wise Performance</CardTitle>
-          <CardDescription>Pass/fail rate across different subjects</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
+    <Card className="overflow-hidden">
+      <CardHeader>
+        <CardTitle>{title || 'Subject Performance Analysis'}</CardTitle>
+        <CardDescription>
+          Analyzing pass/fail rates and grade distribution across all subjects
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="performance" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="performance">Pass/Fail Performance</TabsTrigger>
+            <TabsTrigger value="grades">Grade Distribution</TabsTrigger>
+          </TabsList>
+          <TabsContent value="performance" className="pt-4">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
                 data={analysis.subjectPerformance}
-                margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 60,
+                }}
+                barSize={25}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="subject" 
                   angle={-45} 
                   textAnchor="end" 
-                  height={70} 
-                  interval={0}
+                  height={80} 
+                  tick={{ fontSize: 12 }}
                 />
-                <YAxis domain={[0, 100]} />
-                <RechartsTooltip 
-                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Percentage']}
-                  labelFormatter={(label) => `Subject: ${label}`}
-                />
-                <Legend layout="horizontal" verticalAlign="top" align="center" />
-                <Bar dataKey="pass" stackId="a" fill="#22c55e" name="Pass %" />
-                <Bar dataKey="fail" stackId="a" fill="#ef4444" name="Fail %" />
+                <YAxis label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip formatter={(value) => `${value}%`} />
+                <Bar dataKey="pass" name="Pass %" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="fail" name="Fail %" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-
-          <div className="mt-6 border rounded-md overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Subject Code</TableHead>
-                  <TableHead>Pass %</TableHead>
-                  <TableHead>Fail %</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analysis.subjectPerformance.map((subject, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{subject.subject}</TableCell>
-                    <TableCell>{subject.pass.toFixed(1)}%</TableCell>
-                    <TableCell>{subject.fail.toFixed(1)}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </>
+          </TabsContent>
+          <TabsContent value="grades" className="pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(analysis.subjectGradeDistribution).map(([subject, grades]) => (
+                <Card key={subject} className="overflow-hidden">
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-sm">{subject}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart
+                        data={grades}
+                        margin={{
+                          top: 0,
+                          right: 0,
+                          left: 0,
+                          bottom: 0,
+                        }}
+                        barSize={20}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip 
+                          formatter={(value) => [`${value} students`, 'Count']}
+                          cursor={{ fillOpacity: 0.1 }}
+                        />
+                        <Bar dataKey="count" name="Students">
+                          {grades.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
