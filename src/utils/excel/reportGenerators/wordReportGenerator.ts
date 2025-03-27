@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -35,6 +36,78 @@ export const downloadWordReport = async (
   URL.revokeObjectURL(url);
 };
 
+// Helper function to create a table cell with optional formatting
+const createTableCell = (
+  text: string, 
+  isHeader: boolean = false, 
+  options: {
+    colspan?: number;
+    rowspan?: number;
+    alignment?: 'LEFT' | 'CENTER' | 'RIGHT';
+    bold?: boolean;
+    verticalMerge?: 'restart' | 'continue';
+    rightIndent?: number;
+  } = {}
+) => {
+  const {
+    colspan,
+    rowspan,
+    alignment = 'LEFT',
+    bold = false,
+    verticalMerge,
+    rightIndent
+  } = options;
+  
+  let alignmentValue = AlignmentType.LEFT;
+  if (alignment === 'CENTER') alignmentValue = AlignmentType.CENTER;
+  if (alignment === 'RIGHT') alignmentValue = AlignmentType.RIGHT;
+  
+  return new TableCell({
+    children: [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text,
+            bold: isHeader || bold,
+            size: 22, // 11pt = 22 half-points
+          }),
+        ],
+        alignment: alignmentValue,
+        ...(rightIndent ? { indent: { right: rightIndent } } : {}),
+      }),
+    ],
+    ...(colspan ? { columnSpan: colspan } : {}),
+    ...(rowspan ? { rowSpan: rowspan } : {}),
+    ...(verticalMerge ? { verticalMerge } : {}),
+    verticalAlign: AlignmentType.CENTER,
+  });
+};
+
+// Helper function to create a header cell with centered alignment
+const createHeaderCell = (
+  text: string, 
+  options: {
+    alignment?: 'LEFT' | 'CENTER' | 'RIGHT';
+    rightIndent?: number;
+  } = {}
+) => {
+  return createTableCell(text, true, { 
+    ...options,
+    alignment: options.alignment || 'CENTER',
+    bold: true
+  });
+};
+
+// Helper function to create a table row with two columns
+const createTableRow = (cells: [string, string]) => {
+  return new TableRow({
+    children: [
+      createTableCell(cells[0], true),
+      createTableCell(cells[1]),
+    ],
+  });
+};
+
 const createWordDocument = async (
   analysis: ResultAnalysis, 
   records: StudentRecord[],
@@ -63,7 +136,7 @@ const createWordDocument = async (
       headerImage = new ImageRun({
         data: arrayBuffer,
         transformation: {
-          width: 70,  // Slightly increased for better visibility
+          width: 70,
           height: 70,
         },
         type: 'png',
@@ -89,6 +162,10 @@ const createWordDocument = async (
     columnWidths: [1500, 6500, 1500], // Keep the wide middle column for text on the same line
     rows: [
       new TableRow({
+        height: {
+          value: 800, // Reduced from default for slimmer appearance
+          rule: 'atLeast',
+        },
         children: [
           new TableCell({
             width: {
@@ -103,10 +180,10 @@ const createWordDocument = async (
               : [new Paragraph("Logo")],
             verticalAlign: AlignmentType.CENTER,
             margins: {
-              top: 30, // Reduced from 60
-              bottom: 30, // Reduced from 60
-              left: 50, // Reduced from 100
-              right: 50 // Reduced from 100
+              top: 20, // Further reduced for a slimmer look
+              bottom: 20, // Further reduced for a slimmer look
+              left: 30, // Further reduced for a slimmer look
+              right: 30 // Further reduced for a slimmer look
             },
           }),
           new TableCell({
@@ -119,29 +196,19 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215",
+                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215 (An Autonomous Institute Affiliated to Anna University, Chennai)",
                     bold: true,
                     size: 24, 
-                  }),
-                ],
-              }),
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: "(An Autonomous Institute Affiliated to Anna University, Chennai)",
-                    bold: false,
-                    size: 22, 
                   }),
                 ],
               }),
             ],
             verticalAlign: AlignmentType.CENTER,
             margins: {
-              top: 30, // Reduced from 60
-              bottom: 30, // Reduced from 60
-              left: 50, // Reduced from 100
-              right: 50 // Reduced from 100
+              top: 20, // Further reduced for a slimmer look
+              bottom: 20, // Further reduced for a slimmer look
+              left: 30, // Further reduced for a slimmer look
+              right: 30 // Further reduced for a slimmer look
             },
           }),
           new TableCell({
@@ -154,17 +221,7 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "RESULT",
-                    bold: true,
-                    size: 22, 
-                  }),
-                ],
-              }),
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: "ANALYSIS",
+                    text: "RESULT ANALYSIS",
                     bold: true,
                     size: 22, 
                   }),
@@ -173,10 +230,10 @@ const createWordDocument = async (
             ],
             verticalAlign: AlignmentType.CENTER,
             margins: {
-              top: 30, // Reduced from 60
-              bottom: 30, // Reduced from 60
-              left: 50, // Reduced from 100
-              right: 50 // Reduced from 100
+              top: 20, // Further reduced for a slimmer look
+              bottom: 20, // Further reduced for a slimmer look
+              left: 30, // Further reduced for a slimmer look
+              right: 30 // Further reduced for a slimmer look
             },
           }),
         ],
@@ -919,5 +976,3 @@ const createWordDocument = async (
 
   return new Document({ sections });
 };
-
-// Helper function to create table
