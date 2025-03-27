@@ -1008,12 +1008,12 @@ function createTableCell(
     alignment?: keyof typeof AlignmentType;
   } = {}
 ): TableCell {
-  const { colspan, rowspan, alignment = 'LEFT' } = options;
+  const { colspan, rowspan, alignment = 'CENTER' } = options;
   
   return new TableCell({
     children: [
       new Paragraph({
-        alignment: alignment ? AlignmentType[alignment] : AlignmentType.LEFT,
+        alignment: alignment ? AlignmentType[alignment] : AlignmentType.CENTER,
         children: [
           new TextRun({
             text,
@@ -1026,12 +1026,12 @@ function createTableCell(
     columnSpan: colspan,
     rowSpan: rowspan,
     margins: {
-      top: 80,      // Reduced top margin
-      bottom: 80,   // Reduced bottom margin
-      left: 100,    // Left margin
-      right: 100    // Right margin
+      top: 80,
+      bottom: 80,
+      left: 100,
+      right: 100
     },
-    verticalAlign: AlignmentType.CENTER, // Added to center content vertically
+    verticalAlign: AlignmentType.CENTER,
   });
 }
 
@@ -1073,12 +1073,12 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
           }),
         ],
         margins: {
-          top: 80,       // Reduced top margin
-          bottom: 80,    // Reduced bottom margin
-          left: 100,     // Left margin
-          right: 100     // Right margin
+          top: 80,
+          bottom: 80,
+          left: 100,
+          right: 100
         },
-        verticalAlign: AlignmentType.CENTER, // Added to center content vertically
+        verticalAlign: AlignmentType.CENTER,
       })
     ),
   });
