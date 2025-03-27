@@ -421,7 +421,7 @@ const createWordDocument = async (
     sections.push(fileAnalysisTable);
   }
   
-  // End Semester Result Analysis Section - UPDATED TO USE ACTUAL DATA 
+  // End Semester Result Analysis Section - UPDATED TO USE ACTUAL DATA WITH ORIGINAL TABLE SIZING
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
     const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
     
@@ -442,24 +442,24 @@ const createWordDocument = async (
       }),
     );
     
-    // Subject Analysis Table - Using actual data
+    // Subject Analysis Table - Using actual data with original column widths
     const subjectRows = [
       new TableRow({
         tableHeader: true,
         children: [
-          createHeaderCell("S.No", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Subject Code", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Subject Name", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Faculty Name", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Dept", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("App", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Ab", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Fail", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("WH", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Passed", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("% of pass", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("Highest Grade", { alignment: 'CENTER', rightIndent: -0.06 }),
-          createHeaderCell("No. of students", { alignment: 'CENTER', rightIndent: -0.06 }),
+          createHeaderCell("S.No", { alignment: 'CENTER' }),
+          createHeaderCell("Subject Code", { alignment: 'CENTER' }),
+          createHeaderCell("Subject Name", { alignment: 'CENTER' }),
+          createHeaderCell("Faculty Name", { alignment: 'CENTER' }),
+          createHeaderCell("Dept", { alignment: 'CENTER' }),
+          createHeaderCell("App", { alignment: 'CENTER' }),
+          createHeaderCell("Ab", { alignment: 'CENTER' }),
+          createHeaderCell("Fail", { alignment: 'CENTER' }),
+          createHeaderCell("WH", { alignment: 'CENTER' }),
+          createHeaderCell("Passed", { alignment: 'CENTER' }),
+          createHeaderCell("% of pass", { alignment: 'CENTER' }),
+          createHeaderCell("Highest Grade", { alignment: 'CENTER' }),
+          createHeaderCell("No. of students", { alignment: 'CENTER' }),
         ],
       }),
     ];
@@ -484,19 +484,19 @@ const createWordDocument = async (
       subjectRows.push(
         new TableRow({
           children: [
-            createTableCell((index + 1).toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(totalStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(failedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(passedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(passPercentage.toFixed(1), false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(highestGrade, false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(studentsWithHighestGrade.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }), 
+            createTableCell((index + 1).toString(), false, { alignment: 'CENTER' }),
+            createTableCell(subject, false, { alignment: 'CENTER' }),
+            createTableCell(subject, false, { alignment: 'CENTER' }),
+            createTableCell("", false, { alignment: 'CENTER' }),
+            createTableCell(department, false, { alignment: 'CENTER' }),
+            createTableCell(totalStudents.toString(), false, { alignment: 'CENTER' }), 
+            createTableCell("0", false, { alignment: 'CENTER' }), 
+            createTableCell(failedStudents.toString(), false, { alignment: 'CENTER' }),
+            createTableCell("0", false, { alignment: 'CENTER' }), 
+            createTableCell(passedStudents.toString(), false, { alignment: 'CENTER' }), 
+            createTableCell(passPercentage.toFixed(1), false, { alignment: 'CENTER' }), 
+            createTableCell(highestGrade, false, { alignment: 'CENTER' }), 
+            createTableCell(studentsWithHighestGrade.toString(), false, { alignment: 'CENTER' }), 
           ],
         })
       );
@@ -515,7 +515,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Updated column widths to fit within 6.4 inches while maintaining proportions
+      // Restored original column widths while keeping calculated values
       columnWidths: [400, 800, 800, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
