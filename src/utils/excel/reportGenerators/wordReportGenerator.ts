@@ -43,7 +43,7 @@ const createWordDocument = async (
 ): Promise<Document> => {
   // Destructure options with defaults
   const { 
-    logoImagePath = "",
+    logoImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png", // Updated to use the new logo
     department = "CSE",
     departmentFullName = "Computer Science and Engineering",
     calculationMode
@@ -64,8 +64,8 @@ const createWordDocument = async (
       headerImage = new ImageRun({
         data: arrayBuffer,
         transformation: {
-          width: 60,
-          height: 60,
+          width: 70,  // Slightly increased for better visibility
+          height: 70,
         },
         type: 'png',
       });
@@ -545,52 +545,52 @@ const createWordDocument = async (
     rows: [
       new TableRow({
         children: [
-          createTableCell("Current semester", true, { colspan: 7, alignment: "CENTER" }),
-          createTableCell("Upto this semester", true, { colspan: 7, alignment: "CENTER" }),
+          createTableCell("Current semester", true, { colspan: 7, alignment: 'CENTER' }),
+          createTableCell("Upto this semester", true, { colspan: 7, alignment: 'CENTER' }),
         ],
       }),
       new TableRow({
         children: [
-          createTableCell("Distinction", true, { rowspan: 2, alignment: "CENTER" }),
-          createTableCell("First class", true, { colspan: 2, alignment: "CENTER" }),
-          createTableCell("Second class", true, { colspan: 2, alignment: "CENTER" }),
-          createTableCell("Fail", true, { rowspan: 2, alignment: "CENTER" }),
-          createTableCell("% of pass", true, { rowspan: 2, alignment: "CENTER" }),
-          createTableCell("Distinction", true, { rowspan: 2, alignment: "CENTER" }),
-          createTableCell("First class", true, { colspan: 2, alignment: "CENTER" }),
-          createTableCell("Second class", true, { colspan: 2, alignment: "CENTER" }),
-          createTableCell("Fail", true, { rowspan: 2, alignment: "CENTER" }),
-          createTableCell("% of pass", true, { rowspan: 2, alignment: "CENTER" }),
+          createTableCell("Distinction", true, { rowspan: 2, alignment: 'CENTER' }),
+          createTableCell("First class", true, { colspan: 2, alignment: 'CENTER' }),
+          createTableCell("Second class", true, { colspan: 2, alignment: 'CENTER' }),
+          createTableCell("Fail", true, { rowspan: 2, alignment: 'CENTER' }),
+          createTableCell("% of pass", true, { rowspan: 2, alignment: 'CENTER' }),
+          createTableCell("Distinction", true, { rowspan: 2, alignment: 'CENTER' }),
+          createTableCell("First class", true, { colspan: 2, alignment: 'CENTER' }),
+          createTableCell("Second class", true, { colspan: 2, alignment: 'CENTER' }),
+          createTableCell("Fail", true, { rowspan: 2, alignment: 'CENTER' }),
+          createTableCell("% of pass", true, { rowspan: 2, alignment: 'CENTER' }),
         ],
       }),
       new TableRow({
         children: [
-          createTableCell("WOA", true, { alignment: "CENTER" }),
-          createTableCell("WA", true, { alignment: "CENTER" }),
-          createTableCell("WOA", true, { alignment: "CENTER" }),
-          createTableCell("WA", true, { alignment: "CENTER" }),
-          createTableCell("WOA", true, { alignment: "CENTER" }),
-          createTableCell("WA", true, { alignment: "CENTER" }),
-          createTableCell("WOA", true, { alignment: "CENTER" }),
-          createTableCell("WA", true, { alignment: "CENTER" }),
+          createTableCell("WOA", true, { alignment: 'CENTER' }),
+          createTableCell("WA", true, { alignment: 'CENTER' }),
+          createTableCell("WOA", true, { alignment: 'CENTER' }),
+          createTableCell("WA", true, { alignment: 'CENTER' }),
+          createTableCell("WOA", true, { alignment: 'CENTER' }),
+          createTableCell("WA", true, { alignment: 'CENTER' }),
+          createTableCell("WOA", true, { alignment: 'CENTER' }),
+          createTableCell("WA", true, { alignment: 'CENTER' }),
         ],
       }),
       new TableRow({
         children: [
-          createTableCell(singleFileClassification.distinction.toString(), false, { alignment: "CENTER" }),
-          createTableCell(singleFileClassification.firstClassWOA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(singleFileClassification.firstClassWA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(singleFileClassification.secondClassWOA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(singleFileClassification.secondClassWA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(singleFileClassification.fail.toString(), false, { alignment: "CENTER" }),
-          createTableCell(singleFileClassification.passPercentage.toFixed(1), false, { alignment: "CENTER" }),
-          createTableCell(multipleFileClassification.distinction.toString(), false, { alignment: "CENTER" }),
-          createTableCell(multipleFileClassification.firstClassWOA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(multipleFileClassification.firstClassWA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(multipleFileClassification.secondClassWOA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(multipleFileClassification.secondClassWA.toString(), false, { alignment: "CENTER" }),
-          createTableCell(multipleFileClassification.fail.toString(), false, { alignment: "CENTER" }),
-          createTableCell(multipleFileClassification.passPercentage.toFixed(1), false, { alignment: "CENTER" }),
+          createTableCell(singleFileClassification.distinction.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(singleFileClassification.firstClassWOA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(singleFileClassification.firstClassWA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(singleFileClassification.secondClassWOA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(singleFileClassification.secondClassWA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(singleFileClassification.fail.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(singleFileClassification.passPercentage.toFixed(1), false, { alignment: 'CENTER' }),
+          createTableCell(multipleFileClassification.distinction.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(multipleFileClassification.firstClassWOA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(multipleFileClassification.firstClassWA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(multipleFileClassification.secondClassWOA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(multipleFileClassification.secondClassWA.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(multipleFileClassification.fail.toString(), false, { alignment: 'CENTER' }),
+          createTableCell(multipleFileClassification.passPercentage.toFixed(1), false, { alignment: 'CENTER' }),
         ],
       }),
     ],
@@ -627,8 +627,8 @@ const createWordDocument = async (
   const rankRows = [
     new TableRow({
       children: [
-        createTableCell("Rank in this semester", true, { colspan: 3, alignment: "CENTER" }),
-        createTableCell("Rank up to this semester", true, { colspan: 3, alignment: "CENTER" }),
+        createTableCell("Rank in this semester", true, { colspan: 3, alignment: 'CENTER' }),
+        createTableCell("Rank up to this semester", true, { colspan: 3, alignment: 'CENTER' }),
       ],
     }),
     new TableRow({
