@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -945,15 +944,15 @@ function createTableCell(
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: AlignmentType;
+    alignment?: keyof typeof AlignmentType;
   } = {}
 ): TableCell {
-  const { colspan, rowspan, alignment = AlignmentType.LEFT } = options;
+  const { colspan, rowspan, alignment = 'LEFT' } = options;
   
   return new TableCell({
     children: [
       new Paragraph({
-        alignment,
+        alignment: alignment ? AlignmentType[alignment] : AlignmentType.LEFT,
         children: [
           new TextRun({
             text,
@@ -973,12 +972,12 @@ function createHeaderCell(
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: AlignmentType;
+    alignment?: keyof typeof AlignmentType;
   } = {}
 ): TableCell {
   return createTableCell(text, true, {
     ...options,
-    alignment: options.alignment || AlignmentType.CENTER,
+    alignment: options.alignment || 'CENTER',
   });
 }
 
