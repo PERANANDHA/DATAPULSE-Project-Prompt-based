@@ -616,12 +616,12 @@ const createWordDocument = async (
     }),
   );
   
-  // Rank Analysis Table
-  const topPerformersBySGPA = analysis.topPerformers.slice(0, 10);
+  // Rank Analysis Table - MODIFIED: Only display top 3 students
+  const topPerformersBySGPA = analysis.topPerformers.slice(0, 3); // Changed from 10 to 3
   let topPerformersByCGPA: { id: string; cgpa: number }[] = [];
   
   if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.toppersList) {
-    topPerformersByCGPA = analysis.cgpaAnalysis.toppersList.slice(0, 10);
+    topPerformersByCGPA = analysis.cgpaAnalysis.toppersList.slice(0, 3); // Changed from 10 to 3
   }
   
   const rankRows = [
@@ -643,7 +643,7 @@ const createWordDocument = async (
     }),
   ];
   
-  // Add data rows - match the number of rows to display
+  // Add data rows - match the number of rows to display (limit to 3)
   const maxRankRows = Math.max(topPerformersBySGPA.length, topPerformersByCGPA.length);
   for (let i = 0; i < maxRankRows; i++) {
     const sgpaData = topPerformersBySGPA[i] || { id: "", sgpa: 0 };
@@ -743,88 +743,120 @@ const createWordDocument = async (
   
   sections.push(categoryTable);
   
-  // Individual Student Performance Section
-  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
-    sections.push(
-      new Paragraph({
-        spacing: {
-          before: 200,
-          after: 100,
-        },
-        children: [
-          new TextRun({
-            text: "Individual Student Performance",
-            bold: true,
-            size: 28,
-            color: "2E3192",
-          }),
-        ],
-      }),
-    );
+  // Individual Student Performance Section - ADDED FOR BOTH SGPA AND CGPA MODE
+  sections.push(
+    new Paragraph({
+      spacing: {
+        before: 200,
+        after: 100,
+      },
+      children: [
+        new TextRun({
+          text: "Individual Student Performance",
+          bold: true,
+          size: 28,
+          color: "2E3192",
+        }),
+      ],
+    }),
+  );
+  
+  // Get appropriate student data based on mode
+  let studentPerformanceData = [];
+  
+  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
+    // For SGPA mode, use the SGPA data
+    studentPerformanceData = [...analysis.studentSgpaDetails]
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .map(student => ({
+        id: student.id,
+        gpValue: student.sgpa,
+        hasArrears: student.hasArrears
+      }));
+  } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+    // For CGPA mode, use the CGPA data
+    studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .map(student => {
+        // For CGPA mode, we need to check if the student has arrears in any semester
+        const hasArrears = records.some(record => 
+          record.REGNO === student.id && record.GR === 'U'
+        );
+        
+        return {
+          id: student.id,
+          gpValue: student.cgpa,
+          hasArrears
+        };
+      });
+  }
+  
+  // Build the table rows
+  const studentRows = [
+    new TableRow({
+      children: [
+        createHeaderCell("S.No"),
+        createHeaderCell("Register Number"),
+        createHeaderCell(calculationMode === 'sgpa' ? "SGPA" : "CGPA"),
+        createHeaderCell("Status"),
+      ],
+    }),
+  ];
+  
+  // Add student rows
+  studentPerformanceData.forEach((student, index) => {
+    // Determine status based on GP value and arrears - MODIFIED to show "First Class With Arrear"
+    let status = "";
     
-    // Get student CGPA data and sort by CGPA (descending)
-    const studentCGPAs = [...analysis.cgpaAnalysis.studentCGPAs]
-      .sort((a, b) => b.cgpa - a.cgpa);
-    
-    // Build the table rows
-    const studentRows = [
-      new TableRow({
-        children: [
-          createHeaderCell("S.No"),
-          createHeaderCell("Register Number"),
-          createHeaderCell("CGPA"),
-          createHeaderCell("Status"),
-        ],
-      }),
-    ];
-    
-    // Add student rows
-    studentCGPAs.forEach((student, index) => {
-      // Determine status based on CGPA
-      let status = "";
-      if (student.cgpa >= 8.5) {
-        status = "Distinction";
-      } else if (student.cgpa >= 6.5) {
-        status = "First Class";
-      } else {
+    if (student.hasArrears) {
+      // Students with arrears
+      if (student.gpValue >= 6.5) {
+        status = "First Class With Arrear"; // Changed from "First Class" to "First Class With Arrear"
+      } else if (student.gpValue >= 5.0) {
         status = "Second Class with Arrears";
-      }
-      
-      // For very low CGPAs, likely has arrears
-      if (student.cgpa < 5) {
+      } else {
         status = "Has Arrears";
       }
-      
-      studentRows.push(
-        new TableRow({
-          children: [
-            createTableCell((index + 1).toString()),
-            createTableCell(student.id),
-            createTableCell(student.cgpa.toFixed(2)),
-            createTableCell(status),
-          ],
-        })
-      );
-    });
+    } else {
+      // Students without arrears
+      if (student.gpValue >= 8.5) {
+        status = "Distinction";
+      } else if (student.gpValue >= 6.5) {
+        status = "First Class";
+      } else {
+        status = "Second Class";
+      }
+    }
     
-    const studentTable = new Table({
-      width: {
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1 },
-        bottom: { style: BorderStyle.SINGLE, size: 1 },
-        left: { style: BorderStyle.SINGLE, size: 1 },
-        right: { style: BorderStyle.SINGLE, size: 1 },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-      },
-      rows: studentRows,
-    });
-    
-    sections.push(studentTable);
-  }
+    studentRows.push(
+      new TableRow({
+        children: [
+          createTableCell((index + 1).toString()),
+          createTableCell(student.id),
+          createTableCell(student.gpValue.toFixed(2)),
+          createTableCell(status),
+        ],
+      })
+    );
+  });
+  
+  const studentTable = new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1 },
+      bottom: { style: BorderStyle.SINGLE, size: 1 },
+      left: { style: BorderStyle.SINGLE, size: 1 },
+      right: { style: BorderStyle.SINGLE, size: 1 },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+    },
+    rows: studentRows,
+  });
+  
+  sections.push(studentTable);
   
   // Signature section
   sections.push(
