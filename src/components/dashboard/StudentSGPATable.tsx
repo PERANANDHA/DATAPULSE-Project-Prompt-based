@@ -45,7 +45,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
   );
 
   return (
-    <Card>
+    <Card className="w-full" style={{ maxWidth: '650px' }}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">
           {isCgpaMode ? 'Student CGPA Details' : 'Student SGPA Details'}
@@ -66,7 +66,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border overflow-hidden">
+        <div className="rounded-md border overflow-hidden" style={{ minWidth: '600px' }}>
           <Table>
             <TableHeader>
               <TableRow>

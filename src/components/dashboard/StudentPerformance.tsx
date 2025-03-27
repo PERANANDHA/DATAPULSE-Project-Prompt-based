@@ -54,7 +54,7 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
     : analysis.needsImprovement.slice(0, 6);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ maxWidth: '650px', width: '100%' }}>
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">
@@ -67,7 +67,7 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-4" style={{ minWidth: '285px' }}>
             {topStudents.map((student, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-4" style={{ minWidth: '285px' }}>
             {calculationMode === 'cgpa'
               ? needsImprovementData.map((student, index) => (
                   <div key={index} className="flex items-center justify-between">
