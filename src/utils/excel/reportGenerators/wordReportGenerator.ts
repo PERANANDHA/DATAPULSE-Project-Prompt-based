@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -521,7 +522,8 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      columnWidths: [650, 1200, 2000, 1700, 800, 650, 550, 650, 550, 850, 1050, 1050, 1300], // Significantly adjusted column widths for better spacing
+      // Updated column widths based on provided image for End Semester Result Analysis
+      columnWidths: [500, 900, 1000, 900, 500, 450, 450, 450, 450, 650, 650, 650, 650],
       rows: subjectRows,
     });
     
@@ -563,7 +565,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [800, 800, 800, 800, 800, 800, 900, 800, 800, 800, 800, 800, 800, 900], // Adjusted column widths for better spacing in classification table
+    // Updated column widths based on provided image for Classification table
+    columnWidths: [850, 650, 650, 650, 650, 500, 650, 850, 650, 650, 650, 650, 500, 650],
     rows: [
       new TableRow({
         children: [
@@ -1024,10 +1027,10 @@ function createTableCell(
     columnSpan: colspan,
     rowSpan: rowspan,
     margins: {
-      top: 150,       // Increased top margin
-      bottom: 150,     // Increased bottom margin
-      left: 220,       // Significantly increased left margin
-      right: 220       // Significantly increased right margin
+      top: 100,       // Adjusted top margin
+      bottom: 100,     // Adjusted bottom margin
+      left: 100,       // Adjusted left margin
+      right: 100       // Adjusted right margin
     },
   });
 }
@@ -1070,10 +1073,10 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
           }),
         ],
         margins: {
-          top: 150,      // Increased top margin
-          bottom: 150,    // Increased bottom margin
-          left: 220,      // Significantly increased left margin
-          right: 220      // Significantly increased right margin
+          top: 100,      // Adjusted top margin
+          bottom: 100,    // Adjusted bottom margin
+          left: 100,      // Adjusted left margin
+          right: 100      // Adjusted right margin
         },
       })
     ),
