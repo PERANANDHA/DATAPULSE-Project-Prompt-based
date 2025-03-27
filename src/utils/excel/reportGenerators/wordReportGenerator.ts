@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -522,7 +521,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      columnWidths: [800, 1200, 1700, 1500, 800, 700, 600, 700, 600, 850, 900, 950, 1000], // Updated column widths for better spacing
+      columnWidths: [600, 1000, 1800, 1500, 700, 600, 500, 600, 500, 700, 1000, 1000, 1100],
       rows: subjectRows,
     });
     
@@ -564,7 +563,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700], // Modified column widths for better spacing
+    columnWidths: [750, 750, 750, 750, 750, 750, 800, 750, 750, 750, 750, 750, 750, 800],
     rows: [
       new TableRow({
         children: [
@@ -699,7 +698,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [800, 2000, 1000, 800, 2000, 1000], // Added explicit column widths for better spacing
+    columnWidths: [800, 2000, 1000, 800, 2000, 1000],
     rows: rankRows,
   });
   
@@ -737,7 +736,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [3000, 5500], // Added explicit column widths for better spacing
+    columnWidths: [3000, 5500],
     rows: [
       new TableRow({
         children: [
@@ -878,7 +877,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1000, 3000, 1500, 3000], // Added explicit column widths for better spacing
+    columnWidths: [1000, 3000, 1500, 3000],
     rows: studentRows,
   });
   
@@ -905,7 +904,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.NONE },
         insideVertical: { style: BorderStyle.NONE },
       },
-      columnWidths: [2000, 2000, 2000, 2000], // Added explicit column widths for better spacing
+      columnWidths: [2000, 2000, 2000, 2000],
       rows: [
         new TableRow({
           children: [
@@ -1025,10 +1024,10 @@ function createTableCell(
     columnSpan: colspan,
     rowSpan: rowspan,
     margins: {
-      top: 100, // Increased top/bottom margins for better vertical spacing
-      bottom: 100,
-      left: 150, // Increased left/right margins for better horizontal spacing
-      right: 150
+      top: 120,
+      bottom: 120,
+      left: 180,
+      right: 180
     },
   });
 }
@@ -1071,7 +1070,7 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
           }),
         ],
         margins: {
-          top: 100, // Increased margins for better spacing
+          top: 100,
           bottom: 100,
           left: 150,
           right: 150
@@ -1080,4 +1079,3 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
     ),
   });
 };
-
