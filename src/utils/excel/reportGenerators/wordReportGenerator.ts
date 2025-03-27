@@ -644,52 +644,32 @@ const createWordDocument = async (
           }),
         ],
       }),
-      // Third row: WOA/WA headers
+      // Third row: WOA/WA headers - Modified to display "WOA/WA" instead of separate cells
       new TableRow({
         children: [
           // Skip Distinction cell (handled by rowspan above)
-          createTableCell("WOA", true, { 
+          createTableCell("WOA/WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'continue'
+            colspan: 2
           }),
-          createTableCell("WA", true, { 
+          createTableCell("WOA/WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'continue'
-          }),
-          createTableCell("WOA", true, { 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'continue'
-          }),
-          createTableCell("WA", true, { 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'continue' 
+            colspan: 2
           }),
           // Skip Fail cell (handled by rowspan above)
           // Skip % of pass cell (handled by rowspan above)
           // Skip Distinction cell (handled by rowspan above)
-          createTableCell("WOA", true, { 
+          createTableCell("WOA/WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'continue'
+            colspan: 2
           }),
-          createTableCell("WA", true, { 
+          createTableCell("WOA/WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'continue'
-          }),
-          createTableCell("WOA", true, { 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'continue'
-          }),
-          createTableCell("WA", true, { 
-            alignment: 'CENTER',
-            bold: true,
-            verticalMerge: 'continue'
+            colspan: 2
           }),
           // Skip Fail cell (handled by rowspan above)
           // Skip % of pass cell (handled by rowspan above)
