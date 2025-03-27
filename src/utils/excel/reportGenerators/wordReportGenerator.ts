@@ -1161,7 +1161,7 @@ function createTableCell(
     alignment?: keyof typeof AlignmentType;
     rightIndent?: number;
     bold?: boolean;
-    verticalMerge?: 'restart' | 'continue' | 'skip'; // Added 'skip' as a valid value for verticalMerge
+    verticalMerge?: 'restart' | 'continue';
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
