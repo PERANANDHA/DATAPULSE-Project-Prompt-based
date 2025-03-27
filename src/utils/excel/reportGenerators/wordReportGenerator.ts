@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -67,6 +66,7 @@ const createWordDocument = async (
           width: 100,
           height: 100,
         },
+        type: 'png',
       });
     }
   } catch (error) {
