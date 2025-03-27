@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -120,7 +119,7 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215",
+                    text: "K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215, CHENNAI",
                     bold: true,
                     size: 24, // Increased size for better visibility
                   }),
@@ -130,7 +129,7 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "(An Autonomous Institute Affiliated to Anna University, Chennai)",
+                    text: "(An Autonomous Institute Affiliated to Anna University)",
                     bold: false,
                     size: 22, // Increased size for better visibility
                   }),
@@ -291,7 +290,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Performance Text paragraphs 
+  // Performance Text paragraphs - MODIFIED: Changed font size to 12pt and font to Times New Roman
   const performanceParagraphs = [];
   
   if (calculationMode === 'sgpa') {
@@ -299,26 +298,62 @@ const createWordDocument = async (
     performanceParagraphs.push(
       new Paragraph({
         children: [
-          new TextRun({ text: "Average SGPA: ", bold: true }),
-          new TextRun(analysis.averageCGPA.toFixed(2)),
+          new TextRun({ 
+            text: "Average SGPA: ", 
+            bold: true,
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
+          new TextRun({
+            text: analysis.averageCGPA.toFixed(2),
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Highest SGPA: ", bold: true }),
-          new TextRun(analysis.highestSGPA.toFixed(2)),
+          new TextRun({ 
+            text: "Highest SGPA: ", 
+            bold: true,
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
+          new TextRun({
+            text: analysis.highestSGPA.toFixed(2),
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Lowest SGPA: ", bold: true }),
-          new TextRun(analysis.lowestSGPA.toFixed(2)),
+          new TextRun({ 
+            text: "Lowest SGPA: ", 
+            bold: true,
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
+          new TextRun({
+            text: analysis.lowestSGPA.toFixed(2),
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
         ],
       }),
       new Paragraph({
         children: [
-          new TextRun({ text: "Pass Percentage: ", bold: true }),
-          new TextRun(analysis.singleFileClassification.passPercentage.toFixed(2) + "%"),
+          new TextRun({ 
+            text: "Pass Percentage: ", 
+            bold: true,
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
+          new TextRun({
+            text: analysis.singleFileClassification.passPercentage.toFixed(2) + "%",
+            size: 24, // 12pt = 24 half-points
+            font: "Times New Roman"
+          }),
         ],
       }),
     );
@@ -328,26 +363,62 @@ const createWordDocument = async (
       performanceParagraphs.push(
         new Paragraph({
           children: [
-            new TextRun({ text: "Average CGPA: ", bold: true }),
-            new TextRun(analysis.cgpaAnalysis.averageCGPA.toFixed(2)),
+            new TextRun({ 
+              text: "Average CGPA: ", 
+              bold: true,
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
+            new TextRun({
+              text: analysis.cgpaAnalysis.averageCGPA.toFixed(2),
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Highest CGPA: ", bold: true }),
-            new TextRun(analysis.cgpaAnalysis.highestCGPA.toFixed(2)),
+            new TextRun({ 
+              text: "Highest CGPA: ", 
+              bold: true,
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
+            new TextRun({
+              text: analysis.cgpaAnalysis.highestCGPA.toFixed(2),
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Lowest CGPA: ", bold: true }),
-            new TextRun(analysis.cgpaAnalysis.lowestCGPA.toFixed(2)),
+            new TextRun({ 
+              text: "Lowest CGPA: ", 
+              bold: true,
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
+            new TextRun({
+              text: analysis.cgpaAnalysis.lowestCGPA.toFixed(2),
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
           ],
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: "Pass Percentage: ", bold: true }),
-            new TextRun(analysis.multipleFileClassification.passPercentage.toFixed(2) + "%"),
+            new TextRun({ 
+              text: "Pass Percentage: ", 
+              bold: true,
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
+            new TextRun({
+              text: analysis.multipleFileClassification.passPercentage.toFixed(2) + "%",
+              size: 24, // 12pt = 24 half-points
+              font: "Times New Roman"
+            }),
           ],
         }),
       );
