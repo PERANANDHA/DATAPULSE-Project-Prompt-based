@@ -945,7 +945,7 @@ function createTableCell(
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: typeof AlignmentType;
+    alignment?: AlignmentType;
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = AlignmentType.LEFT } = options;
@@ -973,7 +973,7 @@ function createHeaderCell(
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: typeof AlignmentType;
+    alignment?: AlignmentType;
   } = {}
 ): TableCell {
   return createTableCell(text, true, {
