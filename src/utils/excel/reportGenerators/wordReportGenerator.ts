@@ -86,7 +86,7 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1500, 6000, 2000], // Column widths adjusted to match the image
+    columnWidths: [1500, 6500, 1500], // Increased middle column width to fit "Chennai" on the same line
     rows: [
       new TableRow({
         children: [
@@ -111,7 +111,7 @@ const createWordDocument = async (
           }),
           new TableCell({
             width: {
-              size: 60,
+              size: 65, // Increased to match the widened column
               type: WidthType.PERCENTAGE,
             },
             children: [
@@ -139,7 +139,7 @@ const createWordDocument = async (
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: "(An Autonomous Institute Affiliated to Anna University, Chennai)",
+                    text: "(An Autonomous Institute Affiliated to Anna University, Chennai)", // Combined Chennai on same line
                     bold: false,
                     size: 22, 
                   }),
@@ -156,7 +156,7 @@ const createWordDocument = async (
           }),
           new TableCell({
             width: {
-              size: 25,
+              size: 20, // Decreased to compensate for middle column
               type: WidthType.PERCENTAGE,
             },
             children: [
