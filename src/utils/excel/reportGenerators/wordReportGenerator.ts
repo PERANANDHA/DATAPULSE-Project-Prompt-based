@@ -522,7 +522,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      columnWidths: [800, 1200, 1700, 1500, 800, 700, 600, 700, 600, 850, 900, 950, 1000], // Added explicit column widths for better spacing
+      columnWidths: [800, 1200, 1700, 1500, 800, 700, 600, 700, 600, 850, 900, 950, 1000], // Updated column widths for better spacing
       rows: subjectRows,
     });
     
@@ -564,7 +564,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900, 900], // Added explicit column widths for better spacing
+    columnWidths: [700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700, 700], // Modified column widths for better spacing
     rows: [
       new TableRow({
         children: [
@@ -1025,10 +1025,10 @@ function createTableCell(
     columnSpan: colspan,
     rowSpan: rowspan,
     margins: {
-      top: 80,
-      bottom: 80,
-      left: 100,
-      right: 100
+      top: 100, // Increased top/bottom margins for better vertical spacing
+      bottom: 100,
+      left: 150, // Increased left/right margins for better horizontal spacing
+      right: 150
     },
   });
 }
@@ -1071,10 +1071,10 @@ const createTableRow = (cells: string[], isHeader = false): TableRow => {
           }),
         ],
         margins: {
-          top: 80,
-          bottom: 80,
-          left: 100,
-          right: 100
+          top: 100, // Increased margins for better spacing
+          bottom: 100,
+          left: 150,
+          right: 150
         },
       })
     ),
