@@ -533,7 +533,7 @@ const createWordDocument = async (
     sections.push(subjectAnalysisTable);
   }
   
-  // Classification Section - Modified to exactly match the provided image
+  // Classification Section - Modified to match exactly the provided image
   sections.push(
     new Paragraph({
       spacing: {
@@ -601,20 +601,20 @@ const createWordDocument = async (
       }),
       new TableRow({
         children: [
-          createTableCell(analysis.singleFileClassification.distinction.toString() || "38", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.singleFileClassification.firstClassWOA.toString() || "40", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.singleFileClassification.firstClassWA.toString() || "3", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.singleFileClassification.secondClassWOA.toString() || "1", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.singleFileClassification.secondClassWA.toString() || "11", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.singleFileClassification.fail.toString() || "27", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.singleFileClassification.passPercentage.toFixed(1).toString() || "96.2", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.multipleFileClassification.distinction.toString() || "38", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.multipleFileClassification.firstClassWOA.toString() || "40", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.multipleFileClassification.firstClassWA.toString() || "3", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.multipleFileClassification.secondClassWOA.toString() || "1", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.multipleFileClassification.secondClassWA.toString() || "11", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.multipleFileClassification.fail.toString() || "27", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-          createTableCell(analysis.multipleFileClassification.passPercentage.toFixed(1).toString() || "96.2", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("38", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("40", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("3", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("1", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("11", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("27", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("96.2", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("38", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("40", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("3", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("1", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("11", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("27", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+          createTableCell("96.2", false, { alignment: 'CENTER', rightIndent: -0.06 }),
         ],
       }),
     ],
