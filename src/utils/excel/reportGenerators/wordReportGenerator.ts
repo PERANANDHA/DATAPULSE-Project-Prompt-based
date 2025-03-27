@@ -644,32 +644,44 @@ const createWordDocument = async (
           }),
         ],
       }),
-      // Third row: WOA/WA headers - Modified to display "WOA/WA" instead of separate cells
+      // Third row: WOA/WA headers - Modified to display WOA and WA in separate cells with column lines
       new TableRow({
         children: [
           // Skip Distinction cell (handled by rowspan above)
-          createTableCell("WOA/WA", true, { 
+          createTableCell("WOA", true, { 
             alignment: 'CENTER',
-            bold: true,
-            colspan: 2
+            bold: true
           }),
-          createTableCell("WOA/WA", true, { 
+          createTableCell("WA", true, { 
             alignment: 'CENTER',
-            bold: true,
-            colspan: 2
+            bold: true
+          }),
+          createTableCell("WOA", true, { 
+            alignment: 'CENTER',
+            bold: true
+          }),
+          createTableCell("WA", true, { 
+            alignment: 'CENTER',
+            bold: true
           }),
           // Skip Fail cell (handled by rowspan above)
           // Skip % of pass cell (handled by rowspan above)
           // Skip Distinction cell (handled by rowspan above)
-          createTableCell("WOA/WA", true, { 
+          createTableCell("WOA", true, { 
             alignment: 'CENTER',
-            bold: true,
-            colspan: 2
+            bold: true
           }),
-          createTableCell("WOA/WA", true, { 
+          createTableCell("WA", true, { 
             alignment: 'CENTER',
-            bold: true,
-            colspan: 2
+            bold: true
+          }),
+          createTableCell("WOA", true, { 
+            alignment: 'CENTER',
+            bold: true
+          }),
+          createTableCell("WA", true, { 
+            alignment: 'CENTER',
+            bold: true
           }),
           // Skip Fail cell (handled by rowspan above)
           // Skip % of pass cell (handled by rowspan above)
@@ -1118,7 +1130,7 @@ function createTableCell(
     alignment?: keyof typeof AlignmentType;
     rightIndent?: number;
     bold?: boolean;
-    verticalMerge?: 'restart' | 'continue'; 
+    verticalMerge?: 'restart' | 'continue' | 'skip';
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
