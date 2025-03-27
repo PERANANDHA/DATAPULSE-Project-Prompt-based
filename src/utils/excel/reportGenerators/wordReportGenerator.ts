@@ -551,10 +551,10 @@ const createWordDocument = async (
     }),
   );
   
-  // Classification Table - Updated to ensure exactly 6.4 inches total width with proper proportions and improved alignment
+  // Classification Table - Updated based on the image showing 108.7% preferred width, center alignment, and text wrapping
   const classificationTable = new Table({
     width: {
-      size: 100,
+      size: 108.7,
       type: WidthType.PERCENTAGE,
     },
     borders: {
@@ -565,8 +565,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Updated column widths to ensure total width of 6.4 inches (each column sized proportionally) 
-    // Adjusted to improve alignment for Distinction, Fail, and % of pass columns
+    // Adjusted column widths to improve alignment for Distinction, Fail, and % of pass columns
     columnWidths: [460, 460, 460, 460, 460, 300, 400, 460, 460, 460, 460, 460, 300, 400],
     rows: [
       // First row: Current semester | Upto this semester
@@ -591,7 +590,7 @@ const createWordDocument = async (
             rowspan: 2, 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'RESTART' 
+            verticalMerge: 'restart' 
           }),
           createTableCell("First class", true, { 
             colspan: 2, 
@@ -607,19 +606,19 @@ const createWordDocument = async (
             rowspan: 2, 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'RESTART' 
+            verticalMerge: 'restart' 
           }),
           createTableCell("% of pass", true, { 
             rowspan: 2, 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'RESTART' 
+            verticalMerge: 'restart' 
           }),
           createTableCell("Distinction", true, { 
             rowspan: 2, 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'RESTART' 
+            verticalMerge: 'restart' 
           }),
           createTableCell("First class", true, { 
             colspan: 2, 
@@ -635,13 +634,13 @@ const createWordDocument = async (
             rowspan: 2, 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'RESTART' 
+            verticalMerge: 'restart' 
           }),
           createTableCell("% of pass", true, { 
             rowspan: 2, 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'RESTART' 
+            verticalMerge: 'restart' 
           }),
         ],
       }),
@@ -652,22 +651,22 @@ const createWordDocument = async (
           createTableCell("WOA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE'
+            verticalMerge: 'continue'
           }),
           createTableCell("WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE'
+            verticalMerge: 'continue'
           }),
           createTableCell("WOA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE'
+            verticalMerge: 'continue'
           }),
           createTableCell("WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE' 
+            verticalMerge: 'continue' 
           }),
           // Skip Fail cell (handled by rowspan above)
           // Skip % of pass cell (handled by rowspan above)
@@ -675,22 +674,22 @@ const createWordDocument = async (
           createTableCell("WOA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE'
+            verticalMerge: 'continue'
           }),
           createTableCell("WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE'
+            verticalMerge: 'continue'
           }),
           createTableCell("WOA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE'
+            verticalMerge: 'continue'
           }),
           createTableCell("WA", true, { 
             alignment: 'CENTER',
             bold: true,
-            verticalMerge: 'CONTINUE'
+            verticalMerge: 'continue'
           }),
           // Skip Fail cell (handled by rowspan above)
           // Skip % of pass cell (handled by rowspan above)
@@ -1139,7 +1138,7 @@ function createTableCell(
     alignment?: keyof typeof AlignmentType;
     rightIndent?: number;
     bold?: boolean;
-    verticalMerge?: 'RESTART' | 'CONTINUE'; 
+    verticalMerge?: 'restart' | 'continue'; 
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
