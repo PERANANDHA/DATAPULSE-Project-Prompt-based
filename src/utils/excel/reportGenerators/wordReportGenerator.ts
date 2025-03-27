@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
@@ -1130,7 +1131,7 @@ function createTableCell(
     alignment?: keyof typeof AlignmentType;
     rightIndent?: number;
     bold?: boolean;
-    verticalMerge?: 'restart' | 'continue' | 'skip';
+    verticalMerge?: 'restart' | 'continue'; // Removed 'skip' as it's not a valid value for verticalMerge
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
