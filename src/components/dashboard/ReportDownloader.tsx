@@ -22,6 +22,7 @@ interface ReportDownloaderProps {
 
 const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRecords, calculationMode }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<string | null>(null);
   const [departmentCode, setDepartmentCode] = useState('CSE');
   const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
@@ -29,6 +30,16 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [downloadProgress, setDownloadProgress] = useState(0);
   const dropdownRef = useRef<HTMLButtonElement>(null);
   const { toast } = useToast();
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clear any lingering progress intervals when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
     if (!analysis || !studentRecords.length) {
@@ -52,23 +63,26 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     }
     
     setIsDownloading(true);
+    setDownloadingFormat(format);
     setDownloadProgress(0);
     setSelectedFormat(format);
     
     const progressInterval = startProgressSimulation();
+    progressIntervalRef.current = progressInterval;
     
     try {
       if (format === 'csv') {
-        downloadCSVReport(analysis, studentRecords);
+        await downloadCSVReport(analysis, studentRecords);
         finishDownload(progressInterval, format);
       } else if (format === 'excel') {
-        downloadExcelReport(analysis, studentRecords);
+        await downloadExcelReport(analysis, studentRecords);
         finishDownload(progressInterval, format);
       } else if (format === 'pdf') {
         await downloadPdfReport('dashboard-content');
         finishDownload(progressInterval, format);
       }
     } catch (error) {
+      console.error("Download error:", error);
       handleDownloadError(progressInterval, error);
     }
   };
@@ -86,6 +100,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
 
   const finishDownload = (progressInterval: NodeJS.Timeout, format: string) => {
     clearInterval(progressInterval);
+    progressIntervalRef.current = null;
     setDownloadProgress(100);
     
     setTimeout(() => {
@@ -94,6 +109,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         description: `Your analysis report has been downloaded as ${format.toUpperCase()}.`,
       });
       setIsDownloading(false);
+      setDownloadingFormat(null);
       setDownloadProgress(0);
       setSelectedFormat(null);
     }, 500);
@@ -101,6 +117,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
 
   const handleDownloadError = (progressInterval: NodeJS.Timeout, error: any) => {
     clearInterval(progressInterval);
+    progressIntervalRef.current = null;
     console.error("Download error:", error);
     toast({
       variant: "destructive",
@@ -108,6 +125,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       description: "There was a problem generating your report. Please try again.",
     });
     setIsDownloading(false);
+    setDownloadingFormat(null);
     setDownloadProgress(0);
     setSelectedFormat(null);
   };
@@ -115,9 +133,11 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const handleConfirmDepartment = async () => {
     setIsDepartmentDialogOpen(false);
     setIsDownloading(true);
+    setDownloadingFormat('word');
     setDownloadProgress(0);
     
     const progressInterval = startProgressSimulation();
+    progressIntervalRef.current = progressInterval;
     
     try {
       if (selectedFormat === 'word' && analysis) {
@@ -134,8 +154,18 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         finishDownload(progressInterval, 'word');
       }
     } catch (error) {
+      console.error("Word download error:", error);
       handleDownloadError(progressInterval, error);
     }
+  };
+
+  // Disable the download button completely when downloading
+  const isButtonDisabled = isDownloading;
+  
+  // Show format-specific loading text
+  const getDownloadingText = () => {
+    if (!downloadingFormat) return "Downloading...";
+    return `Downloading ${downloadingFormat.toUpperCase()}...`;
   };
 
   return (
@@ -152,12 +182,12 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         )}
         <div className="flex justify-end">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild disabled={isDownloading} ref={dropdownRef}>
-              <Button disabled={isDownloading}>
+            <DropdownMenuTrigger asChild disabled={isButtonDisabled} ref={dropdownRef}>
+              <Button disabled={isButtonDisabled}>
                 {isDownloading ? (
                   <>
                     <Loader className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
+                    {getDownloadingText()}
                   </>
                 ) : (
                   <>
@@ -168,19 +198,31 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
+              <DropdownMenuItem 
+                onClick={() => handleDownloadReport('pdf')}
+                disabled={isDownloading}
+              >
                 <File className="h-4 w-4 mr-2" />
                 <span>Download as PDF</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
+              <DropdownMenuItem 
+                onClick={() => handleDownloadReport('word')}
+                disabled={isDownloading}
+              >
                 <FileText className="h-4 w-4 mr-2" />
                 <span>Download as Word</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
+              <DropdownMenuItem 
+                onClick={() => handleDownloadReport('excel')}
+                disabled={isDownloading}
+              >
                 <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
                 <span>Download as Excel</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
+              <DropdownMenuItem 
+                onClick={() => handleDownloadReport('csv')}
+                disabled={isDownloading}
+              >
                 <Download className="h-4 w-4 mr-2" />
                 <span>Download as CSV</span>
               </DropdownMenuItem>
@@ -189,7 +231,15 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         </div>
       </div>
       
-      <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
+      <Dialog 
+        open={isDepartmentDialogOpen} 
+        onOpenChange={(open) => {
+          // Only allow closing if we're not currently downloading
+          if (!isDownloading) {
+            setIsDepartmentDialogOpen(open);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Department Information</DialogTitle>
@@ -208,6 +258,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
                 onChange={(e) => setDepartmentFullName(e.target.value)}
                 placeholder="e.g. Computer Science and Engineering"
                 className="mb-2"
+                disabled={isDownloading}
               />
               <p className="text-sm text-muted-foreground">
                 This will be used in the College Information table.
@@ -225,6 +276,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
                 placeholder="e.g. CSE"
                 className="mb-2"
                 maxLength={5}
+                disabled={isDownloading}
               />
               <p className="text-sm text-muted-foreground">
                 This will be used in the End Semester Result Analysis table.
@@ -232,11 +284,25 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDepartmentDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDepartmentDialogOpen(false)}
+              disabled={isDownloading}
+            >
               Cancel
             </Button>
-            <Button onClick={handleConfirmDepartment}>
-              Continue
+            <Button 
+              onClick={handleConfirmDepartment}
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <>
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  Downloading...
+                </>
+              ) : (
+                "Continue"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

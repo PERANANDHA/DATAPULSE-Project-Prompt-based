@@ -21,9 +21,14 @@ export const downloadWordReport = async (
     // Save the document using file-saver
     const buffer = await Packer.toBuffer(doc);
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    saveAs(blob, options.calculationMode === 'sgpa' 
-      ? 'sgpa-analysis-report.docx' 
-      : 'cgpa-analysis-report.docx');
+    
+    // Use a unique filename with timestamp to prevent browser caching issues
+    const timestamp = new Date().getTime();
+    const fileName = options.calculationMode === 'sgpa' 
+      ? `sgpa-analysis-report-${timestamp}.docx` 
+      : `cgpa-analysis-report-${timestamp}.docx`;
+    
+    saveAs(blob, fileName);
   } catch (error) {
     console.error("Error generating Word document:", error);
     throw error;
@@ -43,7 +48,7 @@ const createWordDocument = async (
     calculationMode
   } = options;
   
-  // Create document with explicit sections array
+  // Create document with sections array
   const doc = new Document({
     sections: [],
   });
@@ -52,7 +57,7 @@ const createWordDocument = async (
   const sectionsContent = [];
   
   // Process header image
-  let headerImage;
+  let headerImageRun;
   
   try {
     if (logoImagePath) {
@@ -60,12 +65,14 @@ const createWordDocument = async (
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       
-      headerImage = new ImageRun({
+      // Fix the ImageRun options to match the required interface
+      headerImageRun = new ImageRun({
         data: arrayBuffer,
         transformation: {
           width: 70,
           height: 70,
         },
+        type: 'png', // Specify the image type
       });
     }
   } catch (error) {
@@ -93,10 +100,10 @@ const createWordDocument = async (
               size: 15,
               type: WidthType.PERCENTAGE,
             },
-            children: headerImage 
+            children: headerImageRun 
               ? [new Paragraph({ 
                   alignment: AlignmentType.CENTER,
-                  children: [headerImage] 
+                  children: [headerImageRun] 
                 })]
               : [new Paragraph("Logo")],
             verticalAlign: AlignmentType.CENTER,
@@ -609,10 +616,13 @@ const createWordDocument = async (
   
   sectionsContent.push(rankTable);
 
-  // Add all generated content to document
-  doc.addSection({
-    children: sectionsContent,
+  // Fix: Use the correct way to add sections to the document
+  // Create a new Document with the content
+  return new Document({
+    sections: [
+      {
+        children: sectionsContent
+      }
+    ]
   });
-
-  return doc;
 };
