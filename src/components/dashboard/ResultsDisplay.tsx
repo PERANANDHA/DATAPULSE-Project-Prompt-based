@@ -7,6 +7,7 @@ import AnalysisOverview from './AnalysisOverview';
 import SubjectAnalysis from './SubjectAnalysis';
 import StudentPerformance from './StudentPerformance';
 import StudentSGPATable from './StudentSGPATable';
+import ClassificationTable from './ClassificationTable';
 import ReportDownloader from './ReportDownloader';
 
 interface ResultsDisplayProps {
@@ -81,6 +82,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       
       <div className="w-full flex justify-center">
         <StudentPerformance analysis={analysis} calculationMode={calculationMode} />
+      </div>
+
+      <div className="w-full flex justify-center">
+        <ClassificationTable analysis={analysis} />
       </div>
       
       <div className="w-full flex justify-center">
