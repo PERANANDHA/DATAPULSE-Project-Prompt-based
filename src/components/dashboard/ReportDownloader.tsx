@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -111,21 +110,32 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
           department: departmentCode,
           departmentFullName: departmentFullName,
           calculationMode: calculationMode || 'sgpa'
+        }).then(() => {
+          clearInterval(progressInterval);
+          setDownloadProgress(100);
+          
+          setTimeout(() => {
+            toast({
+              title: "Report downloaded",
+              description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
+            });
+            setIsDownloading(false);
+            setDownloadProgress(0);
+            setSelectedFormat(null);
+          }, 500);
+        }).catch((error) => {
+          clearInterval(progressInterval);
+          console.error("Download error:", error);
+          toast({
+            variant: "destructive",
+            title: "Download failed",
+            description: "There was a problem generating your report. Please try again.",
+          });
+          setIsDownloading(false);
+          setDownloadProgress(0);
+          setSelectedFormat(null);
         });
       }
-      
-      clearInterval(progressInterval);
-      setDownloadProgress(100);
-      
-      setTimeout(() => {
-        toast({
-          title: "Report downloaded",
-          description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
-        });
-        setIsDownloading(false);
-        setDownloadProgress(0);
-        setSelectedFormat(null);
-      }, 500);
     } catch (error) {
       clearInterval(progressInterval);
       console.error("Download error:", error);

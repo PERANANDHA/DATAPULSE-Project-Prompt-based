@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
+import { saveAs } from 'file-saver';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 
 interface WordReportOptions {
@@ -15,24 +16,12 @@ export const downloadWordReport = async (
 ): Promise<void> => {
   const doc = await createWordDocument(analysis, records, options);
   
-  // Save the document
-  const blob = await Packer.toBlob(doc);
-  const url = URL.createObjectURL(blob);
-  
-  // Create download link
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = options.calculationMode === 'sgpa' 
+  // Save the document using file-saver instead of the native download approach
+  const buffer = await Packer.toBuffer(doc);
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  saveAs(blob, options.calculationMode === 'sgpa' 
     ? 'sgpa-analysis-report.docx' 
-    : 'cgpa-analysis-report.docx';
-  
-  // Trigger download
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+    : 'cgpa-analysis-report.docx');
 };
 
 const createWordDocument = async (
@@ -920,4 +909,43 @@ const createWordDocument = async (
   return new Document({ sections });
 };
 
-// Helper function to create table
+// Helper functions
+function createTableRow(cells: string[]): TableRow {
+  return new TableRow({
+    children: cells.map(cell => 
+      createTableCell(cell)
+    )
+  });
+}
+
+function createTableCell(text: string, isHeader: boolean = false, options: any = {}): TableCell {
+  const { colspan, rowspan, verticalMerge, alignment, bold, rightIndent } = options || {};
+  
+  return new TableCell({
+    columnSpan: colspan,
+    rowSpan: rowspan,
+    verticalMerge,
+    width: {
+      size: 100 / (colspan || 1),
+      type: WidthType.PERCENTAGE,
+    },
+    margins: {
+      right: rightIndent,
+    },
+    children: [
+      new Paragraph({
+        alignment: alignment || AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text: String(text),
+            bold: isHeader || bold || false,
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+function createHeaderCell(text: string, options: any = {}): TableCell {
+  return createTableCell(text, true, options);
+}
