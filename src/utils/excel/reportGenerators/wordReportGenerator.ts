@@ -206,6 +206,24 @@ const createWordDocument = async (
   }
   
   // College Information Table
+  const collegeInfoTableRows = [
+    createTableRow(["College Name", "K. S. Rangasamy College of Technology"]),
+    createTableRow(["Department", departmentFullName]),
+    createTableRow(["Total Students", analysis.totalStudents.toString()]),
+  ];
+  
+  // Add file count for CGPA mode
+  if (calculationMode === 'cgpa' && fileCount > 0) {
+    collegeInfoTableRows.push(
+      createTableRow(["Files Processed", fileCount.toString()])
+    );
+  }
+  
+  // Add calculation mode
+  collegeInfoTableRows.push(
+    createTableRow(["Calculation Mode", calculationModeDisplay])
+  );
+  
   const collegeInfoTable = new Table({
     width: {
       size: 100,
@@ -219,24 +237,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    rows: [
-      createTableRow(["College Name", "K. S. Rangasamy College of Technology"]),
-      createTableRow(["Department", departmentFullName]),
-      createTableRow(["Total Students", analysis.totalStudents.toString()]),
-    ],
+    rows: collegeInfoTableRows,
   });
-  
-  // Add file count for CGPA mode
-  if (calculationMode === 'cgpa' && fileCount > 0) {
-    collegeInfoTable.root.push(
-      createTableRow(["Files Processed", fileCount.toString()])
-    );
-  }
-  
-  // Add calculation mode
-  collegeInfoTable.root.push(
-    createTableRow(["Calculation Mode", calculationModeDisplay])
-  );
   
   sections.push(collegeInfoTable);
   
@@ -943,7 +945,7 @@ function createTableCell(
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: AlignmentType;
+    alignment?: typeof AlignmentType;
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = AlignmentType.LEFT } = options;
@@ -971,7 +973,7 @@ function createHeaderCell(
   options: {
     colspan?: number;
     rowspan?: number;
-    alignment?: AlignmentType;
+    alignment?: typeof AlignmentType;
   } = {}
 ): TableCell {
   return createTableCell(text, true, {
