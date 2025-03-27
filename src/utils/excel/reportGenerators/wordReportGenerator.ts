@@ -533,7 +533,7 @@ const createWordDocument = async (
     sections.push(subjectAnalysisTable);
   }
   
-  // Classification Section - Modified to match the second image
+  // Classification Section - Modified to match exactly the provided image
   sections.push(
     new Paragraph({
       spacing: {
@@ -551,10 +551,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Classification Table - Exactly matching the second image's layout
-  const singleFileClassification = analysis.singleFileClassification;
-  const multipleFileClassification = analysis.multipleFileClassification;
-  
+  // Classification Table - Exactly matching the provided image layout
   const classificationTable = new Table({
     width: {
       size: 100,
@@ -568,8 +565,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Precise column widths to match the second image
-    columnWidths: [700, 550, 550, 550, 550, 450, 600, 700, 550, 550, 550, 550, 450, 600],
+    columnWidths: [1300, 650, 650, 650, 650, 600, 600, 1300, 650, 650, 650, 650, 600, 600],
     rows: [
       new TableRow({
         children: [
