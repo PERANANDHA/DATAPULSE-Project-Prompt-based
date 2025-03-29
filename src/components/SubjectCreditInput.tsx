@@ -3,14 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader } from 'lucide-react';
+import { Loader, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { useToast } from '@/hooks/use-toast';
 
 interface SubjectCredit {
   subjectCode: string;
   creditValue: number;
-  subjectName?: string; // Added subject name field
+  subjectName?: string;
+  facultyName?: string; // Added faculty name field
 }
 
 interface SubjectCreditInputProps {
@@ -29,12 +30,13 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize with default credit value of 3 and empty subject name
+    // Initialize with default credit value of 3, empty subject name, and empty faculty name
     if (uploadedSubjects.length > 0) {
       const initialCredits = uploadedSubjects.map((subject) => ({
         subjectCode: subject,
         creditValue: 3,
-        subjectName: ''
+        subjectName: '',
+        facultyName: '' // Initialize with empty faculty name
       }));
       setSubjectCredits(initialCredits);
       validateInputs(initialCredits);
@@ -70,6 +72,28 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     
     setSubjectCredits(updatedCredits);
     validateInputs(updatedCredits);
+  };
+
+  const handleFacultyNameChange = (subjectCode: string, name: string) => {
+    const updatedCredits = subjectCredits.map((credit) => 
+      credit.subjectCode === subjectCode 
+        ? { ...credit, facultyName: name } 
+        : credit
+    );
+    
+    setSubjectCredits(updatedCredits);
+    validateInputs(updatedCredits);
+  };
+
+  const handleRemoveSubject = (subjectCode: string) => {
+    const updatedCredits = subjectCredits.filter(credit => credit.subjectCode !== subjectCode);
+    setSubjectCredits(updatedCredits);
+    validateInputs(updatedCredits);
+    
+    toast({
+      title: "Subject removed",
+      description: `Subject ${subjectCode} has been removed from the list.`,
+    });
   };
 
   const validateInputs = (credits: SubjectCredit[]) => {
@@ -117,9 +141,9 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
   return (
     <Card className="col-span-1 lg:col-span-2 shadow-md">
       <CardHeader className="pb-2">
-        <CardTitle>Assign Subject Credits and Names</CardTitle>
+        <CardTitle>Assign Subject Details</CardTitle>
         <CardDescription>
-          Specify credit values (1-10) and names for each subject code found in the uploaded file(s).
+          Specify credit values (1-10), subject names and faculty names for each subject code found in the uploaded file(s).
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -130,6 +154,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
                 <TableHead>Subject Code</TableHead>
                 <TableHead>Credit Value</TableHead>
                 <TableHead>Subject Name</TableHead>
+                <TableHead>Faculty Name</TableHead>
+                <TableHead className="w-20">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -155,6 +181,25 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
                       className="w-full mx-auto"
                     />
                   </TableCell>
+                  <TableCell>
+                    <Input
+                      type="text"
+                      placeholder="Enter faculty name"
+                      value={subject.facultyName}
+                      onChange={(e) => handleFacultyNameChange(subject.subjectCode, e.target.value)}
+                      className="w-full mx-auto"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleRemoveSubject(subject.subjectCode)}
+                      className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -172,7 +217,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
                 Processing...
               </>
             ) : (
-              'Assign Credits & Process Data'
+              'Assign Details & Process Data'
             )}
           </Button>
         </div>

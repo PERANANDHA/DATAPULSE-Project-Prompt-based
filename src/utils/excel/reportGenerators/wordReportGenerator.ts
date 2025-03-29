@@ -421,7 +421,7 @@ const createWordDocument = async (
     sections.push(fileAnalysisTable);
   }
   
-  // End Semester Result Analysis Section - Using actual subject data
+  // End Semester Result Analysis Section - Using actual subject data with faculty names
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
     const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
     
@@ -464,7 +464,7 @@ const createWordDocument = async (
       }),
     ];
     
-    // Adding actual subject data instead of sample data
+    // Adding actual subject data with faculty names
     uniqueSubjects.forEach((subject, index) => {
       const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
       const totalStudents = subjectRecords.length;
@@ -484,11 +484,18 @@ const createWordDocument = async (
         ? subjectRecords.filter(record => record.GR === highestGrade).length 
         : 0;
       
-      // Try to find subject name from the creditValue property if available
+      // Get subject name and faculty name from the record if available
       let subjectName = "";
-      const recordWithCredit = subjectRecords.find(record => record.subjectName);
-      if (recordWithCredit && recordWithCredit.subjectName) {
-        subjectName = recordWithCredit.subjectName;
+      let facultyName = "";
+      
+      const recordWithInfo = subjectRecords.find(record => record.subjectName || record.facultyName);
+      if (recordWithInfo) {
+        if (recordWithInfo.subjectName) {
+          subjectName = recordWithInfo.subjectName;
+        }
+        if (recordWithInfo.facultyName) {
+          facultyName = recordWithInfo.facultyName;
+        }
       }
       
       subjectRows.push(
@@ -496,13 +503,13 @@ const createWordDocument = async (
           children: [
             createTableCell((index + 1).toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(subjectName, false, { alignment: 'CENTER', rightIndent: -0.06 }), // Use the subject name from data
-            createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),      // Faculty name not available
+            createTableCell(subjectName, false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(facultyName, false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(totalStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }), // Appeared students
-            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }),     // Absent - assuming 0
+            createTableCell(totalStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(failedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }),     // Withheld - assuming 0
+            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(passedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(passPercentage.toFixed(1), false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(highestGrade, false, { alignment: 'CENTER', rightIndent: -0.06 }),
@@ -525,7 +532,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Preserve original column width ratios but expand the table
+      // Keep original column widths but make the table wider
       columnWidths: [400, 800, 1000, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
