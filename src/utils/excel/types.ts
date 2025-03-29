@@ -1,4 +1,3 @@
-
 import JsPDF from 'jspdf';
 
 // Export interfaces for use in other components
@@ -9,6 +8,7 @@ export interface StudentRecord {
   SCODE: string;
   GR: string;
   creditValue?: number;
+  subjectName?: string; // Added for storing subject names
   fileSource?: string; // To track which file the record came from
 }
 

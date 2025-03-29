@@ -1,4 +1,3 @@
-
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
@@ -127,16 +126,25 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
   
   const totalGrades = records.filter(record => record.GR in gradePointMap).length;
   
-  // Subject-wise performance
-  const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number } } = {};
+  // Subject-wise performance - Now includes preservation of subject names
+  const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number; subjectName?: string } } = {};
   records.forEach(record => {
     // Skip records with invalid grades
     if (!(record.GR in gradePointMap)) return;
     
     const subject = record.SCODE;
     if (!subjectPerformanceMap[subject]) {
-      subjectPerformanceMap[subject] = { pass: 0, fail: 0, total: 0 };
+      subjectPerformanceMap[subject] = { 
+        pass: 0, 
+        fail: 0, 
+        total: 0,
+        subjectName: record.subjectName // Store subject name if available
+      };
+    } else if (record.subjectName && !subjectPerformanceMap[subject].subjectName) {
+      // Update subject name if it was previously not set but is now available
+      subjectPerformanceMap[subject].subjectName = record.subjectName;
     }
+    
     subjectPerformanceMap[subject].total++;
     if (record.GR !== 'U') {
       subjectPerformanceMap[subject].pass++;
@@ -149,6 +157,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     subject: subject,
     pass: data.total > 0 ? formatTo2Decimals((data.pass / data.total) * 100) : 0,
     fail: data.total > 0 ? formatTo2Decimals((data.fail / data.total) * 100) : 0,
+    subjectName: data.subjectName // Include subject name in the result
   }));
   
   // Top performers
@@ -246,7 +255,7 @@ export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
     cgpaAnalysis,
     singleFileClassification,
     multipleFileClassification,
-    currentSemesterFile // Add this to the result object so we can use it elsewhere
+    currentSemesterFile
   };
 };
 

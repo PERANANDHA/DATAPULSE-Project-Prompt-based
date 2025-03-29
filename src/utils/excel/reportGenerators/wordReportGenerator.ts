@@ -442,7 +442,7 @@ const createWordDocument = async (
       }),
     );
     
-    // Subject Analysis Table - Using exact dimensions from original template
+    // Subject Analysis Table - Make it wider while keeping proportions of columns
     const subjectRows = [
       new TableRow({
         tableHeader: true,
@@ -484,12 +484,19 @@ const createWordDocument = async (
         ? subjectRecords.filter(record => record.GR === highestGrade).length 
         : 0;
       
+      // Try to find subject name from the creditValue property if available
+      let subjectName = "";
+      const recordWithCredit = subjectRecords.find(record => record.subjectName);
+      if (recordWithCredit && recordWithCredit.subjectName) {
+        subjectName = recordWithCredit.subjectName;
+      }
+      
       subjectRows.push(
         new TableRow({
           children: [
             createTableCell((index + 1).toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }), // Using subject code as name, can be improved
+            createTableCell(subjectName, false, { alignment: 'CENTER', rightIndent: -0.06 }), // Use the subject name from data
             createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),      // Faculty name not available
             createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(totalStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }), // Appeared students
@@ -518,8 +525,8 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Keep original column widths exactly as they were
-      columnWidths: [400, 800, 800, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
+      // Preserve original column width ratios but expand the table
+      columnWidths: [400, 800, 1000, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
     
