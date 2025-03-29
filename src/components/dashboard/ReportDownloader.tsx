@@ -58,9 +58,6 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         downloadCSVReport(analysis, studentRecords);
       } else if (format === 'excel') {
         downloadExcelReport(analysis, studentRecords);
-      } else if (format === 'pdf') {
-        // This old version captures dashboard content as a PDF
-        await captureElementAsPdf('dashboard-content');
       }
       
       clearInterval(progressInterval);
@@ -118,7 +115,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         };
         
         if (selectedFormat === 'word') {
-          downloadWordReport(analysis, studentRecords, options);
+          await downloadWordReport(analysis, studentRecords, options);
         } else if (selectedFormat === 'pdf') {
           await downloadPdfReport(analysis, studentRecords, options);
         }
