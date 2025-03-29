@@ -8,7 +8,9 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Download, Loader, File, FileText, FileSpreadsheetIcon } from 'lucide-react';
-import { ResultAnalysis, StudentRecord, downloadCSVReport, downloadExcelReport, downloadWordReport, downloadPdfReport } from '@/utils/excelProcessor';
+import { ResultAnalysis, StudentRecord } from '@/utils/excel/types';
+import { downloadCSVReport, downloadExcelReport, downloadWordReport } from '@/utils/excelProcessor';
+import { downloadPdfReport, captureElementAsPdf } from '@/utils/excel/reportGenerators/pdfReportGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -39,8 +41,9 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       return;
     }
     
-    if (format === 'word') {
-      setSelectedFormat('word');
+    // If format requires department information, show dialog first
+    if (format === 'word' || format === 'pdf') {
+      setSelectedFormat(format);
       setIsDepartmentDialogOpen(true);
       return;
     }
@@ -56,7 +59,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       } else if (format === 'excel') {
         downloadExcelReport(analysis, studentRecords);
       } else if (format === 'pdf') {
-        await downloadPdfReport('dashboard-content');
+        // This old version captures dashboard content as a PDF
+        await captureElementAsPdf('dashboard-content');
       }
       
       clearInterval(progressInterval);
@@ -94,7 +98,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     }, 150);
   };
 
-  const handleConfirmDepartment = () => {
+  const handleConfirmDepartment = async () => {
     setIsDepartmentDialogOpen(false);
     setIsDownloading(true);
     setDownloadProgress(0);
@@ -102,16 +106,22 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     const progressInterval = startProgressSimulation();
     
     try {
-      if (selectedFormat === 'word' && analysis) {
-        // Updated to use the new logo image path
+      if (analysis) {
+        // Updated to use the college logo image path
         const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
         
-        downloadWordReport(analysis, studentRecords, {
+        const options = {
           logoImagePath: headerImagePath,
           department: departmentCode,
           departmentFullName: departmentFullName,
           calculationMode: calculationMode || 'sgpa'
-        });
+        };
+        
+        if (selectedFormat === 'word') {
+          downloadWordReport(analysis, studentRecords, options);
+        } else if (selectedFormat === 'pdf') {
+          await downloadPdfReport(analysis, studentRecords, options);
+        }
       }
       
       clearInterval(progressInterval);
