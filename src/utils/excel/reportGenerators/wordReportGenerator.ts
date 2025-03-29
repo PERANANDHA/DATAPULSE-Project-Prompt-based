@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
+import { calculateSGPA } from '../gradeUtils';
 
 interface WordReportOptions {
   logoImagePath?: string;
@@ -420,7 +421,7 @@ const createWordDocument = async (
     sections.push(fileAnalysisTable);
   }
   
-  // End Semester Result Analysis Section - Modified to match exactly the first image
+  // End Semester Result Analysis Section - Using actual subject data
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
     const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
     
@@ -441,7 +442,7 @@ const createWordDocument = async (
       }),
     );
     
-    // Subject Analysis Table - Exactly matching the first image's layout
+    // Subject Analysis Table - Using exact dimensions from original template
     const subjectRows = [
       new TableRow({
         tableHeader: true,
@@ -463,40 +464,42 @@ const createWordDocument = async (
       }),
     ];
     
-    // Adding sample data or using actual data if available
+    // Adding actual subject data instead of sample data
     uniqueSubjects.forEach((subject, index) => {
       const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
       const totalStudents = subjectRecords.length;
       const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
       const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;
-      const passPercentage = (passedStudents / totalStudents) * 100;
+      const passPercentage = totalStudents > 0 ? (passedStudents / totalStudents) * 100 : 0;
       
       // Find the highest grade
       const grades = subjectRecords.map(record => record.GR);
-      const highestGrade = grades.sort((a, b) => (gradePointMap[b] || 0) - (gradePointMap[a] || 0))[0];
+      const validGrades = grades.filter(grade => grade in gradePointMap);
+      const highestGrade = validGrades.length > 0 
+        ? validGrades.sort((a, b) => (gradePointMap[b] || 0) - (gradePointMap[a] || 0))[0] 
+        : '';
       
       // Count students with highest grade
-      const studentsWithHighestGrade = subjectRecords.filter(record => record.GR === highestGrade).length;
-      
-      // Format subject code to match the image
-      const formattedSubjectCode = `60 CS ${(index + 1).toString().padStart(3, '0')}`;
+      const studentsWithHighestGrade = highestGrade 
+        ? subjectRecords.filter(record => record.GR === highestGrade).length 
+        : 0;
       
       subjectRows.push(
         new TableRow({
           children: [
             createTableCell((index + 1).toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(formattedSubjectCode, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(`Subject ${index + 1}`, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }), // Using subject code as name, can be improved
+            createTableCell("", false, { alignment: 'CENTER', rightIndent: -0.06 }),      // Faculty name not available
             createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("97", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("Nil", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell(failedStudents === 0 ? "Nil" : failedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }), // WH (withheld)
-            createTableCell("93", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("95.9", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("O", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
-            createTableCell("13", false, { alignment: 'CENTER', rightIndent: -0.06 }), 
+            createTableCell(totalStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }), // Appeared students
+            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }),     // Absent - assuming 0
+            createTableCell(failedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }),     // Withheld - assuming 0
+            createTableCell(passedStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(passPercentage.toFixed(1), false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(highestGrade, false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(studentsWithHighestGrade.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
           ],
         })
       );
@@ -515,7 +518,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Updated column widths to fit within 6.4 inches while maintaining proportions
+      // Keep original column widths exactly as they were
       columnWidths: [400, 800, 800, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
@@ -541,7 +544,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Classification Table - Updated based on the image showing 108.7% preferred width, center alignment, and text wrapping
+  // Classification Table - Using original dimensions and styling
   const classificationTable = new Table({
     width: {
       size: 108.7,
@@ -555,7 +558,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Adjusted column widths to improve alignment for Distinction, Fail, and % of pass columns
+    // Keep original column widths
     columnWidths: [460, 460, 460, 460, 460, 300, 400, 460, 460, 460, 460, 460, 300, 400],
     rows: [
       // First row: Current semester | Upto this semester
@@ -634,7 +637,7 @@ const createWordDocument = async (
           }),
         ],
       }),
-      // Third row: WOA/WA headers - Modified to display WOA and WA in separate cells with column lines
+      // Third row: WOA/WA headers
       new TableRow({
         children: [
           // Skip Distinction cell (handled by rowspan above)
@@ -731,7 +734,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section
+  // Rank Analysis Section - Modified to use correct data sources
   sections.push(
     new Paragraph({
       spacing: {
@@ -749,14 +752,47 @@ const createWordDocument = async (
     }),
   );
   
-  // Rank Analysis Table - Only display top 3 students
-  const topPerformersBySGPA = analysis.topPerformers.slice(0, 3);
-  let topPerformersByCGPA: { id: string; cgpa: number }[] = [];
+  // For Rank Analysis, we need:
+  // 1. Current semester data (using only currentSemesterRecords)
+  // 2. Cumulative data (using all records)
   
-  if (analysis.cgpaAnalysis && analysis.cgpaAnalysis.toppersList) {
-    topPerformersByCGPA = analysis.cgpaAnalysis.toppersList.slice(0, 3);
+  // Prepare current semester rank data
+  let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
+  
+  // Get unique students from current semester
+  const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+  
+  // Calculate SGPA for current semester students
+  currentSemesterStudentIds.forEach(studentId => {
+    const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+    currentSemesterStudentData.push({ id: studentId, sgpa });
+  });
+  
+  // Sort by SGPA in descending order
+  currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
+  
+  // Get cumulative data (all semesters)
+  let cumulativeStudentData: { id: string; cgpa: number }[] = [];
+  
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    // Use CGPA data for multi-semester analysis
+    cumulativeStudentData = [...analysis.cgpaAnalysis.studentCGPAs];
+  } else {
+    // Use SGPA data for single semester
+    cumulativeStudentData = currentSemesterStudentData.map(student => ({
+      id: student.id,
+      cgpa: student.sgpa // For single semester, CGPA = SGPA
+    }));
   }
   
+  // Sort by CGPA in descending order
+  cumulativeStudentData.sort((a, b) => b.cgpa - a.cgpa);
+  
+  // Limit to top 3 for each
+  const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
+  const topCumulativeStudents = cumulativeStudentData.slice(0, 3);
+  
+  // Rank Analysis Table - Keep original dimensions while using correct data
   const rankRows = [
     new TableRow({
       children: [
@@ -777,20 +813,20 @@ const createWordDocument = async (
   ];
   
   // Add data rows - match the number of rows to display (limit to 3)
-  const maxRankRows = Math.max(topPerformersBySGPA.length, topPerformersByCGPA.length);
+  const maxRankRows = Math.max(topCurrentSemesterStudents.length, topCumulativeStudents.length);
   for (let i = 0; i < maxRankRows; i++) {
-    const sgpaData = topPerformersBySGPA[i] || { id: "", sgpa: 0 };
-    const cgpaData = topPerformersByCGPA[i] || { id: "", cgpa: 0 };
+    const sgpaData = topCurrentSemesterStudents[i] || { id: "", sgpa: 0 };
+    const cgpaData = topCumulativeStudents[i] || { id: "", cgpa: 0 };
     
     rankRows.push(
       new TableRow({
         children: [
           createTableCell((i + 1).toString()),
           createTableCell(sgpaData.id),
-          createTableCell(sgpaData.sgpa.toFixed(1)),
+          createTableCell(sgpaData.sgpa.toFixed(2)),
           createTableCell((i + 1).toString()),
           createTableCell(cgpaData.id),
-          createTableCell(cgpaData.cgpa.toFixed(1)),
+          createTableCell(cgpaData.cgpa.toFixed(2)),
         ],
       })
     );
@@ -809,7 +845,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Updated column widths to fit within 6.4 inches
+    // Keep original column widths
     columnWidths: [800, 2000, 1000, 800, 2000, 1000],
     rows: rankRows,
   });
@@ -990,7 +1026,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Updated column widths to fit within 6.4 inches
+    // Keep original column widths
     columnWidths: [1000, 2800, 1400, 3400],
     rows: studentRows,
   });
