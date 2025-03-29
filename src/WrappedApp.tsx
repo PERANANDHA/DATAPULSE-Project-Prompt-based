@@ -6,7 +6,7 @@ import AppWrapper from './components/AppWrapper';
 
 const WrappedApp = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL || "/"}>
       <AppWrapper>
         <App />
       </AppWrapper>
