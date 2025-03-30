@@ -1,4 +1,3 @@
-
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { ResultAnalysis, StudentRecord } from '../types';
@@ -110,9 +109,6 @@ export const downloadPdfReport = async (
   pdf.setFont('helvetica', 'bold');
   pdf.text("K.S. RANGASAMY COLLEGE OF TECHNOLOGY, TIRUCHENGODE - 637 215", 35, currentY + 10);
   pdf.text("(An Autonomous Institute Affiliated to Anna University, Chennai)", 35, currentY + 15);
-  
-  pdf.setFontSize(14);
-  pdf.text("RESULT ANALYSIS", 160, currentY + 10);
   
   currentY += 25; // Move down after the header
   
@@ -307,21 +303,23 @@ export const downloadPdfReport = async (
       let subjectName = "";
       let facultyName = "";
       
-      const recordWithInfo = subjectRecords.find(record => record.subjectName || record.facultyName);
-      if (recordWithInfo) {
-        if (recordWithInfo.subjectName) {
-          subjectName = recordWithInfo.subjectName;
+      // Check in all records for this subject to find the first one with subject or faculty info
+      for (const record of subjectRecords) {
+        if (record.subjectName && !subjectName) {
+          subjectName = record.subjectName;
         }
-        if (recordWithInfo.facultyName) {
-          facultyName = recordWithInfo.facultyName;
+        if (record.facultyName && !facultyName) {
+          facultyName = record.facultyName;
         }
+        // Break early if we've found both
+        if (subjectName && facultyName) break;
       }
       
       subjectAnalysisBody.push([
         (index + 1).toString(),
         subject,
-        subjectName,
-        facultyName,
+        subjectName || "", // Ensure empty string if null
+        facultyName || "", // Ensure empty string if null
         department,
         totalStudents.toString(),
         "0",

@@ -7,9 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Download, Loader, File, FileText, FileSpreadsheetIcon } from 'lucide-react';
+import { Download, Loader, File, FileText } from 'lucide-react';
 import { ResultAnalysis, StudentRecord } from '@/utils/excel/types';
-import { downloadCSVReport, downloadExcelReport, downloadWordReport } from '@/utils/excelProcessor';
+import { downloadWordReport } from '@/utils/excel/reportGenerators/wordReportGenerator';
 import { downloadPdfReport, captureElementAsPdf } from '@/utils/excel/reportGenerators/pdfReportGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -27,11 +27,11 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [departmentCode, setDepartmentCode] = useState('CSE');
   const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'word' | 'pdf' | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<'word' | 'pdf' | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const { toast } = useToast();
 
-  const handleDownloadReport = async (format: 'csv' | 'excel' | 'word' | 'pdf') => {
+  const handleDownloadReport = async (format: 'word' | 'pdf') => {
     if (!analysis || !studentRecords.length) {
       toast({
         variant: "destructive",
@@ -41,47 +41,9 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       return;
     }
     
-    // If format requires department information, show dialog first
-    if (format === 'word' || format === 'pdf') {
-      setSelectedFormat(format);
-      setIsDepartmentDialogOpen(true);
-      return;
-    }
-    
-    setIsDownloading(true);
-    setDownloadProgress(0);
-    
-    const progressInterval = startProgressSimulation();
-    
-    try {
-      if (format === 'csv') {
-        downloadCSVReport(analysis, studentRecords);
-      } else if (format === 'excel') {
-        downloadExcelReport(analysis, studentRecords);
-      }
-      
-      clearInterval(progressInterval);
-      setDownloadProgress(100);
-      
-      setTimeout(() => {
-        toast({
-          title: "Report downloaded",
-          description: `Your analysis report has been downloaded as ${format.toUpperCase()}.`,
-        });
-        setIsDownloading(false);
-        setDownloadProgress(0);
-      }, 500);
-    } catch (error) {
-      clearInterval(progressInterval);
-      console.error("Download error:", error);
-      toast({
-        variant: "destructive",
-        title: "Download failed",
-        description: "There was a problem generating your report. Please try again.",
-      });
-      setIsDownloading(false);
-      setDownloadProgress(0);
-    }
+    // Always show department dialog for both formats
+    setSelectedFormat(format);
+    setIsDepartmentDialogOpen(true);
   };
 
   const startProgressSimulation = () => {
@@ -97,6 +59,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
 
   const handleConfirmDepartment = async () => {
     setIsDepartmentDialogOpen(false);
+    
+    // Reset state to ensure clean start for each download
     setIsDownloading(true);
     setDownloadProgress(0);
     
@@ -129,6 +93,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
           title: "Report downloaded",
           description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
         });
+        
+        // Completely reset the state after download is complete
         setIsDownloading(false);
         setDownloadProgress(0);
         setSelectedFormat(null);
@@ -141,6 +107,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         title: "Download failed",
         description: "There was a problem generating your report. Please try again.",
       });
+      
+      // Reset state on error as well
       setIsDownloading(false);
       setDownloadProgress(0);
       setSelectedFormat(null);
@@ -184,14 +152,6 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
               <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
                 <FileText className="h-4 w-4 mr-2" />
                 <span>Download as Word</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDownloadReport('excel')}>
-                <FileSpreadsheetIcon className="h-4 w-4 mr-2" />
-                <span>Download as Excel</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDownloadReport('csv')}>
-                <Download className="h-4 w-4 mr-2" />
-                <span>Download as CSV</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
