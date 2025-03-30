@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,16 +82,52 @@
     overflow-x: hidden;
   }
 
-  /* Glass effect */
+  /* Enhanced Glass effect with better realism */
   .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
 
   .glass-card {
     @apply glass rounded-lg shadow-sm;
+  }
+  
+  /* Text shadow for better contrast on gradients */
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Enhanced gradient backgrounds */
+  .realistic-gradient {
+    @apply bg-gradient-to-br from-[#FF7E30] via-[#F97316] to-[#0284c7] opacity-75;
+  }
+
+  /* Updated depth effects */
+  .depth-decoration {
+    @apply absolute inset-0 z-0;
+  }
+
+  .depth-decoration::before {
+    content: "";
+    @apply absolute top-10 left-10 w-[45vw] h-[45vh] rounded-full bg-[#FF8F50] opacity-40 blur-3xl;
+  }
+
+  .depth-decoration::after {
+    content: "";
+    @apply absolute bottom-20 right-20 w-[40vw] h-[40vh] rounded-full bg-[#0EA5E9] opacity-40 blur-3xl;
+  }
+  
+  /* Paper texture for realism */
+  .paper-texture {
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiPjwvcmVjdD4KPHBhdGggZD0iTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVoiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMDIiIHN0cm9rZS13aWR0aD0iMSI+PC9wYXRoPgo8L3N2Zz4=');
+    opacity: 0.3;
   }
   
   /* Login page background patterns */
