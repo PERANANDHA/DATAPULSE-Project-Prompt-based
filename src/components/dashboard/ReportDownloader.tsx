@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu,
@@ -10,7 +10,7 @@ import {
 import { Download, Loader, File, FileText } from 'lucide-react';
 import { ResultAnalysis, StudentRecord } from '@/utils/excel/types';
 import { downloadWordReport } from '@/utils/excel/reportGenerators/wordReportGenerator';
-import { downloadPdfReport, captureElementAsPdf } from '@/utils/excel/reportGenerators/pdfReportGenerator';
+import { downloadPdfReport } from '@/utils/excel/reportGenerators/pdfReportGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -30,8 +30,9 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [selectedFormat, setSelectedFormat] = useState<'word' | 'pdf' | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const { toast } = useToast();
-
-  const handleDownloadReport = async (format: 'word' | 'pdf') => {
+  
+  // Create memoized handlers to prevent unnecessary re-renders
+  const handleDownloadReport = useCallback(async (format: 'word' | 'pdf') => {
     if (!analysis || !studentRecords.length) {
       toast({
         variant: "destructive",
@@ -41,13 +42,16 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       return;
     }
     
-    // Always show department dialog for both formats
-    setSelectedFormat(format);
-    setIsDepartmentDialogOpen(true);
-  };
+    // Only show department dialog if we're not already downloading
+    if (!isDownloading) {
+      setSelectedFormat(format);
+      setIsDepartmentDialogOpen(true);
+    }
+  }, [analysis, studentRecords, isDownloading, toast]);
 
-  const startProgressSimulation = () => {
-    return setInterval(() => {
+  const startProgressSimulation = useCallback(() => {
+    setDownloadProgress(0);
+    const timer = setInterval(() => {
       setDownloadProgress(prev => {
         if (prev >= 90) {
           return 90;
@@ -55,14 +59,15 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         return prev + Math.random() * 10;
       });
     }, 150);
-  };
-
-  const handleConfirmDepartment = async () => {
-    setIsDepartmentDialogOpen(false);
     
-    // Reset state to ensure clean start for each download
+    return timer;
+  }, []);
+
+  const handleConfirmDepartment = useCallback(async () => {
+    if (isDownloading) return; // Prevent multiple clicks
+    
+    setIsDepartmentDialogOpen(false);
     setIsDownloading(true);
-    setDownloadProgress(0);
     
     const progressInterval = startProgressSimulation();
     
@@ -88,17 +93,18 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       clearInterval(progressInterval);
       setDownloadProgress(100);
       
+      // Use a shorter timeout to improve perceived performance
       setTimeout(() => {
         toast({
           title: "Report downloaded",
           description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
         });
         
-        // Completely reset the state after download is complete
+        // Reset state after download is complete
         setIsDownloading(false);
         setDownloadProgress(0);
         setSelectedFormat(null);
-      }, 500);
+      }, 300);
     } catch (error) {
       clearInterval(progressInterval);
       console.error("Download error:", error);
@@ -108,12 +114,11 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         description: "There was a problem generating your report. Please try again.",
       });
       
-      // Reset state on error as well
       setIsDownloading(false);
       setDownloadProgress(0);
       setSelectedFormat(null);
     }
-  };
+  }, [analysis, studentRecords, departmentCode, departmentFullName, calculationMode, selectedFormat, toast, startProgressSimulation, isDownloading]);
 
   return (
     <>
@@ -158,7 +163,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         </div>
       </div>
       
-      <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
+      <Dialog open={isDepartmentDialogOpen && !isDownloading} onOpenChange={setIsDepartmentDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Department Information</DialogTitle>

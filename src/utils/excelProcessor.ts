@@ -1,8 +1,4 @@
 
-import * as XLSX from 'xlsx';
-import JsPDF from 'jspdf';
-import 'jspdf-autotable';
-
 // Export everything from the new module files
 export * from './excel/types';
 export * from './excel/gradeUtils';

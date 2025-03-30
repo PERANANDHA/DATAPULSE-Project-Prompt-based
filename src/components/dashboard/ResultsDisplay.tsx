@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Loader } from 'lucide-react';
 import { ResultAnalysis, StudentRecord } from '@/utils/excelProcessor';
@@ -14,6 +14,13 @@ interface ResultsDisplayProps {
   studentRecords: StudentRecord[];
   calculationMode: 'sgpa' | 'cgpa' | null;
 }
+
+// Memoize the components to prevent unnecessary re-renders
+const MemoizedAnalysisOverview = memo(AnalysisOverview);
+const MemoizedSubjectAnalysis = memo(SubjectAnalysis);
+const MemoizedStudentPerformance = memo(StudentPerformance);
+const MemoizedStudentSGPATable = memo(StudentSGPATable);
+const MemoizedReportDownloader = memo(ReportDownloader);
 
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ 
   analysis, 
@@ -66,13 +73,13 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       </div>
       
       <div className="w-full flex justify-center">
-        <AnalysisOverview analysis={analysis} calculationMode={calculationMode} />
+        <MemoizedAnalysisOverview analysis={analysis} calculationMode={calculationMode} />
       </div>
       
       {/* Show subject analysis in SGPA mode or for the current semester in CGPA mode */}
       {showSubjectAnalysis && (
         <div className="w-full flex justify-center">
-          <SubjectAnalysis 
+          <MemoizedSubjectAnalysis 
             analysis={analysis} 
             title={calculationMode === 'cgpa' ? `Current ${semesterLabel} Subject Performance` : undefined}
           />
@@ -80,15 +87,15 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       )}
       
       <div className="w-full flex justify-center">
-        <StudentPerformance analysis={analysis} calculationMode={calculationMode} />
+        <MemoizedStudentPerformance analysis={analysis} calculationMode={calculationMode} />
       </div>
       
       <div className="w-full flex justify-center">
-        <StudentSGPATable analysis={analysis} calculationMode={calculationMode} />
+        <MemoizedStudentSGPATable analysis={analysis} calculationMode={calculationMode} />
       </div>
       
       <div className="w-full flex justify-center">
-        <ReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
+        <MemoizedReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
       </div>
     </motion.div>
   );

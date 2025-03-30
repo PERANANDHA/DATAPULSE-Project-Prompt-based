@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -11,9 +12,9 @@ const Index = () => {
   // Use responsive text sizes
   const heroTitleSize = useBreakpointValue({
     base: "text-4xl",
-    sm: "text-5xl",
-    md: "text-6xl",
-    lg: "text-7xl"
+    sm: "text-6xl",
+    md: "text-7xl",
+    lg: "text-8xl"
   });
 
   const heroParagraphSize = useBreakpointValue({
@@ -114,18 +115,16 @@ const Index = () => {
                 </span>
               </motion.div>
               <motion.h2 
-                className={`${heroTitleSize || 'text-5xl'} font-extrabold tracking-tight mb-4 sm:mb-6 text-white`}
+                className={`${heroTitleSize || 'text-6xl'} font-extrabold tracking-tight mb-4 sm:mb-6 text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200`}
                 variants={fadeInUp}
               >
-                RESULT ANALYZER
+                DATAPULSE
               </motion.h2>
-              <motion.p 
-                className={`${heroParagraphSize || 'text-lg'} text-white font-medium mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-2 sm:px-4`}
+              <motion.div 
+                className="w-32 h-1 bg-gradient-to-r from-blue-300 to-blue-500 mx-auto my-4"
                 variants={fadeInUp}
-              >
-                A powerful platform designed for educational professionals to analyze, track, and improve student performance with just a few clicks.
-              </motion.p>
-              <motion.div variants={fadeInUp}>
+              ></motion.div>
+              <motion.div variants={fadeInUp} className="mt-6">
                 <Link to="/signup">
                   <Button 
                     size="lg" 
@@ -204,7 +203,7 @@ const Index = () => {
         <div className="container-centered px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-700 text-sm">
-              © {new Date().getFullYear()} Result Analyzer. All rights reserved.
+              © {new Date().getFullYear()} DataPulse. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="text-[#0EA5E9] hover:text-[#F97316] transition-colors text-sm">Privacy</a>
