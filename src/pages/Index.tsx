@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BarChart4, LineChart, FileSpreadsheet, Users } from 'lucide-react';
 import { useBreakpointValue } from '@/hooks/use-mobile';
-import PageBackground from '@/components/ui/PageBackground';
 
 const Index = () => {
   const [isHovered, setIsHovered] = useState(false);
@@ -69,9 +68,20 @@ const Index = () => {
   ];
 
   return (
-    <PageBackground variant="gradient">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Half Orange and Half Blue Background Design - Fixed overflow issue */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] to-[#0EA5E9] opacity-75 z-0"></div>
+      
+      {/* Decorative Elements - Adjusted positioning and z-index */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-black/20 backdrop-blur-sm"></div>
+        <div className="absolute top-10 left-10 w-40 md:w-60 h-40 md:h-60 rounded-full bg-orange-500 opacity-40 blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-40 md:w-60 h-40 md:h-60 rounded-full bg-blue-500 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-20 h-20 sm:w-40 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
+      </div>
+      
       {/* College Logo and Auth Buttons moved to the same section */}
-      <div className="p-4 flex justify-between items-center">
+      <div className="relative z-10 p-4 flex justify-between items-center">
         <div className="bg-white p-2 rounded-lg shadow-md inline-flex">
           <img 
             src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
@@ -90,8 +100,8 @@ const Index = () => {
         </div>
       </div>
 
-      <main className="flex-grow">
-        <section className="py-8 md:py-12 lg:py-20">
+      <main className="flex-grow relative z-10">
+        <section className="py-8 md:py-12 lg:py-16">
           <div className="container-centered px-4 sm:px-6">
             <motion.div 
               className="max-w-3xl mx-auto text-center"
@@ -105,7 +115,7 @@ const Index = () => {
                 </span>
               </motion.div>
               <motion.h2 
-                className={`${heroTitleSize || 'text-6xl'} font-extrabold tracking-tight mb-4 sm:mb-6 text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200 drop-shadow-lg`}
+                className={`${heroTitleSize || 'text-6xl'} font-extrabold tracking-tight mb-4 sm:mb-6 text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200`}
                 variants={fadeInUp}
               >
                 DATAPULSE
@@ -189,7 +199,7 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="py-4 sm:py-6 bg-white/95 backdrop-blur-sm">
+      <footer className="py-4 sm:py-6 relative z-10 bg-white/95 backdrop-blur-sm">
         <div className="container-centered px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-700 text-sm">
@@ -203,7 +213,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </PageBackground>
+    </div>
   );
 };
 

@@ -1,16 +1,15 @@
 
 import React from 'react';
-import PageBackground from './ui/PageBackground';
+import PageNavigator from './ui/PageNavigator';
 
 const AppWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <PageBackground variant="subtle">
-      <div className="app-wrapper">
-        <div className="pt-10">
-          {children}
-        </div>
+    <div className="app-wrapper">
+      <PageNavigator />
+      <div className="pt-10">
+        {children}
       </div>
-    </PageBackground>
+    </div>
   );
 };
 

@@ -59,10 +59,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="space-y-6 bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-lg flex flex-col items-center border border-blue-100/30"
+      className="space-y-6 bg-white p-6 rounded-lg shadow-md flex flex-col items-center"
     >
       <div className="mb-4 text-center w-full">
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-[#0EA5E9] to-[#F97316] bg-clip-text text-transparent">
+        <h2 className="text-xl font-semibold">
           {calculationMode === 'sgpa' ? 'SGPA Analysis Results' : 'CGPA Analysis Results'}
         </h2>
         <p className="text-muted-foreground">
@@ -97,10 +97,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       <div className="w-full flex justify-center">
         <MemoizedReportDownloader analysis={analysis} studentRecords={studentRecords} calculationMode={calculationMode} />
       </div>
-
-      {/* Decorative elements for the dashboard */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-      <div className="absolute bottom-40 left-20 w-72 h-72 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
     </motion.div>
   );
 };

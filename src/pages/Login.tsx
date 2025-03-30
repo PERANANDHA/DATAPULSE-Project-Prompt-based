@@ -15,9 +15,8 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useBreakpointValue } from '@/hooks/use-mobile';
-import PageBackground from '@/components/ui/PageBackground';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -91,9 +90,20 @@ const Login = () => {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
-    <PageBackground variant="gradient">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Orange and Blue Background Design - Fixed overflow issues */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-60 z-0"></div>
+      
+      {/* Decorative Elements - Better contained */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-black/15 backdrop-blur-sm"></div>
+        <div className="absolute top-20 left-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-orange-400 opacity-30 blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-20 sm:w-40 h-20 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
+      </div>
+      
       {/* College Logo - Adjusted for better positioning */}
-      <div className="p-4 flex">
+      <div className="relative z-10 p-4 flex">
         <div className="bg-white p-2 rounded-lg shadow-md">
           <img 
             src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
@@ -103,7 +113,7 @@ const Login = () => {
         </div>
       </div>
 
-      <div className="flex-grow flex items-center justify-center p-4">
+      <div className="flex-grow flex items-center justify-center p-4 relative z-10">
         <motion.div 
           className={`${formWidth || 'w-full max-w-md'}`}
           initial={{ opacity: 0, y: 20 }}
@@ -185,7 +195,7 @@ const Login = () => {
           </div>
         </motion.div>
       </div>
-    </PageBackground>
+    </div>
   );
 };
 

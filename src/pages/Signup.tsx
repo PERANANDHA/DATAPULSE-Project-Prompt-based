@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -15,7 +16,7 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { Eye, EyeOff, Check, X, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Check, X, AlertTriangle } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBreakpointValue } from '@/hooks/use-mobile';
-import PageBackground from '@/components/ui/PageBackground';
 
 // Enhanced password validation
 const signupSchema = z.object({
@@ -69,23 +69,27 @@ const Signup = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Responsive form width
   const formWidth = useBreakpointValue({
     base: "w-full",
     sm: "max-w-md",
     md: "max-w-lg"
   });
 
+  // Password validation criteria checks
   const hasMinLength = password.length >= 8;
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
   const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
 
+  // Load stored users from localStorage
   useEffect(() => {
     const storedUsers = localStorage.getItem('registeredUsers');
     if (storedUsers) {
       setExistingUsers(JSON.parse(storedUsers));
     } else {
+      // Initialize with empty array if no users exist
       localStorage.setItem('registeredUsers', JSON.stringify([]));
     }
   }, []);
@@ -105,6 +109,7 @@ const Signup = () => {
     },
   });
 
+  // Update password state when form field changes
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = e.target.value;
     setPassword(newPassword);
@@ -115,6 +120,7 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Check if email already exists
       if (existingUsers.some(user => user.email === values.email)) {
         toast({
           variant: "destructive",
@@ -125,6 +131,7 @@ const Signup = () => {
         return;
       }
       
+      // Check if staffId already exists
       if (existingUsers.some(user => user.staffId === values.staffId)) {
         toast({
           variant: "destructive",
@@ -135,6 +142,7 @@ const Signup = () => {
         return;
       }
       
+      // Check if phone number already exists
       if (existingUsers.some(user => user.phoneNumber === values.phoneNumber)) {
         toast({
           variant: "destructive",
@@ -145,16 +153,20 @@ const Signup = () => {
         return;
       }
       
+      // Check if the robot verification is completed
       if (!values.robotCheck) {
         setShowRobotCheck(true);
         setIsLoading(false);
         return;
       }
       
+      // In a real application, this would call an API
       console.log("Form values:", values);
       
+      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Store user details in localStorage for demo purposes
       const newUser = {
         name: values.name,
         email: values.email,
@@ -173,6 +185,7 @@ const Signup = () => {
         description: "You've successfully signed up. Redirecting to login...",
       });
       
+      // Redirect to login page after successful signup
       setTimeout(() => {
         navigate('/login');
       }, 1500);
@@ -193,8 +206,20 @@ const Signup = () => {
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
   return (
-    <PageBackground variant="gradient">
-      <div className="p-4 flex">
+    <div className="min-h-screen flex flex-col relative">
+      {/* Orange and Blue Background Design - Fixed overflow issues */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F97316] via-[#0EA5E9] to-[#33C3F0] opacity-60 z-0"></div>
+      
+      {/* Decorative Elements - Better contained */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-black/15 backdrop-blur-sm"></div>
+        <div className="absolute top-20 left-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-orange-400 opacity-30 blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-40 sm:w-60 h-40 sm:h-60 rounded-full bg-blue-400 opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-20 sm:w-40 h-20 sm:h-40 rounded-full bg-white opacity-20 blur-2xl"></div>
+      </div>
+      
+      {/* College Logo - Adjusted for better positioning */}
+      <div className="relative z-10 p-4 flex">
         <div className="bg-white p-2 rounded-lg shadow-md">
           <img 
             src="/lovable-uploads/c8d5fc43-569a-4b7e-9366-09b681f0e06f.png" 
@@ -204,7 +229,7 @@ const Signup = () => {
         </div>
       </div>
 
-      <div className="flex-grow flex items-center justify-center p-4">
+      <div className="flex-grow flex items-center justify-center p-4 relative z-10">
         <motion.div 
           className={`${formWidth || 'w-full max-w-md'}`}
           initial={{ opacity: 0, y: 20 }}
@@ -347,6 +372,7 @@ const Signup = () => {
                       </FormControl>
                       <FormMessage />
                       
+                      {/* Password strength indicators */}
                       <div className="mt-2 space-y-1">
                         <p className="text-xs font-medium">Password must contain:</p>
                         <div className="grid grid-cols-1 gap-1">
@@ -469,6 +495,7 @@ const Signup = () => {
         </motion.div>
       </div>
       
+      {/* Robot verification dialog */}
       <Dialog open={showRobotCheck} onOpenChange={setShowRobotCheck}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -491,7 +518,7 @@ const Signup = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </PageBackground>
+    </div>
   );
 };
 
