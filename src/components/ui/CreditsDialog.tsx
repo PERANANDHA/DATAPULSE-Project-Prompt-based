@@ -29,14 +29,18 @@ const CreditsDialog = () => {
           <div className="text-center">
             <h3 className="text-lg font-semibold text-muted-foreground mb-1">PROJECT LEAD</h3>
             <p className="text-xl font-bold">K L PERANANDHA</p>
+            <p className="text-sm text-muted-foreground mt-1">(BATCH: 2023-27)</p>
           </div>
           
           <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
           
           <div className="text-center">
             <h3 className="text-lg font-semibold text-muted-foreground mb-3">TEAM MEMBERS</h3>
-            <p className="text-xl font-bold mb-2">A SHANMUGESHWARA</p>
-            <p className="text-xl font-bold">R P ASHWINI</p>
+            <p className="text-xl font-bold mb-1">A SHANMUGESHWARA</p>
+            <p className="text-sm text-muted-foreground">(BATCH: 2023-27)</p>
+            <div className="my-2"></div>
+            <p className="text-xl font-bold mb-1">R P ASHWINI</p>
+            <p className="text-sm text-muted-foreground">(BATCH: 2023-27)</p>
           </div>
         </div>
       </DialogContent>

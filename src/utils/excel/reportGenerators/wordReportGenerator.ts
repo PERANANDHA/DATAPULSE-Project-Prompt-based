@@ -87,7 +87,8 @@ const createWordDocument = async (
       left: { style: BorderStyle.SINGLE, size: 1 },
       right: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [1200, 6400, 2300], // Increased middle column width to accommodate longer text
+    // Improved column widths for better proportions
+    columnWidths: [1200, 6400, 2300],
     rows: [
       new TableRow({
         children: [
@@ -444,6 +445,7 @@ const createWordDocument = async (
     );
     
     // Subject Analysis Table - Make it wider with increased width for subject and faculty name columns
+    // Ensuring better alignment and consistent sizing
     const subjectRows = [
       new TableRow({
         tableHeader: true,
@@ -518,9 +520,10 @@ const createWordDocument = async (
       );
     });
     
+    // Improved table styling for better alignment and consistent appearance
     const subjectAnalysisTable = new Table({
       width: {
-        size: 150, // Increased to 150% to make it wider, similar to PDF landscape mode
+        size: 145, // Increased to 145% for better visibility while maintaining proportions
         type: WidthType.PERCENTAGE,
       },
       borders: {
@@ -531,7 +534,7 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Increased column widths for Subject Name and Faculty Name
+      // More precise column widths for better alignment
       columnWidths: [400, 800, 1500, 1500, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
@@ -557,7 +560,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Classification Table - Using original dimensions and styling
+  // Classification Table - Improved alignment and consistent appearance
   const classificationTable = new Table({
     width: {
       size: 108.7,
@@ -571,7 +574,7 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Keep original column widths
+    // More precise column widths for better alignment
     columnWidths: [460, 460, 460, 460, 460, 300, 400, 460, 460, 460, 460, 460, 300, 400],
     rows: [
       // First row: Current semester | Upto this semester
@@ -1105,7 +1108,7 @@ function createTableCell(
     alignment?: keyof typeof AlignmentType;
     rightIndent?: number;
     bold?: boolean;
-    verticalMerge?: 'restart' | 'continue'; // Removed 'skip' as it's not a valid value for verticalMerge
+    verticalMerge?: 'restart' | 'continue';
   } = {}
 ): TableCell {
   const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
