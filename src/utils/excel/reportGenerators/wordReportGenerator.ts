@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA } from '../gradeUtils';
@@ -490,16 +489,14 @@ const createWordDocument = async (
       let subjectName = "";
       let facultyName = "";
       
-      // Check in all records for this subject to find the first one with subject or faculty info
-      for (const record of subjectRecords) {
-        if (record.subjectName && !subjectName) {
-          subjectName = record.subjectName;
+      const recordWithInfo = subjectRecords.find(record => record.subjectName || record.facultyName);
+      if (recordWithInfo) {
+        if (recordWithInfo.subjectName) {
+          subjectName = recordWithInfo.subjectName;
         }
-        if (record.facultyName && !facultyName) {
-          facultyName = record.facultyName;
+        if (recordWithInfo.facultyName) {
+          facultyName = recordWithInfo.facultyName;
         }
-        // Break early if we've found both
-        if (subjectName && facultyName) break;
       }
       
       subjectRows.push(
@@ -507,8 +504,8 @@ const createWordDocument = async (
           children: [
             createTableCell((index + 1).toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(subject, false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(subjectName || "", false, { alignment: 'CENTER', rightIndent: -0.06 }),
-            createTableCell(facultyName || "", false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(subjectName, false, { alignment: 'CENTER', rightIndent: -0.06 }),
+            createTableCell(facultyName, false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(department, false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell(totalStudents.toString(), false, { alignment: 'CENTER', rightIndent: -0.06 }),
             createTableCell("0", false, { alignment: 'CENTER', rightIndent: -0.06 }),

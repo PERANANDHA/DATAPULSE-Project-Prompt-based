@@ -10,8 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 interface SubjectCredit {
   subjectCode: string;
   creditValue: number;
-  subjectName: string; // Changed from optional to required
-  facultyName: string; // Changed from optional to required
+  subjectName?: string;
+  facultyName?: string; // Added faculty name field
 }
 
 interface SubjectCreditInputProps {
@@ -35,8 +35,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       const initialCredits = uploadedSubjects.map((subject) => ({
         subjectCode: subject,
         creditValue: 3,
-        subjectName: '', // Initialize with empty string
-        facultyName: '' // Initialize with empty string
+        subjectName: '',
+        facultyName: '' // Initialize with empty faculty name
       }));
       setSubjectCredits(initialCredits);
       validateInputs(initialCredits);
