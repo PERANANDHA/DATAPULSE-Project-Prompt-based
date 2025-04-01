@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +9,7 @@ import {
   type StudentRecord,
   type ResultAnalysis
 } from '@/utils/excelProcessor';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -22,6 +21,8 @@ import ResultsDisplay from '@/components/dashboard/ResultsDisplay';
 interface SubjectCredit {
   subjectCode: string;
   creditValue: number;
+  subjectName?: string;
+  facultyName?: string;
 }
 
 interface ProfileInfo {
@@ -98,16 +99,27 @@ const Dashboard = () => {
     setIsAnalyzing(true);
     
     try {
+      const subjectCodesToProcess = credits.map(credit => credit.subjectCode);
+      
       const recordsWithCredits = studentRecords.map(record => {
         const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
+        
+        if (creditInfo) {
+          return {
+            ...record,
+            creditValue: creditInfo.creditValue,
+            subjectName: creditInfo.subjectName,
+            facultyName: creditInfo.facultyName
+          };
+        }
+        
         return {
           ...record,
-          creditValue: creditInfo ? creditInfo.creditValue : 3
+          creditValue: 3
         };
       });
       
-      // Analyze all records without department filtering
-      const analysis = analyzeResults(recordsWithCredits);
+      const analysis = analyzeResults(recordsWithCredits, subjectCodesToProcess);
       setResultAnalysis(analysis);
       
       setIsAnalyzing(false);
@@ -269,7 +281,9 @@ const Dashboard = () => {
             <TabsContent value="results" className="space-y-6">
               <ResultsDisplay 
                 analysis={resultAnalysis} 
-                studentRecords={studentRecords}
+                studentRecords={studentRecords.filter(record => 
+                  subjectCredits.some(credit => credit.subjectCode === record.SCODE)
+                )}
                 calculationMode={calculationMode} 
               />
             </TabsContent>
@@ -281,11 +295,7 @@ const Dashboard = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Profile Information</DialogTitle>
-            <DialogDescription>
-              Your account details and information
-            </DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-4 py-2">
             <div className="flex flex-col space-y-1">
               <h3 className="text-sm font-medium text-muted-foreground">Name</h3>

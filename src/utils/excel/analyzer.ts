@@ -1,8 +1,14 @@
+
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
 // Analyze student records and generate comprehensive result analysis
-export const analyzeResults = (records: StudentRecord[]): ResultAnalysis => {
+export const analyzeResults = (records: StudentRecord[], assignedSubjects?: string[]): ResultAnalysis => {
+  // If assignedSubjects is provided, filter records to only include those subjects
+  if (assignedSubjects && assignedSubjects.length > 0) {
+    records = records.filter(record => assignedSubjects.includes(record.SCODE));
+  }
+  
   // Get unique files processed
   const filesProcessed = [...new Set(records.map(record => record.fileSource || 'Unknown'))];
   const fileCount = filesProcessed.length;

@@ -1,3 +1,4 @@
+
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { ResultAnalysis, StudentRecord } from '../types';
@@ -272,7 +273,7 @@ export const downloadPdfReport = async (
     pdf.text("End Semester Result Analysis", 10, currentY);
     currentY += 8;
     
-    // Subject Analysis Table
+    // Subject Analysis Table (made wider by adjusting column widths)
     const subjectAnalysisHead = [
       ["S.No", "Subject Code", "Subject Name", "Faculty Name", "Dept", "App", "Ab", "Fail", "WH", "Passed", "% of pass", "Highest Grade", "No. of students"]
     ];
@@ -332,38 +333,59 @@ export const downloadPdfReport = async (
       ]);
     });
     
-    pdf.autoTable({
-      startY: currentY,
-      head: subjectAnalysisHead,
-      body: subjectAnalysisBody,
-      theme: 'grid',
-      styles: {
-        fontSize: 8, // Smaller font to fit all columns
-        cellPadding: 2,
-      },
-      headStyles: {
-        fillColor: [240, 240, 240],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-      },
-      columnStyles: {
-        0: { cellWidth: 8 }, // S.No
-        1: { cellWidth: 18 }, // Subject Code
-        2: { cellWidth: 25 }, // Subject Name
-        3: { cellWidth: 25 }, // Faculty Name
-        4: { cellWidth: 10 }, // Dept
-        5: { cellWidth: 10 }, // App
-        6: { cellWidth: 8 }, // Ab
-        7: { cellWidth: 10 }, // Fail
-        8: { cellWidth: 8 }, // WH
-        9: { cellWidth: 12 }, // Passed
-        10: { cellWidth: 14 }, // % of pass
-        11: { cellWidth: 15 }, // Highest Grade
-        12: { cellWidth: 15 } // No. of students
-      }
-    });
-    
-    currentY = (pdf as any).lastAutoTable.finalY + 10;
+    // Make the table wider by adjusting column widths and using landscape for this page if needed
+    if (uniqueSubjects.length > 0) {
+      pdf.addPage('landscape');
+      currentY = 10;
+      
+      // Repeat header on the new page
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text("K.S. RANGASAMY COLLEGE OF TECHNOLOGY - END SEMESTER RESULT ANALYSIS", 60, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(14);
+      pdf.setTextColor(46, 49, 146);
+      pdf.text("End Semester Result Analysis", 10, currentY);
+      currentY += 8;
+      
+      pdf.autoTable({
+        startY: currentY,
+        head: subjectAnalysisHead,
+        body: subjectAnalysisBody,
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: [240, 240, 240],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+        },
+        columnStyles: {
+          0: { cellWidth: 10 }, // S.No
+          1: { cellWidth: 22 }, // Subject Code
+          2: { cellWidth: 40 }, // Subject Name (wider)
+          3: { cellWidth: 40 }, // Faculty Name (wider)
+          4: { cellWidth: 13 }, // Dept
+          5: { cellWidth: 13 }, // App
+          6: { cellWidth: 10 }, // Ab
+          7: { cellWidth: 13 }, // Fail
+          8: { cellWidth: 13 }, // WH
+          9: { cellWidth: 15 }, // Passed
+          10: { cellWidth: 17 }, // % of pass
+          11: { cellWidth: 17 }, // Highest Grade
+          12: { cellWidth: 17 }  // No. of students
+        }
+      });
+      
+      currentY = (pdf as any).lastAutoTable.finalY + 10;
+      
+      // Return to portrait for the rest of the report
+      pdf.addPage('portrait');
+      currentY = 10;
+    }
   }
   
   // Check if we need to add a new page
@@ -565,49 +587,6 @@ export const downloadPdfReport = async (
   });
   
   currentY = (pdf as any).lastAutoTable.finalY + 10;
-  
-  // Category Analysis Section
-  pdf.setFontSize(14);
-  pdf.setTextColor(46, 49, 146); // RGB color #2E3192
-  pdf.setFont('helvetica', 'bold');
-  pdf.text("Category Analysis", 10, currentY);
-  currentY += 8;
-  
-  // Category Analysis Table
-  const categoryHead = [["Category", "Grade Point"]];
-  const categoryBody = [
-    ["1. Distinction", ">= 8.5 and no history of arrears"],
-    ["2. First class", ">= 6.5"],
-    ["3. Second class", "< 6.5"]
-  ];
-  
-  pdf.autoTable({
-    startY: currentY,
-    head: categoryHead,
-    body: categoryBody,
-    theme: 'grid',
-    styles: {
-      fontSize: 10,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [240, 240, 240],
-      textColor: [0, 0, 0],
-      fontStyle: 'bold',
-    },
-    columnStyles: {
-      0: { cellWidth: 40 },
-      1: { cellWidth: 60 }
-    }
-  });
-  
-  currentY = (pdf as any).lastAutoTable.finalY + 10;
-  
-  // Check if we need to add a new page
-  if (currentY > 250) {
-    pdf.addPage();
-    currentY = 10;
-  }
   
   // Individual Student Performance Section
   pdf.setFontSize(14);
