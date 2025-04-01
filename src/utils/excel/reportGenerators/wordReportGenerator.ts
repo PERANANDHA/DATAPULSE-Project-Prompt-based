@@ -422,6 +422,7 @@ const createWordDocument = async (
   }
   
   // End Semester Result Analysis Section - Using actual subject data with faculty names
+  // Made table much wider to match exact PDF layout
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
     const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
     
@@ -442,7 +443,7 @@ const createWordDocument = async (
       }),
     );
     
-    // Subject Analysis Table - Make it wider while keeping proportions of columns
+    // Subject Analysis Table - Make it wider with increased width for subject and faculty name columns
     const subjectRows = [
       new TableRow({
         tableHeader: true,
@@ -521,7 +522,7 @@ const createWordDocument = async (
     
     const subjectAnalysisTable = new Table({
       width: {
-        size: 100,
+        size: 150, // Increased to 150% to make it wider, similar to PDF landscape mode
         type: WidthType.PERCENTAGE,
       },
       borders: {
@@ -532,8 +533,8 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // Keep original column widths but make the table wider
-      columnWidths: [400, 800, 1000, 800, 400, 350, 350, 400, 350, 450, 450, 450, 600],
+      // Increased column widths for Subject Name and Faculty Name
+      columnWidths: [400, 800, 1500, 1500, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
     
@@ -865,70 +866,6 @@ const createWordDocument = async (
   });
   
   sections.push(rankTable);
-  
-  // Category Analysis Section
-  sections.push(
-    new Paragraph({
-      spacing: {
-        before: 200,
-        after: 100,
-      },
-      children: [
-        new TextRun({
-          text: "Category Analysis",
-          bold: true,
-          size: 28,
-          color: "2E3192",
-        }),
-      ],
-    }),
-  );
-  
-  // Category Analysis Table
-  const categoryTable = new Table({
-    width: {
-      size: 100,
-      type: WidthType.PERCENTAGE,
-    },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1 },
-      bottom: { style: BorderStyle.SINGLE, size: 1 },
-      left: { style: BorderStyle.SINGLE, size: 1 },
-      right: { style: BorderStyle.SINGLE, size: 1 },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-    },
-    // Updated column widths to fit within 6.4 inches
-    columnWidths: [3000, 5600],
-    rows: [
-      new TableRow({
-        children: [
-          createHeaderCell("Category"),
-          createHeaderCell("Grade Point"),
-        ],
-      }),
-      new TableRow({
-        children: [
-          createTableCell("1. Distinction"),
-          createTableCell(">= 8.5 and no history of arrears"),
-        ],
-      }),
-      new TableRow({
-        children: [
-          createTableCell("2. First class"),
-          createTableCell(">= 6.5"),
-        ],
-      }),
-      new TableRow({
-        children: [
-          createTableCell("3. Second class"),
-          createTableCell("< 6.5"),
-        ],
-      }),
-    ],
-  });
-  
-  sections.push(categoryTable);
   
   // Individual Student Performance Section - ADDED FOR BOTH SGPA AND CGPA MODE
   sections.push(

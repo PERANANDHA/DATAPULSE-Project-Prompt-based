@@ -264,16 +264,27 @@ export const downloadPdfReport = async (
   }
   
   // End Semester Result Analysis Section - Using actual subject data with faculty names
+  // Made the table wider by using landscape orientation for this section
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
     const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
     
+    // Switch to landscape for this section to make the table wider
+    pdf.addPage('landscape');
+    currentY = 10;
+    
+    // Repeat header on the new page
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("K.S. RANGASAMY COLLEGE OF TECHNOLOGY - END SEMESTER RESULT ANALYSIS", 60, currentY);
+    currentY += 10;
+    
     pdf.setFontSize(14);
-    pdf.setTextColor(46, 49, 146); // RGB color #2E3192
+    pdf.setTextColor(46, 49, 146);
     pdf.setFont('helvetica', 'bold');
     pdf.text("End Semester Result Analysis", 10, currentY);
     currentY += 8;
     
-    // Subject Analysis Table (made wider by adjusting column widths)
+    // Subject Analysis Table (made wider by adjusting column widths in landscape orientation)
     const subjectAnalysisHead = [
       ["S.No", "Subject Code", "Subject Name", "Faculty Name", "Dept", "App", "Ab", "Fail", "WH", "Passed", "% of pass", "Highest Grade", "No. of students"]
     ];
@@ -333,59 +344,43 @@ export const downloadPdfReport = async (
       ]);
     });
     
-    // Make the table wider by adjusting column widths and using landscape for this page if needed
-    if (uniqueSubjects.length > 0) {
-      pdf.addPage('landscape');
-      currentY = 10;
-      
-      // Repeat header on the new page
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text("K.S. RANGASAMY COLLEGE OF TECHNOLOGY - END SEMESTER RESULT ANALYSIS", 60, currentY);
-      currentY += 10;
-      
-      pdf.setFontSize(14);
-      pdf.setTextColor(46, 49, 146);
-      pdf.text("End Semester Result Analysis", 10, currentY);
-      currentY += 8;
-      
-      pdf.autoTable({
-        startY: currentY,
-        head: subjectAnalysisHead,
-        body: subjectAnalysisBody,
-        theme: 'grid',
-        styles: {
-          fontSize: 9,
-          cellPadding: 3,
-        },
-        headStyles: {
-          fillColor: [240, 240, 240],
-          textColor: [0, 0, 0],
-          fontStyle: 'bold',
-        },
-        columnStyles: {
-          0: { cellWidth: 10 }, // S.No
-          1: { cellWidth: 22 }, // Subject Code
-          2: { cellWidth: 40 }, // Subject Name (wider)
-          3: { cellWidth: 40 }, // Faculty Name (wider)
-          4: { cellWidth: 13 }, // Dept
-          5: { cellWidth: 13 }, // App
-          6: { cellWidth: 10 }, // Ab
-          7: { cellWidth: 13 }, // Fail
-          8: { cellWidth: 13 }, // WH
-          9: { cellWidth: 15 }, // Passed
-          10: { cellWidth: 17 }, // % of pass
-          11: { cellWidth: 17 }, // Highest Grade
-          12: { cellWidth: 17 }  // No. of students
-        }
-      });
-      
-      currentY = (pdf as any).lastAutoTable.finalY + 10;
-      
-      // Return to portrait for the rest of the report
-      pdf.addPage('portrait');
-      currentY = 10;
-    }
+    // Make the table wider in landscape orientation with adjusted column widths
+    pdf.autoTable({
+      startY: currentY,
+      head: subjectAnalysisHead,
+      body: subjectAnalysisBody,
+      theme: 'grid',
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { cellWidth: 10 }, // S.No
+        1: { cellWidth: 22 }, // Subject Code
+        2: { cellWidth: 50 }, // Subject Name (wider)
+        3: { cellWidth: 50 }, // Faculty Name (wider)
+        4: { cellWidth: 13 }, // Dept
+        5: { cellWidth: 13 }, // App
+        6: { cellWidth: 10 }, // Ab
+        7: { cellWidth: 13 }, // Fail
+        8: { cellWidth: 13 }, // WH
+        9: { cellWidth: 15 }, // Passed
+        10: { cellWidth: 17 }, // % of pass
+        11: { cellWidth: 17 }, // Highest Grade
+        12: { cellWidth: 17 }  // No. of students
+      }
+    });
+    
+    currentY = (pdf as any).lastAutoTable.finalY + 10;
+    
+    // Return to portrait for the rest of the report
+    pdf.addPage('portrait');
+    currentY = 10;
   }
   
   // Check if we need to add a new page
