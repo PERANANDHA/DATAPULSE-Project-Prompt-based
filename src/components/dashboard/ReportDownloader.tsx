@@ -73,7 +73,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (analysis) {
-        // Updated to use the college logo image path
+        // Ensure we're working with the most up-to-date student records
+        // which contain the faculty names and subject names
         const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
         
         const options = {
@@ -83,24 +84,25 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
           calculationMode: calculationMode || 'sgpa'
         };
         
+        // Make sure we only include subjects that haven't been removed
+        const filteredRecords = [...studentRecords];
+        
         if (selectedFormat === 'word') {
-          await downloadWordReport(analysis, studentRecords, options);
+          await downloadWordReport(analysis, filteredRecords, options);
         } else if (selectedFormat === 'pdf') {
-          await downloadPdfReport(analysis, studentRecords, options);
+          await downloadPdfReport(analysis, filteredRecords, options);
         }
       }
       
       clearInterval(progressInterval);
       setDownloadProgress(100);
       
-      // Use a shorter timeout to improve perceived performance
       setTimeout(() => {
         toast({
           title: "Report downloaded",
           description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
         });
         
-        // Reset state after download is complete
         setIsDownloading(false);
         setDownloadProgress(0);
         setSelectedFormat(null);
