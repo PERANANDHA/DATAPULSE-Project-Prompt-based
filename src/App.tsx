@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import CreditsDialog from "./components/ui/CreditsDialog";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <div className="fixed bottom-4 right-4 z-50">
+        <CreditsDialog />
+      </div>
       <AnimatePresence mode="wait">
         <Routes>
           <Route path="/" element={<Index />} />

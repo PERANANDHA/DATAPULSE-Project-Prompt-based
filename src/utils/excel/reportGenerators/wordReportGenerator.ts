@@ -485,18 +485,16 @@ const createWordDocument = async (
         ? subjectRecords.filter(record => record.GR === highestGrade).length 
         : 0;
       
-      // Get subject name and faculty name from the record if available
+      // Find a record with subject name and faculty name
+      const recordWithInfo = subjectRecords.find(record => record.subjectName || record.facultyName);
+      
+      // Get subject name and faculty name
       let subjectName = "";
       let facultyName = "";
       
-      const recordWithInfo = subjectRecords.find(record => record.subjectName || record.facultyName);
       if (recordWithInfo) {
-        if (recordWithInfo.subjectName) {
-          subjectName = recordWithInfo.subjectName;
-        }
-        if (recordWithInfo.facultyName) {
-          facultyName = recordWithInfo.facultyName;
-        }
+        subjectName = recordWithInfo.subjectName || "";
+        facultyName = recordWithInfo.facultyName || "";
       }
       
       subjectRows.push(

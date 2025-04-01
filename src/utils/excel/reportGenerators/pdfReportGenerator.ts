@@ -311,27 +311,23 @@ export const downloadPdfReport = async (
         ? subjectRecords.filter(record => record.GR === highestGrade).length 
         : 0;
       
-      // Get subject name and faculty name from the record if available
+      // Find a subject record with subject name and faculty name
+      const recordWithSubjectInfo = subjectRecords.find(record => record.subjectName || record.facultyName);
+      
+      // Get subject name and faculty name
       let subjectName = "";
       let facultyName = "";
       
-      // Check in all records for this subject to find the first one with subject or faculty info
-      for (const record of subjectRecords) {
-        if (record.subjectName && !subjectName) {
-          subjectName = record.subjectName;
-        }
-        if (record.facultyName && !facultyName) {
-          facultyName = record.facultyName;
-        }
-        // Break early if we've found both
-        if (subjectName && facultyName) break;
+      if (recordWithSubjectInfo) {
+        subjectName = recordWithSubjectInfo.subjectName || "";
+        facultyName = recordWithSubjectInfo.facultyName || "";
       }
       
       subjectAnalysisBody.push([
         (index + 1).toString(),
         subject,
-        subjectName || "", // Ensure empty string if null
-        facultyName || "", // Ensure empty string if null
+        subjectName,
+        facultyName,
         department,
         totalStudents.toString(),
         "0",
