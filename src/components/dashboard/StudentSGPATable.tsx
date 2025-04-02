@@ -92,20 +92,20 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
                 </TableRow>
               ) : (
                 filteredStudents.map((student, index) => {
-                  // Calculate rank (index + 1)
+                  // Calculate rank (index + 1) based on the sorted order
                   const rank = index + 1;
                   // Highlight top 3 ranks
                   const isTopRank = rank <= 3;
                   
                   return (
                     <TableRow key={student.id} className={isTopRank ? "bg-muted/30" : ""}>
-                      {/* Rank column comes first now */}
+                      {/* Rank column now properly displays the actual rank number */}
                       <TableCell className="text-center">
                         {isTopRank ? (
                           <Badge variant={rank === 1 ? "default" : (rank === 2 ? "secondary" : "outline")} 
                                 className={rank === 1 ? "bg-amber-500" : 
                                            (rank === 2 ? "bg-slate-400" : "bg-amber-700/30")}>
-                            Rank {rank}
+                            {rank}
                           </Badge>
                         ) : rank}
                       </TableCell>
