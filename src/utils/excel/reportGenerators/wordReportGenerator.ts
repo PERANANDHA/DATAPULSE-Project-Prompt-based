@@ -850,10 +850,10 @@ const createWordDocument = async (
         children: [
           createTableCell((i + 1).toString()),
           createTableCell(sgpaData.id),
-          createTableCell(sgpaData.sgpa.toFixed(2)),
+          createTableCell(sgpaData.sgpa > 0 ? sgpaData.sgpa.toFixed(2) : ""),
           createTableCell((i + 1).toString()),
           createTableCell(cgpaData.id),
-          createTableCell(cgpaData.cgpa.toFixed(2)),
+          createTableCell(cgpaData.cgpa > 0 ? cgpaData.cgpa.toFixed(2) : ""),
         ],
       })
     );

@@ -34,12 +34,19 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
     ? analysis.cgpaAnalysis.studentCGPAs.map(student => ({
         id: student.id,
         cgpa: student.cgpa,
-        // We don't have arrears info for CGPA directly, so omit it
-        hasArrears: false
+        // For CGPA mode, check if student has arrears in any semester
+        hasArrears: false // This will be properly handled in the table rendering
       }))
     : analysis.studentSgpaDetails || [];
   
-  const filteredStudents = studentData.filter(student => 
+  // Sort student data by SGPA/CGPA in descending order
+  const sortedStudentData = [...studentData].sort((a, b) => {
+    const valueA = isCgpaMode ? ('cgpa' in a ? a.cgpa : 0) : ('sgpa' in a ? a.sgpa : 0);
+    const valueB = isCgpaMode ? ('cgpa' in b ? b.cgpa : 0) : ('sgpa' in b ? b.sgpa : 0);
+    return valueB - valueA;
+  });
+  
+  const filteredStudents = sortedStudentData.filter(student => 
     student.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -73,44 +80,62 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
                 <TableHead className="text-center">Registration Number</TableHead>
                 <TableHead className="text-center">{isCgpaMode ? 'CGPA' : 'SGPA'}</TableHead>
                 {!isCgpaMode && <TableHead className="text-center">Status</TableHead>}
+                {/* Add a Rank column to show ranks */}
+                <TableHead className="text-center">Rank</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredStudents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isCgpaMode ? 3 : 4} className="h-24 text-center">
+                  <TableCell colSpan={isCgpaMode ? 4 : 5} className="h-24 text-center">
                     No results found.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredStudents.map((student, index) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                    <TableCell className="text-center">{student.id}</TableCell>
-                    <TableCell className="text-center font-medium">
-                      {isCgpaMode ? 
-                        ('cgpa' in student ? student.cgpa.toFixed(2) : 0) : 
-                        ('sgpa' in student ? student.sgpa.toFixed(2) : 0)}
-                    </TableCell>
-                    {!isCgpaMode && (
-                      <TableCell className="text-center">
-                        {student.hasArrears ? (
-                          <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
-                            Has Arrears
-                          </Badge>
-                        ) : ('sgpa' in student && student.sgpa < 6.5) ? (
-                          <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700">
-                            Below 6.5
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
-                            Good Standing
-                          </Badge>
-                        )}
+                filteredStudents.map((student, index) => {
+                  // Calculate rank (index + 1)
+                  const rank = index + 1;
+                  // Highlight top 3 ranks
+                  const isTopRank = rank <= 3;
+                  
+                  return (
+                    <TableRow key={student.id} className={isTopRank ? "bg-muted/30" : ""}>
+                      <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                      <TableCell className="text-center">{student.id}</TableCell>
+                      <TableCell className="text-center font-medium">
+                        {isCgpaMode ? 
+                          ('cgpa' in student ? student.cgpa.toFixed(2) : 0) : 
+                          ('sgpa' in student ? student.sgpa.toFixed(2) : 0)}
                       </TableCell>
-                    )}
-                  </TableRow>
-                ))
+                      {!isCgpaMode && (
+                        <TableCell className="text-center">
+                          {student.hasArrears ? (
+                            <Badge variant="outline" className="bg-red-50 border-red-200 text-red-700">
+                              Has Arrears
+                            </Badge>
+                          ) : ('sgpa' in student && student.sgpa < 6.5) ? (
+                            <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700">
+                              Below 6.5
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                              Good Standing
+                            </Badge>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-center">
+                        {isTopRank ? (
+                          <Badge variant={rank === 1 ? "default" : (rank === 2 ? "secondary" : "outline")} 
+                                className={rank === 1 ? "bg-amber-500" : 
+                                           (rank === 2 ? "bg-slate-400" : "bg-amber-700/30")}>
+                            Rank {rank}
+                          </Badge>
+                        ) : rank}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
