@@ -1,4 +1,3 @@
-
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
@@ -50,7 +49,7 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   let highestSemValue = -1;
   
   // If multiple files, find the one with the highest semester number
-  if (fileCount > 1) {
+  if (fileCount > 0) {
     filesProcessed.forEach(fileName => {
       const fileRecords = fileGroups[fileName];
       if (fileRecords.length > 0) {
@@ -227,7 +226,7 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   
   // Classification table calculations - these follow the specified rules
   // For CGPA mode, current semester is the file with highest semester number
-  const currentSemesterRecords = fileCount > 1 ? fileGroups[currentSemesterFile] : records;
+  const currentSemesterRecords = currentSemesterFile ? fileGroups[currentSemesterFile] : records;
   const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecords.map(record => record.REGNO))].map(studentId => {
     const sgpa = calculateSGPA(currentSemesterRecords, studentId);
     return {

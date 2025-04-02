@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
-import { calculateSGPA } from '../gradeUtils';
+import { calculateSGPA, calculateCGPA } from '../gradeUtils';
 
 interface WordReportOptions {
   logoImagePath?: string;
@@ -205,7 +205,7 @@ const createWordDocument = async (
   }
   
   if (calculationMode === 'cgpa' && analysis.fileCount && analysis.fileCount > 1) {
-    // Use the current semester file determined by the analyzer
+    // MODIFIED: Use the current semester file determined by the analyzer (highest semester)
     const currentSemFile = analysis.currentSemesterFile || '';
     
     if (currentSemFile) {
@@ -282,7 +282,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Performance Text paragraphs - UPDATED WITH LARGER SIZE TO MATCH HEADERS BUT NOT BOLD
+  // MODIFIED: Performance Text paragraphs with correct values for SGPA/CGPA mode
   const performanceParagraphs = [];
   
   if (calculationMode === 'sgpa') {
@@ -314,7 +314,7 @@ const createWordDocument = async (
       }),
     );
   } else {
-    // For CGPA mode
+    // For CGPA mode - MODIFIED to use correct CGPA values
     if (analysis.cgpaAnalysis) {
       performanceParagraphs.push(
         new Paragraph({

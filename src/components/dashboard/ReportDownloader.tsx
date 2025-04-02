@@ -76,11 +76,14 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
         // Updated to use the college logo image path
         const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
         
+        // Get the correct calculation mode with fallback to 'sgpa'
+        const mode = calculationMode || 'sgpa';
+        
         const options = {
           logoImagePath: headerImagePath,
           department: departmentCode,
           departmentFullName: departmentFullName,
-          calculationMode: calculationMode || 'sgpa'
+          calculationMode: mode
         };
         
         if (selectedFormat === 'word') {
