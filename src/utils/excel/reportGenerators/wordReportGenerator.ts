@@ -750,7 +750,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section - UPDATED to use correct column headers and student data
+  // Rank Analysis Section - UPDATED to display actual student data
   sections.push(
     new Paragraph({
       spacing: {
@@ -768,7 +768,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Prepare current semester rank data - Complete overhaul to ensure we have actual student data
+  // Prepare current semester rank data with actual student information
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
   // Get unique students from current semester
@@ -785,7 +785,7 @@ const createWordDocument = async (
     }
   });
   
-  // Sort by SGPA in descending order
+  // Sort by SGPA in descending order to get top performers
   currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
   
   // Get cumulative data (all semesters)
@@ -817,7 +817,7 @@ const createWordDocument = async (
     topCumulativeStudents.push({ id: "-", cgpa: 0 });
   }
   
-  // Rank Analysis Table - Updated to show actual top 3 students
+  // Rank Analysis Table - Updated to show actual registration numbers and SGPA/CGPA values
   const rankRows = [
     new TableRow({
       children: [
@@ -837,7 +837,7 @@ const createWordDocument = async (
     }),
   ];
   
-  // Add data rows for top 3 ranks with actual student data
+  // Add data rows for top 3 ranks with actual student data, showing registration numbers
   for (let i = 0; i < 3; i++) {
     const currentSemStudent = topCurrentSemesterStudents[i];
     const cumulativeStudent = topCumulativeStudents[i];
@@ -846,10 +846,10 @@ const createWordDocument = async (
       new TableRow({
         children: [
           createTableCell((i + 1).toString()),
-          createTableCell(currentSemStudent.id),
+          createTableCell(currentSemStudent.id), // Registration number
           createTableCell(currentSemStudent.sgpa > 0 ? currentSemStudent.sgpa.toFixed(2) : "-"),
           createTableCell((i + 1).toString()),
-          createTableCell(cumulativeStudent.id),
+          createTableCell(cumulativeStudent.id), // Registration number
           createTableCell(cumulativeStudent.cgpa > 0 ? cumulativeStudent.cgpa.toFixed(2) : "-"),
         ],
       })
