@@ -750,7 +750,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section - UPDATED to display actual student data
+  // Rank Analysis Section - Fixed to properly display top three students
   sections.push(
     new Paragraph({
       spacing: {
@@ -768,7 +768,7 @@ const createWordDocument = async (
     }),
   );
   
-  // Prepare current semester rank data with actual student information
+  // Prepare current semester rank data - ensure we get actual student data
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
   // Get unique students from current semester
@@ -804,20 +804,11 @@ const createWordDocument = async (
     }));
   }
   
-  // Limit to top 3 for each category
+  // Get top 3 for each category - no placeholder values anymore
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
   const topCumulativeStudents = cumulativeStudentData.slice(0, 3);
   
-  // Ensure we have exactly 3 rows (even if we don't have 3 students)
-  while (topCurrentSemesterStudents.length < 3) {
-    topCurrentSemesterStudents.push({ id: "-", sgpa: 0 });
-  }
-  
-  while (topCumulativeStudents.length < 3) {
-    topCumulativeStudents.push({ id: "-", cgpa: 0 });
-  }
-  
-  // Rank Analysis Table - Updated to show actual registration numbers and SGPA/CGPA values
+  // Rank Analysis Table - Using actual registration numbers and SGPA/CGPA values
   const rankRows = [
     new TableRow({
       children: [
@@ -837,20 +828,30 @@ const createWordDocument = async (
     }),
   ];
   
-  // Add data rows for top 3 ranks with actual student data, showing registration numbers
+  // Add data rows for top 3 ranks with actual student data
   for (let i = 0; i < 3; i++) {
-    const currentSemStudent = topCurrentSemesterStudents[i];
-    const cumulativeStudent = topCumulativeStudents[i];
+    // Get current rank data or use placeholders if less than 3 students
+    const currentRank = i + 1;
+    const hasSemesterStudent = i < topCurrentSemesterStudents.length;
+    const hasCumulativeStudent = i < topCumulativeStudents.length;
+    
+    const currentSemStudent = hasSemesterStudent 
+      ? topCurrentSemesterStudents[i] 
+      : { id: "-", sgpa: 0 };
+      
+    const cumulativeStudent = hasCumulativeStudent 
+      ? topCumulativeStudents[i] 
+      : { id: "-", cgpa: 0 };
     
     rankRows.push(
       new TableRow({
         children: [
-          createTableCell((i + 1).toString()),
+          createTableCell(currentRank.toString()),
           createTableCell(currentSemStudent.id), // Registration number
-          createTableCell(currentSemStudent.sgpa > 0 ? currentSemStudent.sgpa.toFixed(2) : "-"),
-          createTableCell((i + 1).toString()),
+          createTableCell(hasSemesterStudent ? currentSemStudent.sgpa.toFixed(2) : "-"),
+          createTableCell(currentRank.toString()),
           createTableCell(cumulativeStudent.id), // Registration number
-          createTableCell(cumulativeStudent.cgpa > 0 ? cumulativeStudent.cgpa.toFixed(2) : "-"),
+          createTableCell(hasCumulativeStudent ? cumulativeStudent.cgpa.toFixed(2) : "-"),
         ],
       })
     );
