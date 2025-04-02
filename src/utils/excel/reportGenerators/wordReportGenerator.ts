@@ -781,7 +781,9 @@ const createWordDocument = async (
   // Calculate SGPA for current semester students
   currentSemesterStudentIds.forEach(studentId => {
     const sgpa = calculateSGPA(currentSemesterRecords, studentId);
-    currentSemesterStudentData.push({ id: studentId, sgpa });
+    if (sgpa > 0) { // Only include students with valid SGPAs
+      currentSemesterStudentData.push({ id: studentId, sgpa });
+    }
   });
   
   // Sort by SGPA in descending order
@@ -792,7 +794,8 @@ const createWordDocument = async (
   
   if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
     // Use CGPA data for multi-semester analysis
-    cumulativeStudentData = [...analysis.cgpaAnalysis.studentCGPAs];
+    cumulativeStudentData = [...analysis.cgpaAnalysis.studentCGPAs]
+      .filter(student => student.cgpa > 0); // Only include students with valid CGPAs
   } else {
     // Use SGPA data for single semester
     cumulativeStudentData = currentSemesterStudentData.map(student => ({
@@ -807,6 +810,15 @@ const createWordDocument = async (
   // Limit to top 3 for each
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
   const topCumulativeStudents = cumulativeStudentData.slice(0, 3);
+  
+  // Ensure we have at least 3 rows (even if we don't have 3 students)
+  while (topCurrentSemesterStudents.length < 3) {
+    topCurrentSemesterStudents.push({ id: "", sgpa: 0 });
+  }
+  
+  while (topCumulativeStudents.length < 3) {
+    topCumulativeStudents.push({ id: "", cgpa: 0 });
+  }
   
   // Rank Analysis Table - Keep original dimensions while using correct data
   const rankRows = [
@@ -828,9 +840,8 @@ const createWordDocument = async (
     }),
   ];
   
-  // Add data rows - match the number of rows to display (limit to 3)
-  const maxRankRows = Math.max(topCurrentSemesterStudents.length, topCumulativeStudents.length);
-  for (let i = 0; i < maxRankRows; i++) {
+  // Add data rows for exactly 3 ranks
+  for (let i = 0; i < 3; i++) {
     const sgpaData = topCurrentSemesterStudents[i] || { id: "", sgpa: 0 };
     const cgpaData = topCumulativeStudents[i] || { id: "", cgpa: 0 };
     
@@ -861,7 +872,6 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Keep original column widths
     columnWidths: [800, 2000, 1000, 800, 2000, 1000],
     rows: rankRows,
   });
@@ -978,7 +988,6 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // Keep original column widths
     columnWidths: [1000, 2800, 1400, 3400],
     rows: studentRows,
   });
