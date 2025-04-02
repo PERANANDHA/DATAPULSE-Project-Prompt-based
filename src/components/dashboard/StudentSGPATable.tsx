@@ -76,30 +76,36 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
           <Table>
             <TableHeader>
               <TableRow>
-                {/* Rank column comes first, replacing S.No */}
-                <TableHead className="text-center">Rank</TableHead>
-                <TableHead className="text-center">Registration Number</TableHead>
+                <TableHead className="text-center">S.No</TableHead>
+                <TableHead className="text-center">Name of the student</TableHead>
                 <TableHead className="text-center">{isCgpaMode ? 'CGPA' : 'SGPA'}</TableHead>
+                <TableHead className="text-center">Rank</TableHead>
                 {!isCgpaMode && <TableHead className="text-center">Status</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredStudents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isCgpaMode ? 3 : 4} className="h-24 text-center">
+                  <TableCell colSpan={isCgpaMode ? 4 : 5} className="h-24 text-center">
                     No results found.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredStudents.map((student, index) => {
-                  // Calculate rank (index + 1) based on the sorted order
+                  // Calculate rank based on the sorted order
                   const rank = index + 1;
                   // Highlight top 3 ranks
                   const isTopRank = rank <= 3;
                   
                   return (
                     <TableRow key={student.id} className={isTopRank ? "bg-muted/30" : ""}>
-                      {/* Rank column now properly displays the actual rank number */}
+                      <TableCell className="text-center">{index + 1}</TableCell>
+                      <TableCell className="text-center">{student.id}</TableCell>
+                      <TableCell className="text-center font-medium">
+                        {isCgpaMode ? 
+                          ('cgpa' in student ? student.cgpa.toFixed(2) : 0) : 
+                          ('sgpa' in student ? student.sgpa.toFixed(2) : 0)}
+                      </TableCell>
                       <TableCell className="text-center">
                         {isTopRank ? (
                           <Badge variant={rank === 1 ? "default" : (rank === 2 ? "secondary" : "outline")} 
@@ -108,12 +114,6 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
                             {rank}
                           </Badge>
                         ) : rank}
-                      </TableCell>
-                      <TableCell className="text-center">{student.id}</TableCell>
-                      <TableCell className="text-center font-medium">
-                        {isCgpaMode ? 
-                          ('cgpa' in student ? student.cgpa.toFixed(2) : 0) : 
-                          ('sgpa' in student ? student.sgpa.toFixed(2) : 0)}
                       </TableCell>
                       {!isCgpaMode && (
                         <TableCell className="text-center">
