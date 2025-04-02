@@ -750,7 +750,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section - UPDATED to use correct student data
+  // Rank Analysis Section - UPDATED to use correct column headers and student data
   sections.push(
     new Paragraph({
       spacing: {
@@ -827,10 +827,10 @@ const createWordDocument = async (
     }),
     new TableRow({
       children: [
-        createHeaderCell("S.No"),
+        createHeaderCell("RANK"),
         createHeaderCell("Name of the student"),
         createHeaderCell("SGPA"),
-        createHeaderCell("S.No"),
+        createHeaderCell("RANK"),
         createHeaderCell("Name of the student"),
         createHeaderCell("CGPA"),
       ],
