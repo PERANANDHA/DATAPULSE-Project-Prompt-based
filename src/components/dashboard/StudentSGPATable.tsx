@@ -13,25 +13,12 @@ interface StudentSGPATableProps {
 const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculationMode }) => {
   const isCgpaMode = calculationMode === 'cgpa';
   
-  // Get the appropriate student data based on calculation mode
-  const studentData = isCgpaMode && analysis.cgpaAnalysis?.studentCGPAs 
-    ? analysis.cgpaAnalysis.studentCGPAs.map(student => ({
-        id: student.id,
-        cgpa: student.cgpa,
-        // For CGPA mode, check if student has arrears in any semester
-        hasArrears: false // This will be properly handled in the table rendering
-      }))
-    : analysis.studentSgpaDetails || [];
-  
-  // Sort student data by SGPA/CGPA in descending order
-  const sortedStudentData = [...studentData].sort((a, b) => {
-    const valueA = isCgpaMode ? ('cgpa' in a ? a.cgpa : 0) : ('sgpa' in a ? a.sgpa : 0);
-    const valueB = isCgpaMode ? ('cgpa' in b ? b.cgpa : 0) : ('sgpa' in b ? b.sgpa : 0);
-    return valueB - valueA;
-  });
-  
-  // Get only top 3 students
-  const topThreeStudents = sortedStudentData.slice(0, 3);
+  // Hard-coded sample data as requested by the user
+  const topThreeStudents = [
+    { rank: 1, id: '10422086', sgpa: 9.78 },
+    { rank: 2, id: '10421033', sgpa: 9.67 },
+    { rank: 3, id: '10422078', sgpa: 9.67 }
+  ];
 
   return (
     <Card className="w-full mx-auto" style={{ maxWidth: '700px' }}>
@@ -56,36 +43,19 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
               </TableRow>
             </TableHeader>
             <TableBody>
-              {topThreeStudents.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No results found.
+              {topThreeStudents.map((student) => (
+                <TableRow key={student.id} className={student.rank <= 3 ? "bg-muted/30" : ""}>
+                  <TableCell className="text-center">
+                    <Badge variant={student.rank === 1 ? "default" : (student.rank === 2 ? "secondary" : "outline")} 
+                           className={student.rank === 1 ? "bg-amber-500" : 
+                                     (student.rank === 2 ? "bg-slate-400" : "bg-amber-700/30")}>
+                      {student.rank}
+                    </Badge>
                   </TableCell>
+                  <TableCell className="text-center">{student.id}</TableCell>
+                  <TableCell className="text-center font-medium">{student.sgpa.toFixed(2)}</TableCell>
                 </TableRow>
-              ) : (
-                topThreeStudents.map((student, index) => {
-                  // Calculate rank based on the sorted order
-                  const rank = index + 1;
-                  
-                  return (
-                    <TableRow key={student.id} className={rank <= 3 ? "bg-muted/30" : ""}>
-                      <TableCell className="text-center">
-                        <Badge variant={rank === 1 ? "default" : (rank === 2 ? "secondary" : "outline")} 
-                               className={rank === 1 ? "bg-amber-500" : 
-                                         (rank === 2 ? "bg-slate-400" : "bg-amber-700/30")}>
-                          {rank}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">{student.id}</TableCell>
-                      <TableCell className="text-center font-medium">
-                        {isCgpaMode ? 
-                          ('cgpa' in student ? student.cgpa.toFixed(2) : 0) : 
-                          ('sgpa' in student ? student.sgpa.toFixed(2) : 0)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
+              ))}
             </TableBody>
           </Table>
         </div>
