@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ResultAnalysis } from '@/utils/excelProcessor';
+import { ResultAnalysis } from '@/utils/excel/types';
 
 interface StudentPerformanceProps {
   analysis: ResultAnalysis;
@@ -27,7 +27,7 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
   analysis,
   calculationMode = 'sgpa'
 }) => {
-  // Use CGPA data when available and in CGPA mode
+  // Use CGPA data when in CGPA mode, otherwise use current semester SGPA data
   const topStudents: (SgpaStudent | CgpaStudent)[] = calculationMode === 'cgpa' && analysis.cgpaAnalysis?.toppersList 
     ? analysis.cgpaAnalysis.toppersList.slice(0, 6).map(student => ({
         id: student.id,

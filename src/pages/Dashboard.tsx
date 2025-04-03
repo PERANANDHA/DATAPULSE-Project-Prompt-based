@@ -132,9 +132,14 @@ const Dashboard = () => {
     setProgressPercentage(75); // Set progress to 75% when analysis starts
     
     try {
-      // Process records with credits information
-      const recordsWithCurrentCredits = studentRecords.map(record => {
-        const creditInfo = currentCredits.find(c => c.subjectCode === record.SCODE);
+      // Process records with credits information for both current and cumulative semester
+      const recordsWithCredits = studentRecords.map(record => {
+        // Check if the subject is in the current or cumulative credits
+        const currentCreditInfo = currentCredits.find(c => c.subjectCode === record.SCODE);
+        const cumulativeCreditInfo = cumulativeCredits.find(c => c.subjectCode === record.SCODE);
+        
+        // Prioritize current semester credit info if available, otherwise use cumulative
+        const creditInfo = currentCreditInfo || cumulativeCreditInfo;
         
         if (creditInfo) {
           return {
@@ -147,17 +152,16 @@ const Dashboard = () => {
         
         return {
           ...record,
-          creditValue: 3
+          creditValue: 3 // Default credit value if not found
         };
       });
       
-      // Current semester subject codes
+      // Current semester subject codes and cumulative semester subject codes
       const currentSubjectCodes = currentCredits.map(credit => credit.subjectCode);
-      // Cumulative semester subject codes
       const cumulativeSubjectCodes = cumulativeCredits.map(credit => credit.subjectCode);
       
-      // Generate analysis with the current semester subjects
-      const analysis = analyzeResults(recordsWithCurrentCredits, currentSubjectCodes);
+      // Generate analysis with both sets of subject codes
+      const analysis = analyzeResults(recordsWithCredits, currentSubjectCodes, cumulativeSubjectCodes);
       
       // Store both credit sets in the analysis for later use in reports
       const analysisWithBothCredits = {

@@ -1,13 +1,13 @@
+
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
 // Analyze student records and generate comprehensive result analysis
-export const analyzeResults = (records: StudentRecord[], assignedSubjects?: string[]): ResultAnalysis => {
-  // If assignedSubjects is provided, filter records to only include those subjects
-  if (assignedSubjects && assignedSubjects.length > 0) {
-    records = records.filter(record => assignedSubjects.includes(record.SCODE));
-  }
-  
+export const analyzeResults = (
+  records: StudentRecord[], 
+  currentSubjectCodes?: string[], 
+  cumulativeSubjectCodes?: string[]
+): ResultAnalysis => {
   // Get unique files processed
   const filesProcessed = [...new Set(records.map(record => record.fileSource || 'Unknown'))];
   const fileCount = filesProcessed.length;
@@ -63,14 +63,32 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     });
   }
   
+  // Filter records based on the subject codes provided
+  let currentSemesterRecords = records;
+  let cumulativeSemesterRecords = records;
+  
+  // If current semester subject codes are provided, filter records for current semester analysis
+  if (currentSubjectCodes && currentSubjectCodes.length > 0) {
+    currentSemesterRecords = records.filter(record => 
+      currentSubjectCodes.includes(record.SCODE)
+    );
+  }
+  
+  // If cumulative semester subject codes are provided, filter records for cumulative analysis
+  if (cumulativeSubjectCodes && cumulativeSubjectCodes.length > 0) {
+    cumulativeSemesterRecords = records.filter(record => 
+      cumulativeSubjectCodes.includes(record.SCODE)
+    );
+  }
+  
   // Calculate CGPA if multiple files - each file is treated as a separate semester
   let cgpaAnalysis;
   if (fileCount > 1) {
-    const studentIds = [...new Set(records.map(record => record.REGNO))];
+    const studentIds = [...new Set(cumulativeSemesterRecords.map(record => record.REGNO))];
     
     const studentCGPAs = studentIds.map(id => ({
       id,
-      cgpa: calculateCGPA(records, id, fileGroups)
+      cgpa: calculateCGPA(cumulativeSemesterRecords, id, fileGroups)
     }));
     
     // Sort by CGPA in descending order for toppers list
@@ -87,90 +105,121 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     };
   }
   
-  const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
+  // ===== Current Semester Analysis =====
+  const currentSemTotalStudents = [...new Set(currentSemesterRecords.map(record => record.REGNO))].length;
   
-  // Calculate SGPA for each student
-  const studentSgpaMap: { [studentId: string]: number } = {};
-  const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
+  // Calculate SGPA for each student in current semester
+  const currentSemStudentSgpaMap: { [studentId: string]: number } = {};
+  const currentSemStudentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
   
-  [...new Set(records.map(record => record.REGNO))].forEach(studentId => {
-    const sgpa = calculateSGPA(records, studentId);
-    studentSgpaMap[studentId] = sgpa;
-    studentSgpaDetails.push({
+  [...new Set(currentSemesterRecords.map(record => record.REGNO))].forEach(studentId => {
+    const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+    currentSemStudentSgpaMap[studentId] = sgpa;
+    currentSemStudentSgpaDetails.push({
       id: studentId,
       sgpa: sgpa,
-      hasArrears: hasArrears(records, studentId)
+      hasArrears: hasArrears(currentSemesterRecords, studentId)
     });
   });
   
   // Sort by registration number
-  studentSgpaDetails.sort((a, b) => a.id.localeCompare(b.id));
+  currentSemStudentSgpaDetails.sort((a, b) => a.id.localeCompare(b.id));
   
-  const averageCGPA = totalStudents > 0 ? 
-    formatTo2Decimals(studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents) : 0;
+  const currentSemAverageSGPA = currentSemTotalStudents > 0 ? 
+    formatTo2Decimals(currentSemStudentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / currentSemTotalStudents) : 0;
   
-  const highestSGPA = studentSgpaDetails.length > 0 ? 
-    formatTo2Decimals(Math.max(...studentSgpaDetails.map(student => student.sgpa))) : 0;
+  const currentSemHighestSGPA = currentSemStudentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.max(...currentSemStudentSgpaDetails.map(student => student.sgpa))) : 0;
   
-  const lowestSGPA = studentSgpaDetails.length > 0 ? 
-    formatTo2Decimals(Math.min(...studentSgpaDetails.map(student => student.sgpa))) : 0;
+  const currentSemLowestSGPA = currentSemStudentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.min(...currentSemStudentSgpaDetails.map(student => student.sgpa))) : 0;
   
-  // Grade distribution - filter out any non-standard grades
-  const gradeDistribution: { [grade: string]: number } = {};
-  records.forEach(record => {
+  // Current semester grade distribution
+  const currentSemGradeDistribution: { [grade: string]: number } = {};
+  currentSemesterRecords.forEach(record => {
     if (record.GR in gradePointMap) {
-      gradeDistribution[record.GR] = (gradeDistribution[record.GR] || 0) + 1;
+      currentSemGradeDistribution[record.GR] = (currentSemGradeDistribution[record.GR] || 0) + 1;
     }
   });
   
-  const gradeDistributionData = Object.entries(gradeDistribution).map(([grade, count]) => ({
+  const currentSemGradeDistributionData = Object.entries(currentSemGradeDistribution).map(([grade, count]) => ({
     name: grade,
     count: count,
     fill: getGradeColor(grade),
   }));
   
-  const totalGrades = records.filter(record => record.GR in gradePointMap).length;
+  // ===== Cumulative Semester Analysis =====
+  const cumulativeTotalStudents = [...new Set(cumulativeSemesterRecords.map(record => record.REGNO))].length;
   
-  // Subject-wise performance - Now includes preservation of subject names
-  const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number; subjectName?: string } } = {};
-  records.forEach(record => {
+  // Calculate SGPA for each student using cumulative data
+  const cumulativeStudentSgpaMap: { [studentId: string]: number } = {};
+  const cumulativeStudentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
+  
+  [...new Set(cumulativeSemesterRecords.map(record => record.REGNO))].forEach(studentId => {
+    const sgpa = calculateSGPA(cumulativeSemesterRecords, studentId);
+    cumulativeStudentSgpaMap[studentId] = sgpa;
+    cumulativeStudentSgpaDetails.push({
+      id: studentId,
+      sgpa: sgpa,
+      hasArrears: hasArrears(cumulativeSemesterRecords, studentId)
+    });
+  });
+  
+  // Sort by registration number
+  cumulativeStudentSgpaDetails.sort((a, b) => a.id.localeCompare(b.id));
+  
+  const cumulativeAverageSGPA = cumulativeTotalStudents > 0 ? 
+    formatTo2Decimals(cumulativeStudentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / cumulativeTotalStudents) : 0;
+  
+  const cumulativeHighestSGPA = cumulativeStudentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.max(...cumulativeStudentSgpaDetails.map(student => student.sgpa))) : 0;
+  
+  const cumulativeLowestSGPA = cumulativeStudentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.min(...cumulativeStudentSgpaDetails.map(student => student.sgpa))) : 0;
+  
+  // Get the total grades from the current semester records
+  const currentSemTotalGrades = currentSemesterRecords.filter(record => record.GR in gradePointMap).length;
+  
+  // Current semester subject performance
+  const currentSemSubjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number; subjectName?: string } } = {};
+  currentSemesterRecords.forEach(record => {
     // Skip records with invalid grades
     if (!(record.GR in gradePointMap)) return;
     
     const subject = record.SCODE;
-    if (!subjectPerformanceMap[subject]) {
-      subjectPerformanceMap[subject] = { 
+    if (!currentSemSubjectPerformanceMap[subject]) {
+      currentSemSubjectPerformanceMap[subject] = { 
         pass: 0, 
         fail: 0, 
         total: 0,
         subjectName: record.subjectName // Store subject name if available
       };
-    } else if (record.subjectName && !subjectPerformanceMap[subject].subjectName) {
+    } else if (record.subjectName && !currentSemSubjectPerformanceMap[subject].subjectName) {
       // Update subject name if it was previously not set but is now available
-      subjectPerformanceMap[subject].subjectName = record.subjectName;
+      currentSemSubjectPerformanceMap[subject].subjectName = record.subjectName;
     }
     
-    subjectPerformanceMap[subject].total++;
+    currentSemSubjectPerformanceMap[subject].total++;
     if (record.GR !== 'U') {
-      subjectPerformanceMap[subject].pass++;
+      currentSemSubjectPerformanceMap[subject].pass++;
     } else {
-      subjectPerformanceMap[subject].fail++;
+      currentSemSubjectPerformanceMap[subject].fail++;
     }
   });
   
-  const subjectPerformanceData = Object.entries(subjectPerformanceMap).map(([subject, data]) => ({
+  const currentSemSubjectPerformanceData = Object.entries(currentSemSubjectPerformanceMap).map(([subject, data]) => ({
     subject: subject,
     pass: data.total > 0 ? formatTo2Decimals((data.pass / data.total) * 100) : 0,
     fail: data.total > 0 ? formatTo2Decimals((data.fail / data.total) * 100) : 0,
     subjectName: data.subjectName // Include subject name in the result
   }));
   
-  // Top performers
-  const topPerformers = studentSgpaDetails
+  // Current semester top performers
+  const currentSemTopPerformers = currentSemStudentSgpaDetails
     .sort((a, b) => b.sgpa - a.sgpa)
     .slice(0, 6)
     .map(student => {
-      const studentRecords = records.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
+      const studentRecords = currentSemesterRecords.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
       const bestGrade = studentRecords.length > 0 ? 
         studentRecords.sort((a, b) => (gradePointMap[b.GR] || 0) - (gradePointMap[a.GR] || 0))[0].GR : 'A';
       return {
@@ -180,34 +229,34 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
       };
     });
   
-  // Needs improvement
-  const needsImprovement: { id: string; sgpa: number; subjects: string }[] = studentSgpaDetails
+  // Current semester needs improvement
+  const currentSemNeedsImprovement: { id: string; sgpa: number; subjects: string }[] = currentSemStudentSgpaDetails
     .filter(student => student.sgpa < 6.5 || student.hasArrears)
     .map(student => ({
       id: student.id,
       sgpa: student.sgpa,
-      subjects: hasArrears(records, student.id) ? getSubjectsWithArrears(records, student.id) : '',
+      subjects: hasArrears(currentSemesterRecords, student.id) ? getSubjectsWithArrears(currentSemesterRecords, student.id) : '',
     }));
   
-  // Pass/Fail data
-  const passCount = records.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
-  const failCount = records.filter(record => record.GR === 'U').length;
-  const totalValidGrades = passCount + failCount;
+  // Current semester pass/fail data
+  const currentSemPassCount = currentSemesterRecords.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
+  const currentSemFailCount = currentSemesterRecords.filter(record => record.GR === 'U').length;
+  const currentSemTotalValidGrades = currentSemPassCount + currentSemFailCount;
   
-  const passPercentage = totalValidGrades > 0 ? formatTo2Decimals((passCount / totalValidGrades) * 100) : 0;
-  const failPercentage = totalValidGrades > 0 ? formatTo2Decimals((failCount / totalValidGrades) * 100) : 0;
+  const currentSemPassPercentage = currentSemTotalValidGrades > 0 ? formatTo2Decimals((currentSemPassCount / currentSemTotalValidGrades) * 100) : 0;
+  const currentSemFailPercentage = currentSemTotalValidGrades > 0 ? formatTo2Decimals((currentSemFailCount / currentSemTotalValidGrades) * 100) : 0;
   
-  const passFailData = [
-    { name: 'Pass', value: passPercentage, fill: passFailColors.pass },
-    { name: 'Fail', value: failPercentage, fill: passFailColors.fail },
+  const currentSemPassFailData = [
+    { name: 'Pass', value: currentSemPassPercentage, fill: passFailColors.pass },
+    { name: 'Fail', value: currentSemFailPercentage, fill: passFailColors.fail },
   ];
 
-  // Subject-wise grade distribution
-  const subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] } = {};
-  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
+  // Current semester subject-wise grade distribution
+  const currentSemSubjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] } = {};
+  const currentSemUniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
 
-  uniqueSubjects.forEach(subject => {
-    const subjectRecords = records.filter(record => record.SCODE === subject);
+  currentSemUniqueSubjects.forEach(subject => {
+    const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
     const gradeCounts: { [grade: string]: number } = {};
 
     subjectRecords.forEach(record => {
@@ -217,54 +266,47 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
       }
     });
 
-    subjectGradeDistribution[subject] = Object.entries(gradeCounts).map(([grade, count]) => ({
+    currentSemSubjectGradeDistribution[subject] = Object.entries(gradeCounts).map(([grade, count]) => ({
       name: grade,
       count: count,
       fill: getGradeColor(grade),
     }));
   });
   
-  // Classification table calculations - these follow the specified rules
-  // For CGPA mode, current semester is the file with highest semester number
-  const currentSemesterRecords = currentSemesterFile ? fileGroups[currentSemesterFile] : records;
-  const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecords.map(record => record.REGNO))].map(studentId => {
-    const sgpa = calculateSGPA(currentSemesterRecords, studentId);
-    return {
-      id: studentId,
-      sgpa: sgpa,
-      hasArrears: hasArrears(currentSemesterRecords, studentId)
-    };
-  });
+  // Classification table calculations using cumulative semester data
+  // Calculate classification for single file/semester (current semester)
+  const singleFileClassification = calculateSingleFileClassification(currentSemesterRecords, currentSemStudentSgpaDetails);
   
-  const singleFileClassification = calculateSingleFileClassification(currentSemesterRecords, currentSemesterStudentSgpaDetails);
-  const multipleFileClassification = fileCount > 1 
-    ? calculateMultipleFileClassification(records, fileGroups, cgpaAnalysis)
-    : singleFileClassification; // Fallback to single file data if no multiple files
+  // Calculate classification for multiple files/semesters (cumulative)
+  const multipleFileClassification = calculateMultipleFileClassification(cumulativeSemesterRecords, cumulativeStudentSgpaDetails);
   
   return {
-    totalStudents,
-    averageCGPA,
-    highestSGPA,
-    lowestSGPA,
-    gradeDistribution: gradeDistributionData,
-    totalGrades,
-    subjectPerformance: subjectPerformanceData,
-    topPerformers,
-    needsImprovement,
-    studentSgpaDetails,
-    passFailData,
-    subjectGradeDistribution,
+    // We'll use current semester data for some parts and cumulative data for others
+    totalStudents: currentSemTotalStudents,
+    averageCGPA: currentSemAverageSGPA,
+    highestSGPA: currentSemHighestSGPA,
+    lowestSGPA: currentSemLowestSGPA,
+    gradeDistribution: currentSemGradeDistributionData,
+    totalGrades: currentSemTotalGrades,
+    subjectPerformance: currentSemSubjectPerformanceData,
+    topPerformers: currentSemTopPerformers,
+    needsImprovement: currentSemNeedsImprovement,
+    studentSgpaDetails: currentSemStudentSgpaDetails,
+    passFailData: currentSemPassFailData,
+    subjectGradeDistribution: currentSemSubjectGradeDistribution,
     fileCount,
     filesProcessed,
     fileWiseAnalysis,
     cgpaAnalysis,
     singleFileClassification,
     multipleFileClassification,
-    currentSemesterFile
+    currentSemesterFile,
+    // Store both sets of records for use in report generation
+    cumulativeStudentSgpaDetails
   };
 };
 
-// Calculate classification data for single file
+// Calculate classification data for single file/semester (current semester)
 const calculateSingleFileClassification = (
   records: StudentRecord[],
   studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[]
@@ -318,17 +360,10 @@ const calculateSingleFileClassification = (
   return classification;
 };
 
-// Calculate classification data for multiple files
+// Calculate classification data for multiple files/semesters (cumulative)
 const calculateMultipleFileClassification = (
   records: StudentRecord[],
-  fileGroups: { [fileName: string]: StudentRecord[] },
-  cgpaAnalysis?: {
-    studentCGPAs: { id: string; cgpa: number }[];
-    averageCGPA: number;
-    highestCGPA: number;
-    lowestCGPA: number;
-    currentSemesterFile?: string;
-  }
+  studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[]
 ) => {
   // Initialize counters
   const classification = {
@@ -338,40 +373,26 @@ const calculateMultipleFileClassification = (
     secondClassWOA: 0,
     secondClassWA: 0,
     fail: 0,
-    totalStudents: 0,
+    totalStudents: studentSgpaDetails.length,
     passPercentage: 0
   };
   
-  // Get unique student IDs
-  const studentIds = [...new Set(records.map(record => record.REGNO))];
-  classification.totalStudents = studentIds.length;
-  
-  // Process each student according to the specified rules for multiple files
-  studentIds.forEach(studentId => {
-    // Check if student has arrears in ANY semester
-    const hasArrearsInAnySemester = Object.keys(fileGroups).some(fileName => {
-      const fileRecords = fileGroups[fileName];
-      return hasArrears(fileRecords, studentId);
-    });
-    
-    // Get student's CGPA
-    const cgpaInfo = cgpaAnalysis?.studentCGPAs.find(s => s.id === studentId);
-    const cgpa = cgpaInfo?.cgpa || 0;
-    
-    if (hasArrearsInAnySemester) {
-      // Students with arrears in any semester
-      if (cgpa >= 6.5) {
+  // Process each student according to the specified rules
+  studentSgpaDetails.forEach(student => {
+    if (student.hasArrears) {
+      // Students with arrears
+      if (student.sgpa >= 6.5) {
         classification.firstClassWA++;
-      } else if (cgpa >= 5.0) {
+      } else if (student.sgpa >= 5.0) {
         classification.secondClassWA++;
       } else {
         classification.fail++;
       }
     } else {
-      // Students without arrears in any semester
-      if (cgpa >= 8.5) {
+      // Students without arrears
+      if (student.sgpa >= 8.5) {
         classification.distinction++;
-      } else if (cgpa >= 6.5) {
+      } else if (student.sgpa >= 6.5) {
         classification.firstClassWOA++;
       } else {
         classification.secondClassWOA++;
@@ -379,11 +400,11 @@ const calculateMultipleFileClassification = (
     }
   });
   
-  // Count U grades across all semesters for fail column
+  // Count U grades for fail column
   const failGradeCount = records.filter(record => record.GR === 'U').length;
   classification.fail = failGradeCount;
   
-  // Calculate overall pass percentage across all semesters
+  // Calculate pass percentage
   const totalGrades = records.length;
   const passGrades = records.filter(record => record.GR !== 'U').length;
   
