@@ -58,10 +58,6 @@ export interface ResultAnalysis {
   singleFileClassification: ClassificationData; // Classification for single file/semester
   multipleFileClassification: ClassificationData; // Classification for multiple files/semesters
   currentSemesterFile?: string; // Added for direct access to current semester file
-  currentSemesterCredits?: { subjectCode: string; creditValue: number; subjectName?: string; facultyName?: string }[]; // Added for storing current semester credit information
-  cumulativeSemesterCredits?: { subjectCode: string; creditValue: number; subjectName?: string; facultyName?: string }[]; // Added for storing cumulative semester credit information
-  currentSemesterSubjectCodes?: string[]; // Added for storing current semester subject codes for word report
-  cumulativeSemesterSubjectCodes?: string[]; // Added for storing cumulative semester subject codes for word report
 }
 
 // Re-export JsPDF with the autotable extension for use in other files
