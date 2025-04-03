@@ -1,37 +1,25 @@
+
 import React, { useState } from 'react';
 import { FileSpreadsheet, Trash2, Upload, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { parseExcelFile, parseMultipleExcelFiles, StudentRecord } from '@/utils/excelProcessor';
-import { Progress } from '@/components/ui/progress';
-import SubjectCreditInput from '@/components/SubjectCreditInput';
 
 interface FileUploaderProps {
   onRecordsUploaded: (records: StudentRecord[], subjects: string[]) => void;
   isUploading: boolean;
   setIsUploading: (status: boolean) => void;
   calculationMode: 'sgpa' | 'cgpa' | null;
-  onCurrentSemesterCreditsAssigned: (credits: any[]) => void;
-  onCumulativeCreditsAssigned: (credits: any[]) => void;
-  processingProgress: number;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({ 
   onRecordsUploaded, 
   isUploading, 
   setIsUploading,
-  calculationMode,
-  onCurrentSemesterCreditsAssigned,
-  onCumulativeCreditsAssigned,
-  processingProgress
+  calculationMode 
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const [uniqueSubjects, setUniqueSubjects] = useState<string[]>([]);
-  const [currentSemesterCredits, setCurrentSemesterCredits] = useState<any[]>([]);
-  const [cumulativeCredits, setCumulativeCredits] = useState<any[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,8 +105,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         description: `Parsed ${records.length} records from ${files.length} Excel file(s).`,
       });
       
-      setStudentRecords(records);
-      setUniqueSubjects(subjects);
       onRecordsUploaded(records, subjects);
       
     } catch (error) {
@@ -133,27 +119,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     }
   };
 
-  const handleCurrentSemesterCreditsAssigned = (credits: any[]) => {
-    setCurrentSemesterCredits(credits);
-    onCurrentSemesterCreditsAssigned(credits);
-    setIsAnalyzing(true);
-    
-    toast({
-      title: "Current semester credits assigned",
-      description: "Current semester subject credits have been successfully assigned.",
-    });
-  };
-
-  const handleCumulativeCreditsAssigned = (credits: any[]) => {
-    setCumulativeCredits(credits);
-    onCumulativeCreditsAssigned(credits);
-    
-    toast({
-      title: "Cumulative credits assigned",
-      description: "Cumulative subject credits have been successfully assigned.",
-    });
-  };
-
   const getUploadDescription = () => {
     if (calculationMode === 'sgpa') {
       return "Upload a single Excel file containing student results data for SGPA analysis.";
@@ -164,143 +129,104 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   };
 
   return (
-    <div className="space-y-6 w-full">
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            Upload Excel Files{calculationMode ? ` for ${calculationMode.toUpperCase()} Calculation` : ''}
-          </CardTitle>
-          <CardDescription>
-            {getUploadDescription()} Each file should contain columns: SEM (Semester),
-            REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div 
-              className="border-2 border-dashed border-input rounded-lg p-8 w-full flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => document.getElementById('file-upload')?.click()}
-            >
-              <input
-                id="file-upload"
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={handleFileChange}
-                multiple={calculationMode === 'cgpa'}
-              />
-              <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-sm font-medium">Drag and drop your files here or click to browse</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {calculationMode === 'sgpa' 
-                  ? "Supports a single .xlsx or .xls file" 
-                  : "Supports multiple .xlsx and .xls files (max 10)"}
-              </p>
-              
-              {files.length > 0 && (
-                <div className="mt-4 p-2 bg-secondary rounded-md w-full max-w-md">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="text-sm font-medium">{files.length} file(s) selected</p>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFiles([]);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {files.map((file, index) => (
-                      <div key={index} className="flex justify-between items-center py-1">
-                        <div className="flex items-center">
-                          <FileSpreadsheet className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="text-xs truncate max-w-[150px]">{file.name}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-xs text-muted-foreground mr-2">
-                            {(file.size / 1024).toFixed(2)} KB
-                          </span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFile(index);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileSpreadsheet className="h-5 w-5" />
+          Upload Excel Files{calculationMode ? ` for ${calculationMode.toUpperCase()} Calculation` : ''}
+        </CardTitle>
+        <CardDescription>
+          {getUploadDescription()} Each file should contain columns: SEM (Semester),
+          REGNO (Registration Number), SCODE (Subject Code), and GR (Grade).
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div 
+            className="border-2 border-dashed border-input rounded-lg p-8 w-full flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => document.getElementById('file-upload')?.click()}
+          >
+            <input
+              id="file-upload"
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleFileChange}
+              multiple={calculationMode === 'cgpa'}
+            />
+            <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-4" />
+            <p className="text-sm font-medium">Drag and drop your files here or click to browse</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {calculationMode === 'sgpa' 
+                ? "Supports a single .xlsx or .xls file" 
+                : "Supports multiple .xlsx and .xls files (max 10)"}
+            </p>
             
-            <Button 
-              onClick={handleUpload} 
-              disabled={files.length === 0 || isUploading}
-              className="w-full max-w-md"
-            >
-              {isUploading ? (
-                <>
-                  <Loader className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload {files.length > 1 ? 'Files' : 'File'}
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {uniqueSubjects.length > 0 && (
-        <>
-          <SubjectCreditInput 
-            uploadedSubjects={uniqueSubjects}
-            onCreditAssigned={handleCurrentSemesterCreditsAssigned}
-            isProcessing={isAnalyzing}
-            title="Assign Subject Details for CURRENT SEMESTER"
-            description="Specify credit values, subject names and faculty names for the current semester subjects."
-          />
-
-          <SubjectCreditInput 
-            uploadedSubjects={uniqueSubjects}
-            onCreditAssigned={handleCumulativeCreditsAssigned}
-            isProcessing={isAnalyzing}
-            title="Assign Subject Details FOR UPTO THIS SEMESTER"
-            description="Specify credit values, subject names and faculty names for all subjects up to this semester."
-          />
-
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle>Analysis Progress</CardTitle>
-              <CardDescription>
-                Complete both subject details assignments to proceed to the analysis.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Progress value={processingProgress} />
-                <div className="text-sm text-muted-foreground text-right">
-                  {processingProgress}% Complete
+            {files.length > 0 && (
+              <div className="mt-4 p-2 bg-secondary rounded-md w-full max-w-md">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm font-medium">{files.length} file(s) selected</p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFiles([]);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  {files.map((file, index) => (
+                    <div key={index} className="flex justify-between items-center py-1">
+                      <div className="flex items-center">
+                        <FileSpreadsheet className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-xs truncate max-w-[150px]">{file.name}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-xs text-muted-foreground mr-2">
+                          {(file.size / 1024).toFixed(2)} KB
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(index);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
-    </div>
+            )}
+          </div>
+          
+          <Button 
+            onClick={handleUpload} 
+            disabled={files.length === 0 || isUploading}
+            className="w-full max-w-md"
+          >
+            {isUploading ? (
+              <>
+                <Loader className="h-4 w-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload {files.length > 1 ? 'Files' : 'File'}
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
