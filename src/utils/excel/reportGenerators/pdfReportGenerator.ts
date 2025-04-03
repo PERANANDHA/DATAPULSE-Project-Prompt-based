@@ -235,14 +235,14 @@ export const downloadPdfReport = async (
     currentY = (pdf as any).lastAutoTable.finalY + 10;
   }
   
-  // Get records based on current semester subject codes for "End Semester Result Analysis"
   let currentSemesterRecords = records;
   
-  // Filter records for current semester analysis based on currentSemesterSubjectCodes
-  if (analysis.currentSemesterSubjectCodes && analysis.currentSemesterSubjectCodes.length > 0) {
-    currentSemesterRecords = records.filter(record => 
-      analysis.currentSemesterSubjectCodes?.includes(record.SCODE)
-    );
+  if (calculationMode === 'cgpa' && analysis.fileCount && analysis.fileCount > 1) {
+    const currentSemFile = analysis.currentSemesterFile || '';
+    
+    if (currentSemFile) {
+      currentSemesterRecords = records.filter(record => record.fileSource === currentSemFile);
+    }
   }
   
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
@@ -360,7 +360,6 @@ export const downloadPdfReport = async (
     currentY = 10;
   }
   
-  // For classification, use the cumulative semester data (from "Subject Credits FOR UPTO THIS SEMESTER")
   pdf.setFontSize(14);
   pdf.setTextColor(46, 49, 146);
   pdf.setFont('helvetica', 'bold');
@@ -454,38 +453,26 @@ export const downloadPdfReport = async (
     currentY = 10;
   }
   
-  // For rank analysis, use the cumulative semester data
   pdf.setFontSize(14);
   pdf.setTextColor(46, 49, 146);
   pdf.setFont('helvetica', 'bold');
   pdf.text("Rank Analysis", 10, currentY);
   currentY += 8;
   
-  // Use either current semester data or cumulative semester data depending on the mode
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
-  // For current semester rank data, use filtered current semester records
-  if (analysis.studentSgpaDetails) {
-    currentSemesterStudentData = analysis.studentSgpaDetails.map(student => ({
-      id: student.id, 
-      sgpa: student.sgpa
-    }));
-  }
+  const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
   
-  // For cumulative rank data, use the cumulative semester records or CGPA data
+  currentSemesterStudentIds.forEach(studentId => {
+    const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+    currentSemesterStudentData.push({ id: studentId, sgpa });
+  });
+  
   let cumulativeStudentData: { id: string; cgpa: number }[] = [];
   
   if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
-    // In CGPA mode, use the CGPA data
     cumulativeStudentData = [...analysis.cgpaAnalysis.studentCGPAs];
-  } else if (analysis.cumulativeStudentSgpaDetails) {
-    // In SGPA mode, use the cumulative semester data
-    cumulativeStudentData = analysis.cumulativeStudentSgpaDetails.map(student => ({
-      id: student.id,
-      cgpa: student.sgpa
-    }));
   } else {
-    // Fallback to current semester data
     cumulativeStudentData = currentSemesterStudentData.map(student => ({
       id: student.id,
       cgpa: student.sgpa
@@ -563,9 +550,7 @@ export const downloadPdfReport = async (
   
   let studentPerformanceData = [];
   
-  // Determine which data to use for Individual Student Performance
   if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
-    // In SGPA mode, use current semester data
     studentPerformanceData = [...analysis.studentSgpaDetails]
       .sort((a, b) => b.sgpa - a.sgpa)
       .map(student => ({
@@ -574,11 +559,9 @@ export const downloadPdfReport = async (
         hasArrears: student.hasArrears
       }));
   } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
-    // In CGPA mode, use cumulative data (CGPA)
     studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
       .sort((a, b) => b.cgpa - a.cgpa)
       .map(student => {
-        // Check if student has arrears in any cumulative records
         const hasArrears = records.some(record => 
           record.REGNO === student.id && record.GR === 'U'
         );

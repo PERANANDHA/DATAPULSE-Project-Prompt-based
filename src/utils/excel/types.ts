@@ -36,7 +36,6 @@ export interface ResultAnalysis {
   topPerformers: { id: string; sgpa: number; grade: string }[];
   needsImprovement: { id: string; sgpa: number; subjects: string }[];
   studentSgpaDetails?: { id: string; sgpa: number; hasArrears: boolean }[];
-  cumulativeStudentSgpaDetails?: { id: string; sgpa: number; hasArrears: boolean }[]; // Added for cumulative data
   passFailData: { name: string; value: number; fill: string }[];
   subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] };
   fileCount?: number; // Number of files processed
