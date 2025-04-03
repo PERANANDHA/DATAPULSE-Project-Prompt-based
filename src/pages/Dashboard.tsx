@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress'; // Added Progress import
 import SubjectCreditInput from '@/components/SubjectCreditInput';
 import ProfileButton from "@/components/ui/ProfileButton";
 import FileUploader from '@/components/dashboard/FileUploader';
@@ -49,6 +50,7 @@ const Dashboard = () => {
   const [cumulativeSemesterCredits, setCumulativeSemesterCredits] = useState<SubjectCredit[]>([]);
   const [currentSemesterCreditsAssigned, setCurrentSemesterCreditsAssigned] = useState(false);
   const [cumulativeSemesterCreditsAssigned, setCumulativeSemesterCreditsAssigned] = useState(false);
+  const [progressPercentage, setProgressPercentage] = useState(0); // Added progress percentage state
   const [profileOpen, setProfileOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -81,21 +83,23 @@ const Dashboard = () => {
     setCumulativeSemesterCredits([]);
     setCurrentSemesterCreditsAssigned(false);
     setCumulativeSemesterCreditsAssigned(false);
+    setProgressPercentage(0); // Reset progress when new records are uploaded
     setIsUploading(false);
   };
 
   const handleCurrentSemesterCreditAssigned = (credits: SubjectCredit[]) => {
     setCurrentSemesterCredits(credits);
     setCurrentSemesterCreditsAssigned(true);
+    setProgressPercentage(50); // Set progress to 50% when current semester credits are assigned
+    
+    toast({
+      title: "Current semester credits assigned",
+      description: "Please also assign credits for cumulative data up to this semester",
+    });
     
     // Only proceed to analysis if both current and cumulative credits are assigned
     if (cumulativeSemesterCreditsAssigned) {
       analyzeData(credits, cumulativeSemesterCredits);
-    } else {
-      toast({
-        title: "Current semester credits assigned",
-        description: "Please also assign credits for cumulative data up to this semester",
-      });
     }
   };
   
@@ -103,14 +107,14 @@ const Dashboard = () => {
     setCumulativeSemesterCredits(credits);
     setCumulativeSemesterCreditsAssigned(true);
     
+    toast({
+      title: "Cumulative semester credits assigned",
+      description: "Please also assign credits for the current semester",
+    });
+    
     // Only proceed to analysis if both current and cumulative credits are assigned
     if (currentSemesterCreditsAssigned) {
       analyzeData(currentSemesterCredits, credits);
-    } else {
-      toast({
-        title: "Cumulative semester credits assigned",
-        description: "Please also assign credits for the current semester",
-      });
     }
   };
 
@@ -125,12 +129,11 @@ const Dashboard = () => {
     }
     
     setIsAnalyzing(true);
+    setProgressPercentage(75); // Set progress to 75% when analysis starts
     
     try {
-      // Process with current semester credits for current semester analysis
-      const currentSubjectCodes = currentCredits.map(credit => credit.subjectCode);
-      
-      const recordsWithCredits = studentRecords.map(record => {
+      // Process records with credits information
+      const recordsWithCurrentCredits = studentRecords.map(record => {
         const creditInfo = currentCredits.find(c => c.subjectCode === record.SCODE);
         
         if (creditInfo) {
@@ -148,25 +151,38 @@ const Dashboard = () => {
         };
       });
       
-      const analysis = analyzeResults(recordsWithCredits, currentSubjectCodes);
+      // Current semester subject codes
+      const currentSubjectCodes = currentCredits.map(credit => credit.subjectCode);
+      // Cumulative semester subject codes
+      const cumulativeSubjectCodes = cumulativeCredits.map(credit => credit.subjectCode);
+      
+      // Generate analysis with the current semester subjects
+      const analysis = analyzeResults(recordsWithCurrentCredits, currentSubjectCodes);
       
       // Store both credit sets in the analysis for later use in reports
       const analysisWithBothCredits = {
         ...analysis,
         currentSemesterCredits: currentCredits,
-        cumulativeSemesterCredits: cumulativeCredits
+        cumulativeSemesterCredits: cumulativeCredits,
+        // Add separate subject code lists for use in report generation
+        currentSemesterSubjectCodes: currentSubjectCodes,
+        cumulativeSemesterSubjectCodes: cumulativeSubjectCodes
       };
       
       setResultAnalysis(analysisWithBothCredits);
+      setProgressPercentage(100); // Set progress to 100% when analysis completes
       
-      setIsAnalyzing(false);
-      setResultsAvailable(true);
-      setActiveTab('results');
-      
-      toast({
-        title: "Analysis complete!",
-        description: `Your ${calculationMode?.toUpperCase()} results are now available for review.`
-      });
+      // Small delay to show the 100% progress before switching to results tab
+      setTimeout(() => {
+        setIsAnalyzing(false);
+        setResultsAvailable(true);
+        setActiveTab('results');
+        
+        toast({
+          title: "Analysis complete!",
+          description: `Your ${calculationMode?.toUpperCase()} results are now available for review.`
+        });
+      }, 800);
       
     } catch (error) {
       console.error("Analysis error:", error);
@@ -176,6 +192,7 @@ const Dashboard = () => {
         description: error instanceof Error ? error.message : "There was a problem analyzing your data. Please try again.",
       });
       setIsAnalyzing(false);
+      setProgressPercentage(0); // Reset progress on error
     }
   };
 
@@ -201,6 +218,7 @@ const Dashboard = () => {
     setCumulativeSemesterCredits([]);
     setCurrentSemesterCreditsAssigned(false);
     setCumulativeSemesterCreditsAssigned(false);
+    setProgressPercentage(0); // Reset progress when calculation is reset
   };
 
   return (
@@ -310,6 +328,22 @@ const Dashboard = () => {
                 />
 
                 <div className="lg:col-span-3 flex flex-col gap-6">
+                  {/* Progress meter */}
+                  {progressPercentage > 0 && (
+                    <div className="w-full px-4 py-6 bg-white rounded-lg shadow-md">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Analysis progress</span>
+                        <span className="font-semibold">{progressPercentage}%</span>
+                      </div>
+                      <Progress value={progressPercentage} className="h-2" />
+                      <div className="flex justify-between text-xs mt-2 text-muted-foreground">
+                        <span>Credit assignment</span>
+                        <span>Processing</span>
+                        <span>Results</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <SubjectCreditInput 
                     onCreditAssigned={handleCurrentSemesterCreditAssigned}
                     uploadedSubjects={uniqueSubjects}
