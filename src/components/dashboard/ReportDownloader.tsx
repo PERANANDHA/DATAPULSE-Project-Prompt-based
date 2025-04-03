@@ -1,221 +1,142 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Download, Loader, File, FileText } from 'lucide-react';
-import { ResultAnalysis, StudentRecord } from '@/utils/excel/types';
-import { downloadWordReport } from '@/utils/excel/reportGenerators/wordReportGenerator';
-import { downloadPdfReport } from '@/utils/excel/reportGenerators/pdfReportGenerator';
+import { Download, FileText, FilePdf, FileSpreadsheetIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { generateAnalysisWordDocument } from '@/utils/excel/analyzer';
+import { saveAs } from 'file-saver';
+import { Packer } from 'docx';
 
 interface ReportDownloaderProps {
-  analysis: ResultAnalysis | null;
-  studentRecords: StudentRecord[];
+  analysis: any;
+  studentRecords: any[];
   calculationMode: 'sgpa' | 'cgpa' | null;
 }
 
-const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRecords, calculationMode }) => {
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [departmentCode, setDepartmentCode] = useState('CSE');
-  const [departmentFullName, setDepartmentFullName] = useState('Computer Science and Engineering');
-  const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<'word' | 'pdf' | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState(0);
+const ReportDownloader: React.FC<ReportDownloaderProps> = ({
+  analysis,
+  studentRecords,
+  calculationMode
+}) => {
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
-  
-  // Create memoized handlers to prevent unnecessary re-renders
-  const handleDownloadReport = useCallback(async (format: 'word' | 'pdf') => {
-    if (!analysis || !studentRecords.length) {
+  const [reportType, setReportType] = useState('word');
+
+  // Find current semester subjects from the analysis
+  const currentSemesterCodes = analysis?.currentSemesterSubjectPerformance
+    ? analysis.currentSemesterSubjectPerformance.map((subject: any) => subject.subjectCode)
+    : [];
+
+  const handleDownloadReport = async () => {
+    if (!analysis) {
       toast({
         variant: "destructive",
         title: "No data available",
-        description: "Please upload and analyze data before downloading a report.",
+        description: "Please complete the analysis first before downloading reports."
       });
       return;
     }
-    
-    // Only show department dialog if we're not already downloading
-    if (!isDownloading) {
-      setSelectedFormat(format);
-      setIsDepartmentDialogOpen(true);
-    }
-  }, [analysis, studentRecords, isDownloading, toast]);
 
-  const startProgressSimulation = useCallback(() => {
-    setDownloadProgress(0);
-    const timer = setInterval(() => {
-      setDownloadProgress(prev => {
-        if (prev >= 90) {
-          return 90;
-        }
-        return prev + Math.random() * 10;
-      });
-    }, 150);
-    
-    return timer;
-  }, []);
+    setIsGenerating(true);
 
-  const handleConfirmDepartment = useCallback(async () => {
-    if (isDownloading) return; // Prevent multiple clicks
-    
-    setIsDepartmentDialogOpen(false);
-    setIsDownloading(true);
-    
-    const progressInterval = startProgressSimulation();
-    
     try {
-      if (analysis) {
-        // Updated to use the college logo image path
-        const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
-        
-        // Get the correct calculation mode with fallback to 'sgpa'
-        const mode = calculationMode || 'sgpa';
-        
-        const options = {
-          logoImagePath: headerImagePath,
-          department: departmentCode,
-          departmentFullName: departmentFullName,
-          calculationMode: mode
-        };
-        
-        if (selectedFormat === 'word') {
-          await downloadWordReport(analysis, studentRecords, options);
-        } else if (selectedFormat === 'pdf') {
-          await downloadPdfReport(analysis, studentRecords, options);
-        }
+      let blob: Blob | null = null;
+      let filename = '';
+
+      if (reportType === 'word') {
+        const doc = generateAnalysisWordDocument(analysis, studentRecords, currentSemesterCodes);
+        blob = await Packer.toBlob(doc);
+        filename = `${calculationMode?.toUpperCase() || 'Result'}_Analysis_Report.docx`;
       }
-      
-      clearInterval(progressInterval);
-      setDownloadProgress(100);
-      
-      // Use a shorter timeout to improve perceived performance
-      setTimeout(() => {
+
+      if (blob) {
+        saveAs(blob, filename);
         toast({
-          title: "Report downloaded",
-          description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
+          title: "Report generated successfully",
+          description: `Your ${reportType.toUpperCase()} report has been downloaded.`
         });
-        
-        // Reset state after download is complete
-        setIsDownloading(false);
-        setDownloadProgress(0);
-        setSelectedFormat(null);
-      }, 300);
+      }
+
     } catch (error) {
-      clearInterval(progressInterval);
-      console.error("Download error:", error);
+      console.error("Report generation error:", error);
       toast({
         variant: "destructive",
-        title: "Download failed",
-        description: "There was a problem generating your report. Please try again.",
+        title: "Report generation failed",
+        description: "There was a problem generating your report. Please try again."
       });
-      
-      setIsDownloading(false);
-      setDownloadProgress(0);
-      setSelectedFormat(null);
+    } finally {
+      setIsGenerating(false);
     }
-  }, [analysis, studentRecords, departmentCode, departmentFullName, calculationMode, selectedFormat, toast, startProgressSimulation, isDownloading]);
+  };
 
   return (
-    <>
-      <div className="flex flex-col gap-2">
-        {isDownloading && (
-          <div className="w-full mb-2">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Generating report</span>
-              <span>{Math.round(downloadProgress)}%</span>
+    <Card className="w-full mx-auto" style={{ maxWidth: '700px' }}>
+      <CardHeader>
+        <CardTitle className="text-center text-lg">Download Analysis Reports</CardTitle>
+        <CardDescription className="text-center">
+          Download detailed reports of the analysis in different formats
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="word" value={reportType} onValueChange={setReportType} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="word" className="flex items-center justify-center">
+              <FileText className="mr-2 h-4 w-4" />
+              Word
+            </TabsTrigger>
+            <TabsTrigger value="pdf" className="flex items-center justify-center" disabled>
+              <FilePdf className="mr-2 h-4 w-4" />
+              PDF
+            </TabsTrigger>
+            <TabsTrigger value="excel" className="flex items-center justify-center" disabled>
+              <FileSpreadsheetIcon className="mr-2 h-4 w-4" />
+              Excel
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="word" className="mt-4">
+            <div className="text-sm text-muted-foreground mb-4">
+              Download a comprehensive Word document with detailed analysis including:
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>End Semester Result Analysis (current semester data)</li>
+                <li>Performance Summary (current semester data)</li>
+                <li>Individual Student Performance (current semester data)</li>
+                <li>Classification (cumulative data)</li>
+                <li>Rank Analysis (cumulative data)</li>
+              </ul>
             </div>
-            <Progress value={downloadProgress} className="h-2" />
-          </div>
-        )}
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button disabled={isDownloading}>
-                {isDownloading ? (
-                  <>
-                    <Loader className="h-4 w-4 mr-2 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Report
-                  </>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleDownloadReport('pdf')}>
-                <File className="h-4 w-4 mr-2" />
-                <span>Download as PDF</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDownloadReport('word')}>
-                <FileText className="h-4 w-4 mr-2" />
-                <span>Download as Word</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      
-      <Dialog open={isDepartmentDialogOpen && !isDownloading} onOpenChange={setIsDepartmentDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Department Information</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <label htmlFor="department-full-name" className="text-sm font-medium mb-2 block">
-                Enter Department Full Name
-              </label>
-              <Input
-                id="department-full-name"
-                value={departmentFullName}
-                onChange={(e) => setDepartmentFullName(e.target.value)}
-                placeholder="e.g. Computer Science and Engineering"
-                className="mb-2"
-              />
-              <p className="text-sm text-muted-foreground">
-                This will be used in the College Information table.
-              </p>
-            </div>
-            
-            <div>
-              <label htmlFor="department-code" className="text-sm font-medium mb-2 block">
-                Enter Department Code (short form)
-              </label>
-              <Input
-                id="department-code"
-                value={departmentCode}
-                onChange={(e) => setDepartmentCode(e.target.value)}
-                placeholder="e.g. CSE"
-                className="mb-2"
-                maxLength={5}
-              />
-              <p className="text-sm text-muted-foreground">
-                This will be used in the End Semester Result Analysis table.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDepartmentDialogOpen(false)}>
-              Cancel
+            <Button 
+              className="w-full" 
+              onClick={handleDownloadReport}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <>Generating Document...</>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Word Report
+                </>
+              )}
             </Button>
-            <Button onClick={handleConfirmDepartment}>
-              Continue
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          </TabsContent>
+
+          <TabsContent value="pdf" className="mt-4">
+            <div className="text-sm text-muted-foreground mb-4">
+              PDF export coming soon. You can download the Word document and save as PDF for now.
+            </div>
+          </TabsContent>
+
+          <TabsContent value="excel" className="mt-4">
+            <div className="text-sm text-muted-foreground mb-4">
+              Excel export coming soon with raw data and pivot tables for further analysis.
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 

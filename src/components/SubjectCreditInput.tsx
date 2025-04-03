@@ -11,19 +11,23 @@ interface SubjectCredit {
   subjectCode: string;
   creditValue: number;
   subjectName?: string;
-  facultyName?: string; // Added faculty name field
+  facultyName?: string;
 }
 
 interface SubjectCreditInputProps {
   uploadedSubjects: string[];
   onCreditAssigned: (credits: SubjectCredit[]) => void;
   isProcessing: boolean;
+  title?: string;
+  description?: string;
 }
 
 const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({ 
   uploadedSubjects, 
   onCreditAssigned,
-  isProcessing
+  isProcessing,
+  title = "Assign Subject Details",
+  description = "Specify credit values (1-10), subject names and faculty names for each subject code found in the uploaded file(s)."
 }) => {
   const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
   const [isValid, setIsValid] = useState(false);
@@ -129,7 +133,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     return (
       <Card className="col-span-1 lg:col-span-2 shadow-md overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle>Subject Credits</CardTitle>
+          <CardTitle>{title}</CardTitle>
           <CardDescription>
             Please upload an Excel file first to assign subject credits.
           </CardDescription>
@@ -141,9 +145,9 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
   return (
     <Card className="col-span-1 lg:col-span-2 shadow-md">
       <CardHeader className="pb-2">
-        <CardTitle>Assign Subject Details</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>
-          Specify credit values (1-10), subject names and faculty names for each subject code found in the uploaded file(s).
+          {description}
         </CardDescription>
       </CardHeader>
       <CardContent>

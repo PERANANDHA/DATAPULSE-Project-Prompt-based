@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import SubjectCreditInput from '@/components/SubjectCreditInput';
 import ProfileButton from "@/components/ui/ProfileButton";
 import FileUploader from '@/components/dashboard/FileUploader';
 import ResultsDisplay from '@/components/dashboard/ResultsDisplay';
@@ -44,8 +43,9 @@ const Dashboard = () => {
   const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [resultAnalysis, setResultAnalysis] = useState<ResultAnalysis | null>(null);
   const [uniqueSubjects, setUniqueSubjects] = useState<string[]>([]);
-  const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
-  const [creditsAssigned, setCreditsAssigned] = useState(false);
+  const [currentSemesterCredits, setCurrentSemesterCredits] = useState<SubjectCredit[]>([]);
+  const [cumulativeCredits, setCumulativeCredits] = useState<SubjectCredit[]>([]);
+  const [processingProgress, setProcessingProgress] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -74,24 +74,29 @@ const Dashboard = () => {
     setUniqueSubjects(subjects);
     setResultsAvailable(false);
     setResultAnalysis(null);
-    setSubjectCredits([]);
-    setCreditsAssigned(false);
+    setCurrentSemesterCredits([]);
+    setCumulativeCredits([]);
     setIsUploading(false);
+    setProcessingProgress(0);
   };
 
-  const handleCreditAssigned = (credits: SubjectCredit[]) => {
-    setSubjectCredits(credits);
-    setCreditsAssigned(true);
-    
-    analyzeData(credits);
+  const handleCurrentSemesterCreditsAssigned = (credits: SubjectCredit[]) => {
+    setCurrentSemesterCredits(credits);
+    setProcessingProgress(50); // 50% complete after current semester credits assigned
   };
 
-  const analyzeData = async (credits: SubjectCredit[]) => {
-    if (!studentRecords.length) {
+  const handleCumulativeCreditsAssigned = (credits: SubjectCredit[]) => {
+    setCumulativeCredits(credits);
+    setProcessingProgress(100); // 100% complete after cumulative credits assigned
+    analyzeData(credits, currentSemesterCredits);
+  };
+
+  const analyzeData = async (cumulativeCredits: SubjectCredit[], currentSemesterCredits: SubjectCredit[]) => {
+    if (!studentRecords.length || !currentSemesterCredits.length || !cumulativeCredits.length) {
       toast({
         variant: "destructive",
-        title: "No data to analyze",
-        description: "Please upload an Excel file first.",
+        title: "Incomplete data",
+        description: "Please assign credits for both current semester and cumulative data.",
       });
       return;
     }
@@ -99,27 +104,31 @@ const Dashboard = () => {
     setIsAnalyzing(true);
     
     try {
-      const subjectCodesToProcess = credits.map(credit => credit.subjectCode);
-      
       const recordsWithCredits = studentRecords.map(record => {
-        const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
+        const creditInfo = cumulativeCredits.find(c => c.subjectCode === record.SCODE);
         
         if (creditInfo) {
           return {
             ...record,
             creditValue: creditInfo.creditValue,
             subjectName: creditInfo.subjectName,
-            facultyName: creditInfo.facultyName
+            facultyName: creditInfo.facultyName,
+            isCurrentSemester: currentSemesterCredits.some(c => c.subjectCode === record.SCODE)
           };
         }
         
         return {
           ...record,
-          creditValue: 3
+          creditValue: 3,
+          isCurrentSemester: currentSemesterCredits.some(c => c.subjectCode === record.SCODE)
         };
       });
       
-      const analysis = analyzeResults(recordsWithCredits, subjectCodesToProcess);
+      const analysis = analyzeResults(recordsWithCredits, 
+        cumulativeCredits.map(credit => credit.subjectCode),
+        currentSemesterCredits.map(credit => credit.subjectCode)
+      );
+      
       setResultAnalysis(analysis);
       
       setIsAnalyzing(false);
@@ -160,8 +169,9 @@ const Dashboard = () => {
     setUniqueSubjects([]);
     setResultsAvailable(false);
     setResultAnalysis(null);
-    setSubjectCredits([]);
-    setCreditsAssigned(false);
+    setCurrentSemesterCredits([]);
+    setCumulativeCredits([]);
+    setProcessingProgress(0);
   };
 
   return (
@@ -262,27 +272,23 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="upload" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <FileUploader 
-                  onRecordsUploaded={handleRecordsUploaded}
-                  isUploading={isUploading}
-                  setIsUploading={setIsUploading}
-                  calculationMode={calculationMode}
-                />
-
-                <SubjectCreditInput 
-                  onCreditAssigned={handleCreditAssigned}
-                  uploadedSubjects={uniqueSubjects}
-                  isProcessing={isAnalyzing}
-                />
-              </div>
+              <FileUploader 
+                onRecordsUploaded={handleRecordsUploaded}
+                isUploading={isUploading}
+                setIsUploading={setIsUploading}
+                calculationMode={calculationMode}
+                onCurrentSemesterCreditsAssigned={handleCurrentSemesterCreditsAssigned}
+                onCumulativeCreditsAssigned={handleCumulativeCreditsAssigned}
+                processingProgress={processingProgress}
+              />
             </TabsContent>
 
             <TabsContent value="results" className="space-y-6">
               <ResultsDisplay 
                 analysis={resultAnalysis} 
                 studentRecords={studentRecords.filter(record => 
-                  subjectCredits.some(credit => credit.subjectCode === record.SCODE)
+                  currentSemesterCredits.some(credit => credit.subjectCode === record.SCODE) ||
+                  cumulativeCredits.some(credit => credit.subjectCode === record.SCODE)
                 )}
                 calculationMode={calculationMode} 
               />
