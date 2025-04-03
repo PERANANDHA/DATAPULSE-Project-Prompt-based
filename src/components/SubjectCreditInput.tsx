@@ -11,19 +11,21 @@ interface SubjectCredit {
   subjectCode: string;
   creditValue: number;
   subjectName?: string;
-  facultyName?: string; // Added faculty name field
+  facultyName?: string;
 }
 
 interface SubjectCreditInputProps {
   uploadedSubjects: string[];
   onCreditAssigned: (credits: SubjectCredit[]) => void;
   isProcessing: boolean;
+  type: 'current' | 'cumulative'; // New prop to determine which semester this represents
 }
 
 const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({ 
   uploadedSubjects, 
   onCreditAssigned,
-  isProcessing
+  isProcessing,
+  type
 }) => {
   const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
   const [isValid, setIsValid] = useState(false);
@@ -36,7 +38,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
         subjectCode: subject,
         creditValue: 3,
         subjectName: '',
-        facultyName: '' // Initialize with empty faculty name
+        facultyName: ''
       }));
       setSubjectCredits(initialCredits);
       validateInputs(initialCredits);
@@ -129,7 +131,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     return (
       <Card className="col-span-1 lg:col-span-2 shadow-md overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle>Subject Credits</CardTitle>
+          <CardTitle>{type === 'current' ? "Subject Credits for CURRENT SEMESTER" : "Subject Credits FOR UPTO THIS SEMESTER"}</CardTitle>
           <CardDescription>
             Please upload an Excel file first to assign subject credits.
           </CardDescription>
@@ -139,9 +141,11 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
   }
 
   return (
-    <Card className="col-span-1 lg:col-span-2 shadow-md">
+    <Card className="col-span-1 lg:col-span-2 shadow-md mb-6">
       <CardHeader className="pb-2">
-        <CardTitle>Assign Subject Details</CardTitle>
+        <CardTitle>
+          {type === 'current' ? "Assign Subject Details for CURRENT SEMESTER" : "Assign Subject Details FOR UPTO THIS SEMESTER"}
+        </CardTitle>
         <CardDescription>
           Specify credit values (1-10), subject names and faculty names for each subject code found in the uploaded file(s).
         </CardDescription>
