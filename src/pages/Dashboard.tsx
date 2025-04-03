@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -45,10 +44,8 @@ const Dashboard = () => {
   const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [resultAnalysis, setResultAnalysis] = useState<ResultAnalysis | null>(null);
   const [uniqueSubjects, setUniqueSubjects] = useState<string[]>([]);
-  const [currentSemesterCredits, setCurrentSemesterCredits] = useState<SubjectCredit[]>([]);
-  const [cumulativeSemesterCredits, setCumulativeSemesterCredits] = useState<SubjectCredit[]>([]);
-  const [currentSemesterCreditsAssigned, setCurrentSemesterCreditsAssigned] = useState(false);
-  const [cumulativeSemesterCreditsAssigned, setCumulativeSemesterCreditsAssigned] = useState(false);
+  const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
+  const [creditsAssigned, setCreditsAssigned] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -77,44 +74,19 @@ const Dashboard = () => {
     setUniqueSubjects(subjects);
     setResultsAvailable(false);
     setResultAnalysis(null);
-    setCurrentSemesterCredits([]);
-    setCumulativeSemesterCredits([]);
-    setCurrentSemesterCreditsAssigned(false);
-    setCumulativeSemesterCreditsAssigned(false);
+    setSubjectCredits([]);
+    setCreditsAssigned(false);
     setIsUploading(false);
   };
 
-  const handleCurrentSemesterCreditAssigned = (credits: SubjectCredit[]) => {
-    setCurrentSemesterCredits(credits);
-    setCurrentSemesterCreditsAssigned(true);
+  const handleCreditAssigned = (credits: SubjectCredit[]) => {
+    setSubjectCredits(credits);
+    setCreditsAssigned(true);
     
-    // Only proceed to analysis if both current and cumulative credits are assigned
-    if (cumulativeSemesterCreditsAssigned) {
-      analyzeData(credits, cumulativeSemesterCredits);
-    } else {
-      toast({
-        title: "Current semester credits assigned",
-        description: "Please also assign credits for cumulative data up to this semester",
-      });
-    }
-  };
-  
-  const handleCumulativeSemesterCreditAssigned = (credits: SubjectCredit[]) => {
-    setCumulativeSemesterCredits(credits);
-    setCumulativeSemesterCreditsAssigned(true);
-    
-    // Only proceed to analysis if both current and cumulative credits are assigned
-    if (currentSemesterCreditsAssigned) {
-      analyzeData(currentSemesterCredits, credits);
-    } else {
-      toast({
-        title: "Cumulative semester credits assigned",
-        description: "Please also assign credits for the current semester",
-      });
-    }
+    analyzeData(credits);
   };
 
-  const analyzeData = async (currentCredits: SubjectCredit[], cumulativeCredits: SubjectCredit[]) => {
+  const analyzeData = async (credits: SubjectCredit[]) => {
     if (!studentRecords.length) {
       toast({
         variant: "destructive",
@@ -127,11 +99,10 @@ const Dashboard = () => {
     setIsAnalyzing(true);
     
     try {
-      // Process with current semester credits for current semester analysis
-      const currentSubjectCodes = currentCredits.map(credit => credit.subjectCode);
+      const subjectCodesToProcess = credits.map(credit => credit.subjectCode);
       
       const recordsWithCredits = studentRecords.map(record => {
-        const creditInfo = currentCredits.find(c => c.subjectCode === record.SCODE);
+        const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
         
         if (creditInfo) {
           return {
@@ -148,16 +119,8 @@ const Dashboard = () => {
         };
       });
       
-      const analysis = analyzeResults(recordsWithCredits, currentSubjectCodes);
-      
-      // Store both credit sets in the analysis for later use in reports
-      const analysisWithBothCredits = {
-        ...analysis,
-        currentSemesterCredits: currentCredits,
-        cumulativeSemesterCredits: cumulativeCredits
-      };
-      
-      setResultAnalysis(analysisWithBothCredits);
+      const analysis = analyzeResults(recordsWithCredits, subjectCodesToProcess);
+      setResultAnalysis(analysis);
       
       setIsAnalyzing(false);
       setResultsAvailable(true);
@@ -197,10 +160,8 @@ const Dashboard = () => {
     setUniqueSubjects([]);
     setResultsAvailable(false);
     setResultAnalysis(null);
-    setCurrentSemesterCredits([]);
-    setCumulativeSemesterCredits([]);
-    setCurrentSemesterCreditsAssigned(false);
-    setCumulativeSemesterCreditsAssigned(false);
+    setSubjectCredits([]);
+    setCreditsAssigned(false);
   };
 
   return (
@@ -309,21 +270,11 @@ const Dashboard = () => {
                   calculationMode={calculationMode}
                 />
 
-                <div className="lg:col-span-3 flex flex-col gap-6">
-                  <SubjectCreditInput 
-                    onCreditAssigned={handleCurrentSemesterCreditAssigned}
-                    uploadedSubjects={uniqueSubjects}
-                    isProcessing={isAnalyzing}
-                    type="current"
-                  />
-                  
-                  <SubjectCreditInput 
-                    onCreditAssigned={handleCumulativeSemesterCreditAssigned}
-                    uploadedSubjects={uniqueSubjects}
-                    isProcessing={isAnalyzing}
-                    type="cumulative"
-                  />
-                </div>
+                <SubjectCreditInput 
+                  onCreditAssigned={handleCreditAssigned}
+                  uploadedSubjects={uniqueSubjects}
+                  isProcessing={isAnalyzing}
+                />
               </div>
             </TabsContent>
 
@@ -331,8 +282,7 @@ const Dashboard = () => {
               <ResultsDisplay 
                 analysis={resultAnalysis} 
                 studentRecords={studentRecords.filter(record => 
-                  currentSemesterCredits.some(credit => credit.subjectCode === record.SCODE) ||
-                  cumulativeSemesterCredits.some(credit => credit.subjectCode === record.SCODE)
+                  subjectCredits.some(credit => credit.subjectCode === record.SCODE)
                 )}
                 calculationMode={calculationMode} 
               />
