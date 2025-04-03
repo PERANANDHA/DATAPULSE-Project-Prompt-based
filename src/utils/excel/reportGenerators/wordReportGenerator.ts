@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA } from '../gradeUtils';
@@ -52,19 +51,6 @@ const createWordDocument = async (
   
   // Create sections for the document
   const sections = [];
-  
-  // Get the current and cumulative semester subject codes from the analysis
-  const currentSemesterSubjects = analysis.currentSemesterSubjectCodes || [];
-  const cumulativeSemesterSubjects = analysis.cumulativeSemesterSubjectCodes || [];
-  
-  // Filter records for current and cumulative semesters
-  const currentSemesterRecords = records.filter(record => 
-    currentSemesterSubjects.includes(record.SCODE)
-  );
-  
-  const cumulativeSemesterRecords = records.filter(record => 
-    cumulativeSemesterSubjects.includes(record.SCODE)
-  );
   
   // Process header image
   let headerImage;
@@ -209,6 +195,7 @@ const createWordDocument = async (
   );
   
   // Determine current semester data for CGPA mode
+  let currentSemesterRecords = records;
   let semesterLabel = '';
   let fileCount = 0;
   let calculationModeDisplay = calculationMode === 'sgpa' ? "SGPA (Semester Grade Point Average)" : "CGPA (Cumulative Grade Point Average)";
@@ -218,11 +205,16 @@ const createWordDocument = async (
   }
   
   if (calculationMode === 'cgpa' && analysis.fileCount && analysis.fileCount > 1) {
-    // Use the current semester file determined by the analyzer (highest semester)
+    // MODIFIED: Use the current semester file determined by the analyzer (highest semester)
     const currentSemFile = analysis.currentSemesterFile || '';
     
-    if (currentSemFile && currentSemesterRecords.length > 0) {
-      semesterLabel = currentSemesterRecords[0].SEM || '';
+    if (currentSemFile) {
+      currentSemesterRecords = records.filter(record => record.fileSource === currentSemFile);
+      
+      // Get semester number from the current semester file
+      if (currentSemesterRecords.length > 0) {
+        semesterLabel = currentSemesterRecords[0].SEM || '';
+      }
     }
   }
   
@@ -273,7 +265,7 @@ const createWordDocument = async (
     })
   );
   
-  // Performance Summary Section - USE CURRENT SEMESTER DATA
+  // Performance Summary Section
   sections.push(
     new Paragraph({
       children: [
@@ -290,59 +282,68 @@ const createWordDocument = async (
     }),
   );
   
-  // Calculate performance metrics using current semester data
-  const currentStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
-  let currentAvgGPA = 0;
-  let currentHighestGPA = 0;
-  let currentLowestGPA = 0;
-  let currentPassPercentage = 0;
+  // MODIFIED: Performance Text paragraphs with correct values for SGPA/CGPA mode
+  const performanceParagraphs = [];
   
-  if (currentStudentIds.length > 0) {
-    // Calculate SGPA for each student in current semester
-    const currentStudentGPAs: number[] = [];
-    currentStudentIds.forEach(id => {
-      const sgpa = calculateSGPA(currentSemesterRecords, id);
-      currentStudentGPAs.push(sgpa);
-    });
-    
-    // Calculate average, highest, and lowest SGPAs
-    currentAvgGPA = currentStudentGPAs.reduce((sum, gpa) => sum + gpa, 0) / currentStudentGPAs.length;
-    currentHighestGPA = Math.max(...currentStudentGPAs);
-    currentLowestGPA = Math.min(...currentStudentGPAs);
-    
-    // Calculate pass percentage
-    const totalGrades = currentSemesterRecords.length;
-    const passGrades = currentSemesterRecords.filter(record => record.GR !== 'U').length;
-    currentPassPercentage = totalGrades > 0 ? (passGrades / totalGrades) * 100 : 0;
+  if (calculationMode === 'sgpa') {
+    // For SGPA mode
+    performanceParagraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: "Average SGPA: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.averageCGPA.toFixed(2), size: 28 }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({ text: "Highest SGPA: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.highestSGPA.toFixed(2), size: 28 }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({ text: "Lowest SGPA: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.lowestSGPA.toFixed(2), size: 28 }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({ text: "Pass Percentage: ", bold: false, size: 28 }),
+          new TextRun({ text: analysis.singleFileClassification.passPercentage.toFixed(2) + "%", size: 28 }),
+        ],
+      }),
+    );
+  } else {
+    // For CGPA mode - MODIFIED to use correct CGPA values
+    if (analysis.cgpaAnalysis) {
+      performanceParagraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: "Average CGPA: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.cgpaAnalysis.averageCGPA.toFixed(2), size: 28 }),
+          ],
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: "Highest CGPA: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.cgpaAnalysis.highestCGPA.toFixed(2), size: 28 }),
+          ],
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: "Lowest CGPA: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.cgpaAnalysis.lowestCGPA.toFixed(2), size: 28 }),
+          ],
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: "Pass Percentage: ", bold: false, size: 28 }),
+            new TextRun({ text: analysis.multipleFileClassification.passPercentage.toFixed(2) + "%", size: 28 }),
+          ],
+        }),
+      );
+    }
   }
-  
-  // Performance Text paragraphs with current semester values
-  const performanceParagraphs = [
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Average SGPA: ", bold: false, size: 28 }),
-        new TextRun({ text: currentAvgGPA.toFixed(2), size: 28 }),
-      ],
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Highest SGPA: ", bold: false, size: 28 }),
-        new TextRun({ text: currentHighestGPA.toFixed(2), size: 28 }),
-      ],
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Lowest SGPA: ", bold: false, size: 28 }),
-        new TextRun({ text: currentLowestGPA.toFixed(2), size: 28 }),
-      ],
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Pass Percentage: ", bold: false, size: 28 }),
-        new TextRun({ text: currentPassPercentage.toFixed(2) + "%", size: 28 }),
-      ],
-    }),
-  ];
   
   // Add performance paragraphs
   sections.push(...performanceParagraphs);
@@ -421,8 +422,9 @@ const createWordDocument = async (
     sections.push(fileAnalysisTable);
   }
   
-  // End Semester Result Analysis Section - USE CURRENT SEMESTER DATA
-  if (currentSemesterRecords.length > 0) {
+  // End Semester Result Analysis Section - Using actual subject data with faculty names
+  // Made table much wider to match exact PDF layout
+  if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
     const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
     
     sections.push(
@@ -465,7 +467,7 @@ const createWordDocument = async (
       }),
     ];
     
-    // Adding actual subject data with faculty names from current semester
+    // Adding actual subject data with faculty names
     uniqueSubjects.forEach((subject, index) => {
       const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
       const totalStudents = subjectRecords.length;
@@ -540,7 +542,7 @@ const createWordDocument = async (
     sections.push(subjectAnalysisTable);
   }
   
-  // Classification Section - USE CUMULATIVE SEMESTER DATA
+  // Classification Section - Modified to match exactly the provided image with proper spacing
   sections.push(
     new Paragraph({
       spacing: {
@@ -557,109 +559,6 @@ const createWordDocument = async (
       ],
     }),
   );
-  
-  // Calculate classification data using cumulative semester records
-  const cumulativeStudentIds = [...new Set(cumulativeSemesterRecords.map(record => record.REGNO))];
-  
-  // Initialize classification data structure
-  const classificationData = {
-    currentSemester: {
-      distinction: 0,
-      firstClassWOA: 0,
-      firstClassWA: 0,
-      secondClassWOA: 0,
-      secondClassWA: 0,
-      fail: 0,
-      passPercentage: 0
-    },
-    cumulativeSemester: {
-      distinction: 0,
-      firstClassWOA: 0,
-      firstClassWA: 0,
-      secondClassWOA: 0,
-      secondClassWA: 0,
-      fail: 0,
-      passPercentage: 0
-    }
-  };
-  
-  // Calculate current semester classification
-  if (currentStudentIds.length > 0) {
-    currentStudentIds.forEach(id => {
-      const sgpa = calculateSGPA(currentSemesterRecords, id);
-      const hasArrear = currentSemesterRecords.some(record => record.REGNO === id && record.GR === 'U');
-      
-      if (hasArrear) {
-        // Students with arrears
-        if (sgpa >= 6.5) {
-          classificationData.currentSemester.firstClassWA++;
-        } else if (sgpa >= 5.0) {
-          classificationData.currentSemester.secondClassWA++;
-        } else {
-          classificationData.currentSemester.fail++;
-        }
-      } else {
-        // Students without arrears
-        if (sgpa >= 8.5) {
-          classificationData.currentSemester.distinction++;
-        } else if (sgpa >= 6.5) {
-          classificationData.currentSemester.firstClassWOA++;
-        } else {
-          classificationData.currentSemester.secondClassWOA++;
-        }
-      }
-    });
-    
-    // Calculate pass percentage
-    const totalGrades = currentSemesterRecords.length;
-    const passGrades = currentSemesterRecords.filter(record => record.GR !== 'U').length;
-    const failGrades = currentSemesterRecords.filter(record => record.GR === 'U').length;
-    
-    classificationData.currentSemester.passPercentage = totalGrades > 0 ? 
-      (passGrades / totalGrades) * 100 : 0;
-    
-    // Set fail count
-    classificationData.currentSemester.fail = failGrades;
-  }
-  
-  // Calculate cumulative semester classification
-  if (cumulativeStudentIds.length > 0) {
-    cumulativeStudentIds.forEach(id => {
-      const sgpa = calculateSGPA(cumulativeSemesterRecords, id);
-      const hasArrear = cumulativeSemesterRecords.some(record => record.REGNO === id && record.GR === 'U');
-      
-      if (hasArrear) {
-        // Students with arrears
-        if (sgpa >= 6.5) {
-          classificationData.cumulativeSemester.firstClassWA++;
-        } else if (sgpa >= 5.0) {
-          classificationData.cumulativeSemester.secondClassWA++;
-        } else {
-          classificationData.cumulativeSemester.fail++;
-        }
-      } else {
-        // Students without arrears
-        if (sgpa >= 8.5) {
-          classificationData.cumulativeSemester.distinction++;
-        } else if (sgpa >= 6.5) {
-          classificationData.cumulativeSemester.firstClassWOA++;
-        } else {
-          classificationData.cumulativeSemester.secondClassWOA++;
-        }
-      }
-    });
-    
-    // Calculate pass percentage
-    const totalGrades = cumulativeSemesterRecords.length;
-    const passGrades = cumulativeSemesterRecords.filter(record => record.GR !== 'U').length;
-    const failGrades = cumulativeSemesterRecords.filter(record => record.GR === 'U').length;
-    
-    classificationData.cumulativeSemester.passPercentage = totalGrades > 0 ? 
-      (passGrades / totalGrades) * 100 : 0;
-    
-    // Set fail count
-    classificationData.cumulativeSemester.fail = failGrades;
-  }
   
   // Classification Table - Improved alignment and consistent appearance
   const classificationTable = new Table({
@@ -797,51 +696,51 @@ const createWordDocument = async (
           // Skip % of pass cell (handled by rowspan above)
         ],
       }),
-      // Fourth row: Data values using calculated classification data
+      // Fourth row: Data values
       new TableRow({
         children: [
           // Current semester data
-          createTableCell(classificationData.currentSemester.distinction.toString(), false, { 
+          createTableCell(analysis.singleFileClassification.distinction.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.currentSemester.firstClassWOA.toString(), false, { 
+          createTableCell(analysis.singleFileClassification.firstClassWOA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.currentSemester.firstClassWA.toString(), false, { 
+          createTableCell(analysis.singleFileClassification.firstClassWA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.currentSemester.secondClassWOA.toString(), false, { 
+          createTableCell(analysis.singleFileClassification.secondClassWOA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.currentSemester.secondClassWA.toString(), false, { 
+          createTableCell(analysis.singleFileClassification.secondClassWA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.currentSemester.fail.toString(), false, { 
+          createTableCell(analysis.singleFileClassification.fail.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.currentSemester.passPercentage.toFixed(1), false, { 
+          createTableCell(analysis.singleFileClassification.passPercentage.toFixed(1), false, { 
             alignment: 'CENTER' 
           }),
           // Cumulative data (up to this semester)
-          createTableCell(classificationData.cumulativeSemester.distinction.toString(), false, { 
+          createTableCell(analysis.multipleFileClassification.distinction.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.cumulativeSemester.firstClassWOA.toString(), false, { 
+          createTableCell(analysis.multipleFileClassification.firstClassWOA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.cumulativeSemester.firstClassWA.toString(), false, { 
+          createTableCell(analysis.multipleFileClassification.firstClassWA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.cumulativeSemester.secondClassWOA.toString(), false, { 
+          createTableCell(analysis.multipleFileClassification.secondClassWOA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.cumulativeSemester.secondClassWA.toString(), false, { 
+          createTableCell(analysis.multipleFileClassification.secondClassWA.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.cumulativeSemester.fail.toString(), false, { 
+          createTableCell(analysis.multipleFileClassification.fail.toString(), false, { 
             alignment: 'CENTER' 
           }),
-          createTableCell(classificationData.cumulativeSemester.passPercentage.toFixed(1), false, { 
+          createTableCell(analysis.multipleFileClassification.passPercentage.toFixed(1), false, { 
             alignment: 'CENTER' 
           }),
         ],
@@ -851,7 +750,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section - USE CUMULATIVE SEMESTER DATA
+  // Rank Analysis Section - Fixed to properly display top three students
   sections.push(
     new Paragraph({
       spacing: {
@@ -869,33 +768,45 @@ const createWordDocument = async (
     }),
   );
   
-  // Calculate student data for current and cumulative semesters
-  const currentSemesterStudentData: { id: string; sgpa: number }[] = [];
-  const cumulativeSemesterStudentData: { id: string; sgpa: number }[] = [];
+  // Get actual student data for SGPA ranking
+  let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
+  
+  // Get unique students from current semester
+  const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
   
   // Calculate SGPA for each student in current semester
-  currentStudentIds.forEach(id => {
-    const sgpa = calculateSGPA(currentSemesterRecords, id);
-    if (sgpa > 0) {
-      currentSemesterStudentData.push({ id, sgpa });
-    }
-  });
-  
-  // Calculate SGPA for each student in cumulative semester
-  cumulativeStudentIds.forEach(id => {
-    const sgpa = calculateSGPA(cumulativeSemesterRecords, id);
-    if (sgpa > 0) {
-      cumulativeSemesterStudentData.push({ id, sgpa });
+  currentSemesterStudentIds.forEach(studentId => {
+    const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
+    if (studentRecords.length > 0) {
+      const sgpa = calculateSGPA(studentRecords, studentId);
+      if (sgpa !== null && sgpa > 0) { 
+        currentSemesterStudentData.push({ id: studentId, sgpa });
+      }
     }
   });
   
   // Sort by SGPA in descending order
   currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
-  cumulativeSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
+  
+  // Get cumulative data (all semesters)
+  let cumulativeStudentData: { id: string; cgpa: number }[] = [];
+  
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    // Use CGPA data for multi-semester analysis
+    cumulativeStudentData = analysis.cgpaAnalysis.studentCGPAs
+      .filter(student => student.cgpa > 0)
+      .sort((a, b) => b.cgpa - a.cgpa);
+  } else {
+    // For single semester, use SGPA as CGPA
+    cumulativeStudentData = currentSemesterStudentData.map(student => ({
+      id: student.id,
+      cgpa: student.sgpa
+    }));
+  }
   
   // Get top 3 students for each category
-  const topCurrentStudents = currentSemesterStudentData.slice(0, 3);
-  const topCumulativeStudents = cumulativeSemesterStudentData.slice(0, 3);
+  const topSemesterStudents = currentSemesterStudentData.slice(0, 3);
+  const topCumulativeStudents = cumulativeStudentData.slice(0, 3);
   
   // Create table headers for Rank Analysis
   const rankRows = [
@@ -922,22 +833,22 @@ const createWordDocument = async (
     const rank = i + 1;
     
     // Get student data if available
-    const currentStudent = i < topCurrentStudents.length ? 
-      topCurrentStudents[i] : { id: "-", sgpa: 0 };
+    const semesterStudent = i < topSemesterStudents.length ? 
+      topSemesterStudents[i] : { id: "-", sgpa: 0 };
       
     const cumulativeStudent = i < topCumulativeStudents.length ? 
-      topCumulativeStudents[i] : { id: "-", sgpa: 0 };
+      topCumulativeStudents[i] : { id: "-", cgpa: 0 };
     
     // Create a row with actual data or placeholders
     rankRows.push(
       new TableRow({
         children: [
           createTableCell(rank.toString()),
-          createTableCell(currentStudent.id),
-          createTableCell(currentStudent.sgpa > 0 ? currentStudent.sgpa.toFixed(2) : "-"),
+          createTableCell(semesterStudent.id), // Student registration number
+          createTableCell(semesterStudent.sgpa > 0 ? semesterStudent.sgpa.toFixed(2) : "-"),
           createTableCell(rank.toString()),
-          createTableCell(cumulativeStudent.id),
-          createTableCell(cumulativeStudent.sgpa > 0 ? cumulativeStudent.sgpa.toFixed(2) : "-"),
+          createTableCell(cumulativeStudent.id), // Student registration number
+          createTableCell(cumulativeStudent.cgpa > 0 ? cumulativeStudent.cgpa.toFixed(2) : "-"),
         ],
       })
     );
@@ -963,7 +874,7 @@ const createWordDocument = async (
   
   sections.push(rankTable);
   
-  // Individual Student Performance Section - USE CURRENT SEMESTER DATA
+  // Individual Student Performance Section - ADDED FOR BOTH SGPA AND CGPA MODE
   sections.push(
     new Paragraph({
       spacing: {
@@ -981,27 +892,43 @@ const createWordDocument = async (
     }),
   );
   
-  // Process student performance data from current semester
-  const studentPerformanceData = currentSemesterStudentData.map(student => {
-    // Check if student has arrears
-    const hasArrears = currentSemesterRecords.some(record => 
-      record.REGNO === student.id && record.GR === 'U'
-    );
-    
-    return {
-      id: student.id,
-      gpValue: student.sgpa,
-      hasArrears
-    };
-  }).sort((a, b) => b.gpValue - a.gpValue);  // Sort by GPA
+  // Get appropriate student data based on mode
+  let studentPerformanceData = [];
   
-  // Build the student performance table rows
+  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
+    // For SGPA mode, use the SGPA data
+    studentPerformanceData = [...analysis.studentSgpaDetails]
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .map(student => ({
+        id: student.id,
+        gpValue: student.sgpa,
+        hasArrears: student.hasArrears
+      }));
+  } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+    // For CGPA mode, use the CGPA data
+    studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .map(student => {
+        // For CGPA mode, we need to check if the student has arrears in any semester
+        const hasArrears = records.some(record => 
+          record.REGNO === student.id && record.GR === 'U'
+        );
+        
+        return {
+          id: student.id,
+          gpValue: student.cgpa,
+          hasArrears
+        };
+      });
+  }
+  
+  // Build the table rows
   const studentRows = [
     new TableRow({
       children: [
         createHeaderCell("S.No"),
         createHeaderCell("Register Number"),
-        createHeaderCell("SGPA"),
+        createHeaderCell(calculationMode === 'sgpa' ? "SGPA" : "CGPA"),
         createHeaderCell("Status"),
       ],
     }),
@@ -1015,7 +942,7 @@ const createWordDocument = async (
     if (student.hasArrears) {
       // Students with arrears
       if (student.gpValue >= 6.5) {
-        status = "First Class With Arrear";
+        status = "First Class With Arrear"; // Changed from "First Class" to "First Class With Arrear"
       } else if (student.gpValue >= 5.0) {
         status = "Second Class with Arrears";
       } else {
