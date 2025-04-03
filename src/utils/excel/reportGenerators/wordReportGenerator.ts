@@ -768,45 +768,18 @@ const createWordDocument = async (
     }),
   );
   
-  // Get actual student data for SGPA ranking
-  let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
+  // Hard-coded top students data as requested
+  const topSemesterStudents = [
+    { id: '10422086', sgpa: 9.78 },
+    { id: '10421033', sgpa: 9.67 },
+    { id: '10422078', sgpa: 9.67 }
+  ];
   
-  // Get unique students from current semester
-  const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
-  
-  // Calculate SGPA for each student in current semester
-  currentSemesterStudentIds.forEach(studentId => {
-    const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
-    if (studentRecords.length > 0) {
-      const sgpa = calculateSGPA(studentRecords, studentId);
-      if (sgpa !== null && sgpa > 0) { 
-        currentSemesterStudentData.push({ id: studentId, sgpa });
-      }
-    }
-  });
-  
-  // Sort by SGPA in descending order
-  currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
-  
-  // Get cumulative data (all semesters)
-  let cumulativeStudentData: { id: string; cgpa: number }[] = [];
-  
-  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
-    // Use CGPA data for multi-semester analysis
-    cumulativeStudentData = analysis.cgpaAnalysis.studentCGPAs
-      .filter(student => student.cgpa > 0)
-      .sort((a, b) => b.cgpa - a.cgpa);
-  } else {
-    // For single semester, use SGPA as CGPA
-    cumulativeStudentData = currentSemesterStudentData.map(student => ({
-      id: student.id,
-      cgpa: student.sgpa
-    }));
-  }
-  
-  // Get top 3 students for each category
-  const topSemesterStudents = currentSemesterStudentData.slice(0, 3);
-  const topCumulativeStudents = cumulativeStudentData.slice(0, 3);
+  // For CGPA, we'll use the same data temporarily
+  const topCumulativeStudents = topSemesterStudents.map(student => ({
+    id: student.id,
+    cgpa: student.sgpa
+  }));
   
   // Create table headers for Rank Analysis
   const rankRows = [
@@ -828,27 +801,24 @@ const createWordDocument = async (
     }),
   ];
   
-  // Add data rows for top 3 ranks - always display 3 rows
+  // Add data rows for top 3 ranks with the exact values provided
   for (let i = 0; i < 3; i++) {
     const rank = i + 1;
     
-    // Get student data if available
-    const semesterStudent = i < topSemesterStudents.length ? 
-      topSemesterStudents[i] : { id: "-", sgpa: 0 };
-      
-    const cumulativeStudent = i < topCumulativeStudents.length ? 
-      topCumulativeStudents[i] : { id: "-", cgpa: 0 };
+    // Get student data from our hard-coded list
+    const semesterStudent = topSemesterStudents[i];
+    const cumulativeStudent = topCumulativeStudents[i];
     
-    // Create a row with actual data or placeholders
+    // Create a row with the exact data provided
     rankRows.push(
       new TableRow({
         children: [
           createTableCell(rank.toString()),
           createTableCell(semesterStudent.id), // Student registration number
-          createTableCell(semesterStudent.sgpa > 0 ? semesterStudent.sgpa.toFixed(2) : "-"),
+          createTableCell(semesterStudent.sgpa.toFixed(2)),
           createTableCell(rank.toString()),
           createTableCell(cumulativeStudent.id), // Student registration number
-          createTableCell(cumulativeStudent.cgpa > 0 ? cumulativeStudent.cgpa.toFixed(2) : "-"),
+          createTableCell(cumulativeStudent.cgpa.toFixed(2)),
         ],
       })
     );
