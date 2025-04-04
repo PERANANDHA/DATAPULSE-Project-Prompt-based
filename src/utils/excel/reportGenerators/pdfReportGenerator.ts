@@ -236,13 +236,16 @@ export const downloadPdfReport = async (
   }
   
   let currentSemesterRecords = records;
+  let cumulativeSemesterRecords = records;
   
-  if (calculationMode === 'cgpa' && analysis.fileCount && analysis.fileCount > 1) {
-    const currentSemFile = analysis.currentSemesterFile || '';
-    
-    if (currentSemFile) {
-      currentSemesterRecords = records.filter(record => record.fileSource === currentSemFile);
+  if (analysis.fileCount && analysis.fileCount > 1) {
+    if (analysis.currentSemesterFile) {
+      currentSemesterRecords = records.filter(record => 
+        record.fileSource === analysis.currentSemesterFile
+      );
     }
+    
+    cumulativeSemesterRecords = records;
   }
   
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
@@ -350,9 +353,6 @@ export const downloadPdfReport = async (
     });
     
     currentY = (pdf as any).lastAutoTable.finalY + 10;
-    
-    pdf.addPage('portrait');
-    currentY = 10;
   }
   
   if (currentY > 250) {
@@ -394,6 +394,8 @@ export const downloadPdfReport = async (
       { content: "WA", styles: { halign: 'center', fontStyle: 'bold' } }
     ]
   ];
+  
+  const mode = options.calculationMode || 'sgpa';
   
   const classificationBody = [
     [
@@ -470,7 +472,7 @@ export const downloadPdfReport = async (
   
   let cumulativeStudentData: { id: string; cgpa: number }[] = [];
   
-  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+  if (mode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
     cumulativeStudentData = [...analysis.cgpaAnalysis.studentCGPAs];
   } else {
     cumulativeStudentData = currentSemesterStudentData.map(student => ({
@@ -550,7 +552,9 @@ export const downloadPdfReport = async (
   
   let studentPerformanceData = [];
   
-  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
+  const mode = options.calculationMode || 'sgpa';
+  
+  if (mode === 'sgpa' && analysis.studentSgpaDetails) {
     studentPerformanceData = [...analysis.studentSgpaDetails]
       .sort((a, b) => b.sgpa - a.sgpa)
       .map(student => ({
@@ -558,11 +562,11 @@ export const downloadPdfReport = async (
         gpValue: student.sgpa,
         hasArrears: student.hasArrears
       }));
-  } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+  } else if (mode === 'cgpa' && analysis.cgpaAnalysis) {
     studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
       .sort((a, b) => b.cgpa - a.cgpa)
       .map(student => {
-        const hasArrears = records.some(record => 
+        const hasArrears = cumulativeSemesterRecords.some(record => 
           record.REGNO === student.id && record.GR === 'U'
         );
         
@@ -575,7 +579,7 @@ export const downloadPdfReport = async (
   }
   
   const studentHead = [
-    ["S.No", "Register Number", calculationMode === 'sgpa' ? "SGPA" : "CGPA", "Status"]
+    ["S.No", "Register Number", mode === 'sgpa' ? "SGPA" : "CGPA", "Status"]
   ];
   
   const studentBody: string[][] = [];
@@ -648,7 +652,7 @@ export const downloadPdfReport = async (
   pdf.text("DEAN ACADEMICS", 135, currentY);
   pdf.text("PRINCIPAL", 185, currentY);
   
-  pdf.save(calculationMode === 'sgpa' ? 'sgpa-analysis-report.pdf' : 'cgpa-analysis-report.pdf');
+  pdf.save(mode === 'sgpa' ? 'sgpa-analysis-report.pdf' : 'cgpa-analysis-report.pdf');
 };
 
 const blobToBase64 = (blob: Blob): Promise<string> => {

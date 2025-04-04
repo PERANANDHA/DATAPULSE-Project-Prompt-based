@@ -8,26 +8,53 @@ import { Badge } from '@/components/ui/badge';
 interface StudentSGPATableProps {
   analysis: ResultAnalysis;
   calculationMode: 'sgpa' | 'cgpa' | null;
+  useCumulativeData?: boolean; // New prop to determine which dataset to use
 }
 
-const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculationMode }) => {
+const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ 
+  analysis, 
+  calculationMode,
+  useCumulativeData = false // Default to current semester data
+}) => {
   const isCgpaMode = calculationMode === 'cgpa';
   
-  // Hard-coded sample data as requested by the user
-  const topThreeStudents = [
-    { rank: 1, id: '10422086', sgpa: 9.78 },
-    { rank: 2, id: '10421033', sgpa: 9.67 },
-    { rank: 3, id: '10422078', sgpa: 9.67 }
-  ];
+  // Use cumulative data when explicitly asked or in CGPA mode
+  // For rank analysis and classification, we always use cumulative data (UPTO THIS SEMESTER)
+  const shouldUseCumulativeData = useCumulativeData || isCgpaMode;
+  
+  // Determine which students data to use based on the requirements
+  let topStudentsData = [];
+  
+  if (shouldUseCumulativeData && analysis.cgpaAnalysis?.toppersList) {
+    // For "Subject Credits FOR UPTO THIS SEMESTER" or CGPA mode
+    topStudentsData = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
+      rank: index + 1,
+      id: student.id,
+      value: student.cgpa
+    }));
+  } else {
+    // For "Subject Credits for CURRENT SEMESTER" in SGPA mode
+    // Get SGPA data from current semester
+    const currentSemesterStudents = [...(analysis.studentSgpaDetails || [])];
+    currentSemesterStudents.sort((a, b) => b.sgpa - a.sgpa);
+    
+    topStudentsData = currentSemesterStudents.slice(0, 3).map((student, index) => ({
+      rank: index + 1,
+      id: student.id,
+      value: student.sgpa
+    }));
+  }
 
   return (
     <Card className="w-full mx-auto" style={{ maxWidth: '700px' }}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg text-center">
-          {isCgpaMode ? 'Student CGPA Rank Analysis' : 'Student SGPA Rank Analysis'}
+          {shouldUseCumulativeData 
+            ? 'Student CGPA Rank Analysis'
+            : 'Student SGPA Rank Analysis'}
         </CardTitle>
         <CardDescription className="text-center">
-          {isCgpaMode 
+          {shouldUseCumulativeData 
             ? 'Top 3 students by Cumulative Grade Point Average'
             : 'Top 3 students by Semester Grade Point Average'}
         </CardDescription>
@@ -39,11 +66,13 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
               <TableRow>
                 <TableHead className="text-center">Rank</TableHead>
                 <TableHead className="text-center">Name of the student</TableHead>
-                <TableHead className="text-center">{isCgpaMode ? 'CGPA' : 'SGPA'}</TableHead>
+                <TableHead className="text-center">
+                  {shouldUseCumulativeData ? 'CGPA' : 'SGPA'}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {topThreeStudents.map((student) => (
+              {topStudentsData.map((student) => (
                 <TableRow key={student.id} className={student.rank <= 3 ? "bg-muted/30" : ""}>
                   <TableCell className="text-center">
                     <Badge variant={student.rank === 1 ? "default" : (student.rank === 2 ? "secondary" : "outline")} 
@@ -53,7 +82,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ analysis, calculati
                     </Badge>
                   </TableCell>
                   <TableCell className="text-center">{student.id}</TableCell>
-                  <TableCell className="text-center font-medium">{student.sgpa.toFixed(2)}</TableCell>
+                  <TableCell className="text-center font-medium">{student.value.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

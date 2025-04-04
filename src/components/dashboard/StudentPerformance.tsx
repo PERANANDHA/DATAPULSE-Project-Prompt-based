@@ -7,6 +7,7 @@ import { ResultAnalysis } from '@/utils/excelProcessor';
 interface StudentPerformanceProps {
   analysis: ResultAnalysis;
   calculationMode?: 'sgpa' | 'cgpa';
+  useCumulativeData?: boolean; // New prop to determine which dataset to use
 }
 
 // Define types for student performance data
@@ -25,10 +26,15 @@ interface CgpaStudent {
 
 const StudentPerformance: React.FC<StudentPerformanceProps> = ({ 
   analysis,
-  calculationMode = 'sgpa'
+  calculationMode = 'sgpa',
+  useCumulativeData = false // Default to current semester data
 }) => {
-  // Use CGPA data when available and in CGPA mode
-  const topStudents: (SgpaStudent | CgpaStudent)[] = calculationMode === 'cgpa' && analysis.cgpaAnalysis?.toppersList 
+  // Use cumulative data when explicitly asked or in CGPA mode
+  // For Individual Student Performance, in CGPA mode we always use cumulative data
+  const shouldUseCumulativeData = useCumulativeData || calculationMode === 'cgpa';
+
+  // Generate top performers data based on the mode
+  const topStudents: (SgpaStudent | CgpaStudent)[] = shouldUseCumulativeData && analysis.cgpaAnalysis?.toppersList 
     ? analysis.cgpaAnalysis.toppersList.slice(0, 6).map(student => ({
         id: student.id,
         value: student.cgpa,
@@ -41,8 +47,8 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
         grade: student.grade
       }));
 
-  // Generate needs improvement data based on calculation mode
-  const needsImprovementData = calculationMode === 'cgpa' && analysis.cgpaAnalysis
+  // Generate needs improvement data based on the mode
+  const needsImprovementData = shouldUseCumulativeData && analysis.cgpaAnalysis
     ? analysis.cgpaAnalysis.studentCGPAs
         .filter(student => student.cgpa < 6.5)
         .slice(0, 6)
@@ -61,9 +67,9 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
             Top Performers
           </CardTitle>
           <CardDescription className="text-center">
-            {calculationMode === 'sgpa' 
-              ? 'Students with highest SGPA in the semester' 
-              : 'Students with highest CGPA across all semesters'}
+            {shouldUseCumulativeData 
+              ? 'Students with highest CGPA across all semesters' 
+              : 'Students with highest SGPA in the semester'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -94,14 +100,14 @@ const StudentPerformance: React.FC<StudentPerformanceProps> = ({
         <CardHeader className="pb-2">
           <CardTitle className="text-lg text-center">Needs Improvement</CardTitle>
           <CardDescription className="text-center">
-            {calculationMode === 'sgpa'
-              ? 'Students with low SGPA or arrears'
-              : 'Students with low CGPA across all semesters'}
+            {shouldUseCumulativeData
+              ? 'Students with low CGPA across all semesters'
+              : 'Students with low SGPA or arrears'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4" style={{ minWidth: '285px' }}>
-            {calculationMode === 'cgpa'
+            {shouldUseCumulativeData
               ? needsImprovementData.map((student, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex-1 max-w-[60%]">
