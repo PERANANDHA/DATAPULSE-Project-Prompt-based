@@ -768,10 +768,10 @@ const createWordDocument = async (
     }),
   );
   
-  // For SGPA mode, use the studentSgpaDetails data directly sorted by SGPA
+  // For both SGPA and CGPA modes, get current semester SGPA data for "Rank in this semester"
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
-  // Calculate current semester ranks - MODIFIED to use current semester data for "Rank in this semester" in both modes
+  // Get the current semester data - this is for "Rank in this semester" in both SGPA and CGPA modes
   if (analysis.studentSgpaDetails) {
     // For both SGPA and CGPA modes, use the studentSgpaDetails data from current semester only
     currentSemesterStudentData = [...analysis.studentSgpaDetails]
@@ -797,7 +797,7 @@ const createWordDocument = async (
   currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
   
-  // Calculate cumulative ranks (only for CGPA mode)
+  // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
   let topCumulativeStudents: { id: string; cgpa: number }[] = [];
   
   if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
@@ -849,7 +849,7 @@ const createWordDocument = async (
         })
       );
     } else {
-      // For CGPA mode, fill both sections
+      // For CGPA mode, fill both sections with appropriate data
       const cumulativeStudent = topCumulativeStudents[i] || { id: "", cgpa: 0 };
       
       rankRows.push(
@@ -857,10 +857,10 @@ const createWordDocument = async (
           children: [
             createTableCell(rank.toString()),
             createTableCell(semesterStudent.id),
-            createTableCell(semesterStudent.sgpa.toFixed(2)),
+            createTableCell(semesterStudent.sgpa.toFixed(2)),  // Current semester SGPA
             createTableCell(rank.toString()),
             createTableCell(cumulativeStudent.id),
-            createTableCell(cumulativeStudent.cgpa.toFixed(2)),
+            createTableCell(cumulativeStudent.cgpa.toFixed(2)),  // Cumulative CGPA
           ],
         })
       );
