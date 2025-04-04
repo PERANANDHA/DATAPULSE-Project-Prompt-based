@@ -1,3 +1,4 @@
+
 import JsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { ResultAnalysis, StudentRecord } from '../types';
@@ -395,8 +396,7 @@ export const downloadPdfReport = async (
     ]
   ];
   
-  const mode = options.calculationMode || 'sgpa';
-  
+  // Using the calculationMode from options directly instead of redeclaring it
   const classificationBody = [
     [
       analysis.singleFileClassification.distinction.toString(),
@@ -472,7 +472,7 @@ export const downloadPdfReport = async (
   
   let cumulativeStudentData: { id: string; cgpa: number }[] = [];
   
-  if (mode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
     cumulativeStudentData = [...analysis.cgpaAnalysis.studentCGPAs];
   } else {
     cumulativeStudentData = currentSemesterStudentData.map(student => ({
@@ -552,9 +552,8 @@ export const downloadPdfReport = async (
   
   let studentPerformanceData = [];
   
-  const mode = options.calculationMode || 'sgpa';
-  
-  if (mode === 'sgpa' && analysis.studentSgpaDetails) {
+  // Using the calculationMode from options directly instead of redeclaring it
+  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
     studentPerformanceData = [...analysis.studentSgpaDetails]
       .sort((a, b) => b.sgpa - a.sgpa)
       .map(student => ({
@@ -562,7 +561,7 @@ export const downloadPdfReport = async (
         gpValue: student.sgpa,
         hasArrears: student.hasArrears
       }));
-  } else if (mode === 'cgpa' && analysis.cgpaAnalysis) {
+  } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
     studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
       .sort((a, b) => b.cgpa - a.cgpa)
       .map(student => {
@@ -579,7 +578,7 @@ export const downloadPdfReport = async (
   }
   
   const studentHead = [
-    ["S.No", "Register Number", mode === 'sgpa' ? "SGPA" : "CGPA", "Status"]
+    ["S.No", "Register Number", calculationMode === 'sgpa' ? "SGPA" : "CGPA", "Status"]
   ];
   
   const studentBody: string[][] = [];
@@ -652,7 +651,7 @@ export const downloadPdfReport = async (
   pdf.text("DEAN ACADEMICS", 135, currentY);
   pdf.text("PRINCIPAL", 185, currentY);
   
-  pdf.save(mode === 'sgpa' ? 'sgpa-analysis-report.pdf' : 'cgpa-analysis-report.pdf');
+  pdf.save(calculationMode === 'sgpa' ? 'sgpa-analysis-report.pdf' : 'cgpa-analysis-report.pdf');
 };
 
 const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -680,3 +679,4 @@ const gradePointMap: { [grade: string]: number } = {
   "P": 4,
   "U": 0
 };
+
