@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA } from '../gradeUtils';
@@ -774,10 +775,9 @@ const createWordDocument = async (
   // Get current semester data (either the only file in SGPA mode, or the latest semester in CGPA mode)
   const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
   currentSemesterStudentIds.forEach(studentId => {
-    // Calculate SGPA for each student in the current semester
-    const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
-    if (studentRecords.length > 0) {
-      const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+    // Calculate SGPA for each student in the current semester only
+    const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+    if (sgpa > 0) { // Only add students with valid SGPA
       currentSemesterStudentData.push({ id: studentId, sgpa });
     }
   });
