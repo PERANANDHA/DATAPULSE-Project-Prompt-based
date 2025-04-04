@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ResultAnalysis } from '@/utils/excelProcessor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { getAccurateSGPARankings } from '@/utils/excel/gradeUtils';
 
 interface StudentSGPATableProps {
   analysis: ResultAnalysis;
@@ -35,18 +34,14 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
     }));
   } else {
     // For "Subject Credits for CURRENT SEMESTER" in SGPA mode
-    // Get SGPA data from current semester with improved accuracy
-    const currentSemesterRecords = analysis.currentSemesterFile
-      ? analysis.filesProcessed && analysis.filesProcessed.length > 1
-        ? analysis.filesProcessed.filter(record => record === analysis.currentSemesterFile)
-        : analysis.studentSgpaDetails || []
-      : analysis.studentSgpaDetails || [];
+    // Get SGPA data from current semester
+    const currentSemesterStudents = [...(analysis.studentSgpaDetails || [])];
+    currentSemesterStudents.sort((a, b) => b.sgpa - a.sgpa);
     
-    // Use the accurate SGPA rankings
-    topStudentsData = currentSemesterRecords.slice(0, 3).map((student, index) => ({
+    topStudentsData = currentSemesterStudents.slice(0, 3).map((student, index) => ({
       rank: index + 1,
-      id: typeof student === 'string' ? student : student.id,
-      value: typeof student === 'string' ? 0 : student.sgpa
+      id: student.id,
+      value: student.sgpa
     }));
   }
 

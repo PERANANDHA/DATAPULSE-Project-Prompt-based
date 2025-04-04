@@ -1,4 +1,3 @@
-
 import { gradePointMap, gradeColors, StudentRecord } from './types';
 
 // Helper function to get color for a specific grade
@@ -16,7 +15,7 @@ export const getUniqueDepartmentCodes = (records: StudentRecord[]): string[] => 
   return [...new Set(records.map(record => record.CNo))].filter(code => code);
 };
 
-// Calculate SGPA for a given student with specific records
+// Calculate SGPA for a given student
 export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
   const studentRecords = records.filter(record => record.REGNO === studentId);
   let totalCredits = 0;
@@ -88,28 +87,4 @@ export const hasArrears = (records: StudentRecord[], studentId: string): boolean
 export const getSubjectsWithArrears = (records: StudentRecord[], studentId: string): string => {
   const arrearsSubjects = records.filter(record => record.REGNO === studentId && record.GR === 'U').map(record => record.SCODE);
   return arrearsSubjects.join(', ');
-};
-
-// Get accurate SGPA rankings for current semester - new helper function
-export const getAccurateSGPARankings = (
-  records: StudentRecord[],
-  count: number = 3
-): { id: string; sgpa: number }[] => {
-  // Get unique student IDs
-  const studentIds = [...new Set(records.map(record => record.REGNO))];
-  
-  // Calculate SGPA for each student
-  const studentSgpaData = studentIds.map(id => ({
-    id,
-    sgpa: calculateSGPA(records, id)
-  }));
-  
-  // Filter out students with zero SGPA (might indicate calculation errors)
-  const validStudents = studentSgpaData.filter(student => student.sgpa > 0);
-  
-  // Sort by SGPA in descending order
-  validStudents.sort((a, b) => b.sgpa - a.sgpa);
-  
-  // Return top N students
-  return validStudents.slice(0, count);
 };
