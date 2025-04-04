@@ -679,4 +679,3 @@ const gradePointMap: { [grade: string]: number } = {
   "P": 4,
   "U": 0
 };
-
