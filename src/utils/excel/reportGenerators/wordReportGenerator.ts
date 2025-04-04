@@ -768,19 +768,30 @@ const createWordDocument = async (
     }),
   );
   
-  // Calculate current semester ranks (for both SGPA and CGPA modes)
+  // For SGPA mode, use the studentSgpaDetails data directly sorted by SGPA
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
-  // Get current semester data (either the only file in SGPA mode, or the latest semester in CGPA mode)
-  const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
-  currentSemesterStudentIds.forEach(studentId => {
-    // Calculate SGPA for each student in the current semester
-    const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
-    if (studentRecords.length > 0) {
-      const sgpa = calculateSGPA(currentSemesterRecords, studentId);
-      currentSemesterStudentData.push({ id: studentId, sgpa });
-    }
-  });
+  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
+    // Use the existing studentSgpaDetails data, which is already calculated correctly
+    currentSemesterStudentData = [...analysis.studentSgpaDetails]
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .map(student => ({
+        id: student.id,
+        sgpa: student.sgpa
+      }));
+  } else {
+    // For CGPA mode or fallback, calculate from records as before
+    // Get current semester data (either the only file in SGPA mode, or the latest semester in CGPA mode)
+    const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+    currentSemesterStudentIds.forEach(studentId => {
+      // Calculate SGPA for each student in the current semester
+      const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
+      if (studentRecords.length > 0) {
+        const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+        currentSemesterStudentData.push({ id: studentId, sgpa });
+      }
+    });
+  }
   
   // Sort by SGPA in descending order
   currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
