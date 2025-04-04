@@ -771,8 +771,9 @@ const createWordDocument = async (
   // For SGPA mode, use the studentSgpaDetails data directly sorted by SGPA
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
-  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
-    // Use the existing studentSgpaDetails data, which is already calculated correctly
+  // Calculate current semester ranks - MODIFIED to use current semester data for "Rank in this semester" in both modes
+  if (analysis.studentSgpaDetails) {
+    // For both SGPA and CGPA modes, use the studentSgpaDetails data from current semester only
     currentSemesterStudentData = [...analysis.studentSgpaDetails]
       .sort((a, b) => b.sgpa - a.sgpa)
       .map(student => ({
@@ -780,8 +781,7 @@ const createWordDocument = async (
         sgpa: student.sgpa
       }));
   } else {
-    // For CGPA mode or fallback, calculate from records as before
-    // Get current semester data (either the only file in SGPA mode, or the latest semester in CGPA mode)
+    // Fallback calculation from records if studentSgpaDetails is not available
     const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
     currentSemesterStudentIds.forEach(studentId => {
       // Calculate SGPA for each student in the current semester
