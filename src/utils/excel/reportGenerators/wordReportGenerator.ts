@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA } from '../gradeUtils';
@@ -768,18 +769,27 @@ const createWordDocument = async (
     }),
   );
   
-  // Hard-coded top students data as requested
-  const topSemesterStudents = [
-    { id: '10422086', sgpa: 9.78 },
-    { id: '10421033', sgpa: 9.67 },
-    { id: '10422078', sgpa: 9.67 }
-  ];
+  // Calculate current semester ranks (for both SGPA and CGPA modes)
+  let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
-  // For CGPA, we'll use the same data temporarily
-  const topCumulativeStudents = topSemesterStudents.map(student => ({
-    id: student.id,
-    cgpa: student.sgpa
-  }));
+  // Get current semester data (either the only file in SGPA mode, or the latest semester in CGPA mode)
+  const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+  currentSemesterStudentIds.forEach(studentId => {
+    const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+    currentSemesterStudentData.push({ id: studentId, sgpa });
+  });
+  currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
+  const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
+  
+  // Calculate cumulative ranks (only for CGPA mode)
+  let topCumulativeStudents: { id: string; cgpa: number }[] = [];
+  
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    // For CGPA mode, use the actual CGPA data
+    topCumulativeStudents = [...analysis.cgpaAnalysis.studentCGPAs]
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .slice(0, 3);
+  }
   
   // Create table headers for Rank Analysis
   const rankRows = [
@@ -801,27 +811,44 @@ const createWordDocument = async (
     }),
   ];
   
-  // Add data rows for top 3 ranks with the exact values provided
+  // Add data rows for top 3 ranks
   for (let i = 0; i < 3; i++) {
     const rank = i + 1;
     
-    // Get student data from our hard-coded list
-    const semesterStudent = topSemesterStudents[i];
-    const cumulativeStudent = topCumulativeStudents[i];
+    // Current semester student data
+    const semesterStudent = topCurrentSemesterStudents[i] || { id: "", sgpa: 0 };
     
-    // Create a row with the exact data provided
-    rankRows.push(
-      new TableRow({
-        children: [
-          createTableCell(rank.toString()),
-          createTableCell(semesterStudent.id), // Student registration number
-          createTableCell(semesterStudent.sgpa.toFixed(2)),
-          createTableCell(rank.toString()),
-          createTableCell(cumulativeStudent.id), // Student registration number
-          createTableCell(cumulativeStudent.cgpa.toFixed(2)),
-        ],
-      })
-    );
+    if (calculationMode === 'sgpa') {
+      // For SGPA mode, only fill "Rank in this semester" section, leave "Rank up to this semester" empty
+      rankRows.push(
+        new TableRow({
+          children: [
+            createTableCell(rank.toString()),
+            createTableCell(semesterStudent.id),
+            createTableCell(semesterStudent.sgpa.toFixed(2)),
+            createTableCell(""), // Empty for SGPA mode
+            createTableCell(""), // Empty for SGPA mode
+            createTableCell(""), // Empty for SGPA mode
+          ],
+        })
+      );
+    } else {
+      // For CGPA mode, fill both sections
+      const cumulativeStudent = topCumulativeStudents[i] || { id: "", cgpa: 0 };
+      
+      rankRows.push(
+        new TableRow({
+          children: [
+            createTableCell(rank.toString()),
+            createTableCell(semesterStudent.id),
+            createTableCell(semesterStudent.sgpa.toFixed(2)),
+            createTableCell(rank.toString()),
+            createTableCell(cumulativeStudent.id),
+            createTableCell(cumulativeStudent.cgpa.toFixed(2)),
+          ],
+        })
+      );
+    }
   }
   
   // Create and add rank table to sections
@@ -1073,7 +1100,7 @@ const createWordDocument = async (
   });
 };
 
-// Enhanced helper function for creating table cells with better alignment and text control
+// Helper function for creating table cells with better alignment and text control
 function createTableCell(
   text: string, 
   isHeader = false,
