@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
-import { calculateSGPA, calculateCGPA } from '../gradeUtils';
+import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
 
 interface WordReportOptions {
   logoImagePath?: string;
@@ -205,7 +205,7 @@ const createWordDocument = async (
   }
   
   if (calculationMode === 'cgpa' && analysis.fileCount && analysis.fileCount > 1) {
-    // MODIFIED: Use the current semester file determined by the analyzer (highest semester)
+    // Use the current semester file determined by the analyzer (highest semester)
     const currentSemFile = analysis.currentSemesterFile || '';
     
     if (currentSemFile) {
@@ -768,33 +768,33 @@ const createWordDocument = async (
     }),
   );
   
-  // For both SGPA and CGPA modes, get current semester SGPA data for "Rank in this semester"
+  // For SGPA mode, use normal SGPA data
+  // For CGPA mode, get current semester SGPA data for "Rank in this semester"
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
-  // Get the current semester data - this is for "Rank in this semester" in both SGPA and CGPA modes
-  if (analysis.studentSgpaDetails) {
-    // For both SGPA and CGPA modes, use the studentSgpaDetails data from current semester only
-    currentSemesterStudentData = [...analysis.studentSgpaDetails]
-      .sort((a, b) => b.sgpa - a.sgpa)
-      .map(student => ({
-        id: student.id,
-        sgpa: student.sgpa
-      }));
-  } else {
-    // Fallback calculation from records if studentSgpaDetails is not available
-    const currentSemesterStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
-    currentSemesterStudentIds.forEach(studentId => {
-      // Calculate SGPA for each student in the current semester
-      const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
-      if (studentRecords.length > 0) {
-        const sgpa = calculateSGPA(currentSemesterRecords, studentId);
+  if (calculationMode === 'sgpa') {
+    // For SGPA mode, use the studentSgpaDetails data
+    if (analysis.studentSgpaDetails) {
+      currentSemesterStudentData = [...analysis.studentSgpaDetails]
+        .sort((a, b) => b.sgpa - a.sgpa)
+        .map(student => ({
+          id: student.id,
+          sgpa: student.sgpa
+        }));
+    } else {
+      // Fallback calculation from records if studentSgpaDetails is not available
+      const studentIds = [...new Set(records.map(record => record.REGNO))];
+      studentIds.forEach(studentId => {
+        const sgpa = calculateSGPA(records, studentId);
         currentSemesterStudentData.push({ id: studentId, sgpa });
-      }
-    });
+      });
+      currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
+    }
+  } else {
+    // For CGPA mode, calculate SGPA for each student using ONLY the current semester data
+    currentSemesterStudentData = getCurrentSemesterSGPAData(currentSemesterRecords);
   }
   
-  // Sort by SGPA in descending order
-  currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
   
   // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
