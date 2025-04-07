@@ -94,13 +94,39 @@ export const getSubjectsWithArrears = (records: StudentRecord[], studentId: stri
 export const getCurrentSemesterSGPAData = (
   currentSemesterRecords: StudentRecord[]
 ): { id: string; sgpa: number }[] => {
+  if (!currentSemesterRecords || currentSemesterRecords.length === 0) {
+    console.warn("No current semester records provided to getCurrentSemesterSGPAData");
+    return [];
+  }
+
   // Get unique student IDs from the current semester
   const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
   
+  console.log(`Computing SGPA for ${studentIds.length} students in current semester`);
+  
   // Calculate SGPA for each student in the current semester
   const sgpaData = studentIds.map(id => {
-    // Make sure we properly calculate SGPA using only current semester records
-    const sgpa = calculateSGPA(currentSemesterRecords, id);
+    // Calculate SGPA using only the current semester records for this student
+    const studentRecords = currentSemesterRecords.filter(record => record.REGNO === id);
+    
+    let totalCredits = 0;
+    let weightedSum = 0;
+    
+    // Manual calculation to ensure we're only using current semester data
+    studentRecords.forEach(record => {
+      if (record.GR in gradePointMap) {
+        const gradePoint = gradePointMap[record.GR];
+        const creditValue = record.creditValue || 0;
+        
+        weightedSum += gradePoint * creditValue;
+        totalCredits += creditValue;
+      }
+    });
+    
+    const sgpa = totalCredits === 0 ? 0 : formatTo2Decimals(weightedSum / totalCredits);
+    
+    console.log(`Student ${id}: SGPA = ${sgpa} (from ${studentRecords.length} records, ${totalCredits} credits)`);
+    
     return {
       id,
       sgpa

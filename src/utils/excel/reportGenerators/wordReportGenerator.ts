@@ -768,9 +768,15 @@ const createWordDocument = async (
     }),
   );
   
-  // For SGPA mode, use normal SGPA data
-  // For CGPA mode, get current semester SGPA data for "Rank in this semester"
+  // Improved approach for determining the current semester data
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
+  
+  // For CGPA mode, we need to ensure we're using only the current semester records
+  if (calculationMode === 'cgpa' && analysis.currentSemesterFile) {
+    console.log(`CGPA mode: Using records from "${analysis.currentSemesterFile}" as current semester`);
+    currentSemesterRecords = records.filter(record => record.fileSource === analysis.currentSemesterFile);
+    console.log(`Filtered ${currentSemesterRecords.length} records for current semester out of ${records.length} total`);
+  }
   
   if (calculationMode === 'sgpa') {
     // For SGPA mode, use the studentSgpaDetails data
@@ -794,8 +800,17 @@ const createWordDocument = async (
     // For CGPA mode, calculate SGPA for each student using ONLY the current semester data
     if (currentSemesterRecords && currentSemesterRecords.length > 0) {
       console.log(`Calculating current semester SGPA data with ${currentSemesterRecords.length} records`);
+      
+      // Get unique student IDs for current semester
+      const currentSemStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+      console.log(`Found ${currentSemStudentIds.length} students in current semester`);
+      
+      // Use the enhanced function from gradeUtils
       currentSemesterStudentData = getCurrentSemesterSGPAData(currentSemesterRecords);
-      console.log(`Generated ${currentSemesterStudentData.length} student SGPA entries for current semester`);
+      
+      // Log the top students to verify calculations
+      const top3 = currentSemesterStudentData.slice(0, 3);
+      console.log(`Current semester top 3 students: ${JSON.stringify(top3)}`);
     } else {
       console.log('No current semester records found for SGPA calculation');
       currentSemesterStudentData = [];
