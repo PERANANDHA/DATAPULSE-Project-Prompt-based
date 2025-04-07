@@ -1,4 +1,3 @@
-
 import { gradePointMap, gradeColors, StudentRecord } from './types';
 
 // Helper function to get color for a specific grade
@@ -88,18 +87,4 @@ export const hasArrears = (records: StudentRecord[], studentId: string): boolean
 export const getSubjectsWithArrears = (records: StudentRecord[], studentId: string): string => {
   const arrearsSubjects = records.filter(record => record.REGNO === studentId && record.GR === 'U').map(record => record.SCODE);
   return arrearsSubjects.join(', ');
-};
-
-// New helper function to get SGPA for students based on current semester records only
-export const getCurrentSemesterStudentRanks = (
-  currentSemesterRecords: StudentRecord[]
-): { id: string; sgpa: number }[] => {
-  const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
-  const studentData = studentIds.map(studentId => ({
-    id: studentId,
-    sgpa: calculateSGPA(currentSemesterRecords, studentId)
-  }));
-  
-  // Sort by SGPA in descending order
-  return studentData.sort((a, b) => b.sgpa - a.sgpa);
 };
