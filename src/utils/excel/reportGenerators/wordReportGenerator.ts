@@ -1,4 +1,5 @@
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
+
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun, Header, Footer, PageNumber, IImageOptions, IBorderOptions } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getCurrentSemesterStudentRanks } from '../gradeUtils';
 
@@ -57,10 +58,13 @@ const createWordDocument = async (
                       width: 100,
                       height: 50,
                     },
+                    altText: {
+                      title: "College Logo",
+                      description: "College Logo Image",
+                    }
                   }) : null,
                   new TextRun({
                     text: departmentFullName || 'College Name',
-                    bold: true,
                     size: 24,
                     break: 1,
                   }),
@@ -76,7 +80,7 @@ const createWordDocument = async (
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: 'Page',
+                    text: 'Page ',
                     size: 10,
                   }),
                   new TextRun({
@@ -139,29 +143,21 @@ const fileToBuffer = async (url: string): Promise<Buffer> => {
   return Buffer.from(arrayBuffer);
 };
 
-// Define Header and Footer classes
-class Header extends docx.Header {
-  constructor(options: docx.IHeaderOptions) {
-    super(options);
-  }
-}
-
-class Footer extends docx.Footer {
-  constructor(options: docx.IFooterOptions) {
-    super(options);
-  }
-}
-
-// Define PageNumber class
-const PageNumber = docx.PageNumber;
-
 // Create college information table
 const createCollegeInformationTable = (departmentFullName?: string): Table => {
   const rows = [
     new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph({ text: 'College Name', bold: true })],
+          children: [new Paragraph({ 
+            text: 'College Name',
+            children: [
+              new TextRun({
+                text: 'College Name',
+                bold: true,
+              }),
+            ],
+          })],
           borders: getCellBorders(),
         }),
         new TableCell({
@@ -173,7 +169,14 @@ const createCollegeInformationTable = (departmentFullName?: string): Table => {
     new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph({ text: 'Accreditation', bold: true })],
+          children: [new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Accreditation',
+                bold: true,
+              }),
+            ],
+          })],
           borders: getCellBorders(),
         }),
         new TableCell({
@@ -199,7 +202,14 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
     new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph({ text: 'Total Students', bold: true })],
+          children: [new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Total Students',
+                bold: true,
+              }),
+            ],
+          })],
           borders: getCellBorders(),
         }),
         new TableCell({
@@ -211,7 +221,14 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
     new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph({ text: `Average ${calculationMode.toUpperCase()}`, bold: true })],
+          children: [new Paragraph({
+            children: [
+              new TextRun({
+                text: `Average ${calculationMode.toUpperCase()}`,
+                bold: true,
+              }),
+            ],
+          })],
           borders: getCellBorders(),
         }),
         new TableCell({
@@ -223,7 +240,14 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
     new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph({ text: 'Highest SGPA', bold: true })],
+          children: [new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Highest SGPA',
+                bold: true,
+              }),
+            ],
+          })],
           borders: getCellBorders(),
         }),
         new TableCell({
@@ -235,7 +259,14 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
     new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph({ text: 'Lowest SGPA', bold: true })],
+          children: [new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Lowest SGPA',
+                bold: true,
+              }),
+            ],
+          })],
           borders: getCellBorders(),
         }),
         new TableCell({
@@ -258,7 +289,6 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
 // Create rankings tables for the report
 const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[], options: WordReportOptions): Table[] => {
   const tables: Table[] = [];
-  let rankData;
   
   if (options.calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
     // For CGPA mode, we create two tables
@@ -297,12 +327,12 @@ const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[],
   } else {
     // For SGPA mode, just create one table with current SGPA
     const sgpaRankData = analysis.studentSgpaDetails
-      .sort((a, b) => b.sgpa - a.sgpa)
+      ?.sort((a, b) => b.sgpa - a.sgpa)
       .slice(0, 10)
       .map((student, index) => {
         const rankNumber = index + 1;
         return [rankNumber.toString(), student.id, student.sgpa.toString()];
-      });
+      }) || [];
       
     tables.push(createRankTable('Rank Analysis', ['Rank', 'Register Number', 'SGPA'], sgpaRankData));
   }
@@ -314,7 +344,14 @@ const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[],
 const createRankTable = (title: string, headers: string[], data: string[][]): Table => {
   const headerRow = new TableRow({
     children: headers.map(header => new TableCell({
-      children: [new Paragraph({ text: header, bold: true })],
+      children: [new Paragraph({
+        children: [
+          new TextRun({
+            text: header,
+            bold: true,
+          }),
+        ],
+      })],
       borders: getCellBorders(),
     })),
   });
@@ -338,8 +375,12 @@ const createRankTable = (title: string, headers: string[], data: string[][]): Ta
 // Create grade distribution chart
 const createGradeDistributionChart = (analysis: ResultAnalysis): Paragraph => {
   return new Paragraph({
-    text: 'Grade Distribution Chart - Placeholder',
-    italics: true,
+    children: [
+      new TextRun({
+        text: 'Grade Distribution Chart - Placeholder',
+        italic: true,
+      }),
+    ],
   });
 };
 
@@ -349,7 +390,14 @@ const createSubjectPerformanceTable = (analysis: ResultAnalysis): Table => {
 
   const headerRow = new TableRow({
     children: headers.map(header => new TableCell({
-      children: [new Paragraph({ text: header, bold: true })],
+      children: [new Paragraph({
+        children: [
+          new TextRun({
+            text: header,
+            bold: true,
+          }),
+        ],
+      })],
       borders: getCellBorders(),
     })),
   });
@@ -383,8 +431,12 @@ const createSubjectPerformanceTable = (analysis: ResultAnalysis): Table => {
 // Create pass/fail ratio chart
 const createPassFailRatioChart = (analysis: ResultAnalysis): Paragraph => {
   return new Paragraph({
-    text: 'Pass/Fail Ratio Chart - Placeholder',
-    italics: true,
+    children: [
+      new TextRun({
+        text: 'Pass/Fail Ratio Chart - Placeholder',
+        italic: true,
+      }),
+    ],
   });
 };
 
@@ -394,7 +446,14 @@ const createTopPerformerTable = (analysis: ResultAnalysis): Table => {
 
   const headerRow = new TableRow({
     children: headers.map(header => new TableCell({
-      children: [new Paragraph({ text: header, bold: true })],
+      children: [new Paragraph({
+        children: [
+          new TextRun({
+            text: header,
+            bold: true,
+          }),
+        ],
+      })],
       borders: getCellBorders(),
     })),
   });
@@ -435,7 +494,14 @@ const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
 
   const headerRow = new TableRow({
     children: headers.map(header => new TableCell({
-      children: [new Paragraph({ text: header, bold: true })],
+      children: [new Paragraph({
+        children: [
+          new TextRun({
+            text: header,
+            bold: true,
+          }),
+        ],
+      })],
       borders: getCellBorders(),
     })),
   });
@@ -467,15 +533,14 @@ const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
 };
 
 // Helper function to get cell borders
-const getCellBorders = (): docx.IBorders => {
-  const borderStyle: BorderStyle = BorderStyle.SINGLE;
-  const borderWidth = 1;
+const getCellBorders = (): IBorderOptions => {
   const borderColor = '000000';
+  const borderWidth = 1;
 
   return {
-    top: { color: borderColor, style: borderStyle, size: borderWidth },
-    bottom: { color: borderColor, style: borderStyle, size: borderWidth },
-    left: { color: borderColor, style: borderStyle, size: borderWidth },
-    right: { color: borderColor, style: borderStyle, size: borderWidth },
+    top: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
+    bottom: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
+    left: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
+    right: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
   };
 };
