@@ -1,5 +1,5 @@
 
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun, Header, Footer, PageNumber, IImageOptions, IBorderOptions } from 'docx';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun, Header, Footer, PageNumber, IImageOptions, ITableBorderOptions } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getCurrentSemesterStudentRanks } from '../gradeUtils';
 
@@ -59,6 +59,7 @@ const createWordDocument = async (
                       height: 50,
                     },
                     altText: {
+                      name: "College Logo",
                       title: "College Logo",
                       description: "College Logo Image",
                     }
@@ -150,7 +151,6 @@ const createCollegeInformationTable = (departmentFullName?: string): Table => {
       children: [
         new TableCell({
           children: [new Paragraph({ 
-            text: 'College Name',
             children: [
               new TextRun({
                 text: 'College Name',
@@ -158,11 +158,11 @@ const createCollegeInformationTable = (departmentFullName?: string): Table => {
               }),
             ],
           })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
         new TableCell({
           children: [new Paragraph({ text: departmentFullName || 'N/A' })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
       ],
     }),
@@ -177,11 +177,11 @@ const createCollegeInformationTable = (departmentFullName?: string): Table => {
               }),
             ],
           })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
         new TableCell({
           children: [new Paragraph({ text: 'NBA', })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
       ],
     }),
@@ -210,11 +210,11 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
               }),
             ],
           })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
         new TableCell({
           children: [new Paragraph({ text: analysis.totalStudents.toString() })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
       ],
     }),
@@ -229,11 +229,11 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
               }),
             ],
           })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
         new TableCell({
           children: [new Paragraph({ text: analysis.averageCGPA.toString() })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
       ],
     }),
@@ -248,11 +248,11 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
               }),
             ],
           })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
         new TableCell({
           children: [new Paragraph({ text: analysis.highestSGPA.toString() })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
       ],
     }),
@@ -267,11 +267,11 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
               }),
             ],
           })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
         new TableCell({
           children: [new Paragraph({ text: analysis.lowestSGPA.toString() })],
-          borders: getCellBorders(),
+          borders: getTableBorders(),
         }),
       ],
     }),
@@ -352,14 +352,14 @@ const createRankTable = (title: string, headers: string[], data: string[][]): Ta
           }),
         ],
       })],
-      borders: getCellBorders(),
+      borders: getTableBorders(),
     })),
   });
 
   const dataRows = data.map(row => new TableRow({
     children: row.map(cell => new TableCell({
       children: [new Paragraph({ text: cell })],
-      borders: getCellBorders(),
+      borders: getTableBorders(),
     })),
   }));
 
@@ -378,7 +378,7 @@ const createGradeDistributionChart = (analysis: ResultAnalysis): Paragraph => {
     children: [
       new TextRun({
         text: 'Grade Distribution Chart - Placeholder',
-        italic: true,
+        italics: true,
       }),
     ],
   });
@@ -398,7 +398,7 @@ const createSubjectPerformanceTable = (analysis: ResultAnalysis): Table => {
           }),
         ],
       })],
-      borders: getCellBorders(),
+      borders: getTableBorders(),
     })),
   });
 
@@ -406,15 +406,15 @@ const createSubjectPerformanceTable = (analysis: ResultAnalysis): Table => {
     children: [
       new TableCell({
         children: [new Paragraph({ text: subject.subject })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
       new TableCell({
         children: [new Paragraph({ text: subject.pass.toString() })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
       new TableCell({
         children: [new Paragraph({ text: subject.fail.toString() })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
     ],
   }));
@@ -434,7 +434,7 @@ const createPassFailRatioChart = (analysis: ResultAnalysis): Paragraph => {
     children: [
       new TextRun({
         text: 'Pass/Fail Ratio Chart - Placeholder',
-        italic: true,
+        italics: true,
       }),
     ],
   });
@@ -454,7 +454,7 @@ const createTopPerformerTable = (analysis: ResultAnalysis): Table => {
           }),
         ],
       })],
-      borders: getCellBorders(),
+      borders: getTableBorders(),
     })),
   });
 
@@ -462,19 +462,19 @@ const createTopPerformerTable = (analysis: ResultAnalysis): Table => {
     children: [
       new TableCell({
         children: [new Paragraph({ text: (index + 1).toString() })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
       new TableCell({
         children: [new Paragraph({ text: student.id })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
       new TableCell({
         children: [new Paragraph({ text: student.sgpa.toString() })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
       new TableCell({
         children: [new Paragraph({ text: student.grade })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
     ],
   }));
@@ -502,7 +502,7 @@ const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
           }),
         ],
       })],
-      borders: getCellBorders(),
+      borders: getTableBorders(),
     })),
   });
 
@@ -510,15 +510,15 @@ const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
     children: [
       new TableCell({
         children: [new Paragraph({ text: student.id })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
       new TableCell({
         children: [new Paragraph({ text: student.sgpa.toString() })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
       new TableCell({
         children: [new Paragraph({ text: student.subjects })],
-        borders: getCellBorders(),
+        borders: getTableBorders(),
       }),
     ],
   }));
@@ -533,14 +533,27 @@ const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
 };
 
 // Helper function to get cell borders
-const getCellBorders = (): IBorderOptions => {
-  const borderColor = '000000';
-  const borderWidth = 1;
-
+const getTableBorders = (): {} => {
   return {
-    top: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
-    bottom: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
-    left: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
-    right: { color: borderColor, style: BorderStyle.SINGLE, size: borderWidth },
+    top: {
+      style: BorderStyle.SINGLE,
+      size: 1,
+      color: "000000",
+    },
+    bottom: {
+      style: BorderStyle.SINGLE,
+      size: 1,
+      color: "000000",
+    },
+    left: {
+      style: BorderStyle.SINGLE,
+      size: 1,
+      color: "000000",
+    },
+    right: {
+      style: BorderStyle.SINGLE,
+      size: 1,
+      color: "000000",
+    },
   };
 };
