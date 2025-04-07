@@ -93,13 +93,28 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   const studentSgpaMap: { [studentId: string]: number } = {};
   const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
   
-  [...new Set(records.map(record => record.REGNO))].forEach(studentId => {
-    const sgpa = calculateSGPA(records, studentId);
+  // For CGPA mode, if there's a current semester file, use only those records for SGPA calculation
+  const recordsForSgpa = currentSemesterFile ? 
+    records.filter(record => record.fileSource === currentSemesterFile) : 
+    records;
+    
+  console.log(`Using ${recordsForSgpa.length} records for SGPA calculation`);
+  
+  // Check if records have credit values
+  const recordsWithCredits = recordsForSgpa.filter(r => r.creditValue && r.creditValue > 0);
+  console.log(`Records with credits for SGPA: ${recordsWithCredits.length} out of ${recordsForSgpa.length}`);
+  
+  if (recordsWithCredits.length === 0 && recordsForSgpa.length > 0) {
+    console.warn("WARNING: No records have credit values assigned in SGPA calculation! This will result in all SGPAs being 0.");
+  }
+
+  [...new Set(recordsForSgpa.map(record => record.REGNO))].forEach(studentId => {
+    const sgpa = calculateSGPA(recordsForSgpa, studentId);
     studentSgpaMap[studentId] = sgpa;
     studentSgpaDetails.push({
       id: studentId,
       sgpa: sgpa,
-      hasArrears: hasArrears(records, studentId)
+      hasArrears: hasArrears(recordsForSgpa, studentId)
     });
   });
   

@@ -99,6 +99,15 @@ export const getCurrentSemesterSGPAData = (
     return [];
   }
 
+  console.log(`Raw records in getCurrentSemesterSGPAData: ${currentSemesterRecords.length}`);
+  // Check if credits are assigned properly
+  const recordsWithCredits = currentSemesterRecords.filter(r => r.creditValue && r.creditValue > 0);
+  console.log(`Records with credits: ${recordsWithCredits.length} out of ${currentSemesterRecords.length}`);
+  
+  if (recordsWithCredits.length === 0) {
+    console.warn("WARNING: No records have credit values assigned! This will result in all SGPAs being 0.");
+  }
+
   // Get unique student IDs from the current semester
   const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
   
@@ -118,6 +127,11 @@ export const getCurrentSemesterSGPAData = (
         const gradePoint = gradePointMap[record.GR];
         const creditValue = record.creditValue || 0;
         
+        // Debug individual record credit values
+        if (creditValue === 0) {
+          console.log(`Student ${id}, Subject ${record.SCODE}: No credit value assigned`);
+        }
+        
         weightedSum += gradePoint * creditValue;
         totalCredits += creditValue;
       }
@@ -134,5 +148,10 @@ export const getCurrentSemesterSGPAData = (
   });
   
   // Sort by SGPA in descending order
-  return sgpaData.sort((a, b) => b.sgpa - a.sgpa);
+  const sortedData = sgpaData.sort((a, b) => b.sgpa - a.sgpa);
+  
+  // Log top students for debugging
+  console.log(`Top current semester students: ${JSON.stringify(sortedData.slice(0, 3), null, 2)}`);
+  
+  return sortedData;
 };

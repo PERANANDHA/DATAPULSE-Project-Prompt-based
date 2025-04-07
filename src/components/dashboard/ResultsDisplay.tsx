@@ -38,6 +38,24 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     );
   }
 
+  // For CGPA mode, ensure we log important data for debugging
+  if (calculationMode === 'cgpa') {
+    console.log(`ResultsDisplay - CGPA mode active`);
+    if (analysis.currentSemesterFile) {
+      console.log(`Current semester file: ${analysis.currentSemesterFile}`);
+      
+      // Check if student details are present
+      if (analysis.studentSgpaDetails && analysis.studentSgpaDetails.length > 0) {
+        console.log(`Found ${analysis.studentSgpaDetails.length} students with SGPA details`);
+        console.log(`Sample SGPA: ${analysis.studentSgpaDetails[0].id} - ${analysis.studentSgpaDetails[0].sgpa}`);
+      } else {
+        console.warn('No student SGPA details found!');
+      }
+    } else {
+      console.warn('No current semester file identified in CGPA mode!');
+    }
+  }
+
   // For CGPA mode, determine if we're showing the current semester subjects
   const showSubjectAnalysis = calculationMode === 'sgpa' || 
     (calculationMode === 'cgpa' && analysis.currentSemesterFile);

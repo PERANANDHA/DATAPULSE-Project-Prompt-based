@@ -83,6 +83,11 @@ const Dashboard = () => {
     setSubjectCredits(credits);
     setCreditsAssigned(true);
     
+    console.log(`Credits assigned: ${credits.length} subjects`);
+    credits.forEach(credit => {
+      console.log(`Subject ${credit.subjectCode}: ${credit.creditValue} credits`);
+    });
+    
     analyzeData(credits);
   };
 
@@ -118,6 +123,10 @@ const Dashboard = () => {
           creditValue: 3
         };
       });
+      
+      console.log(`Applied credits to ${recordsWithCredits.length} records`);
+      const recordsWithPositiveCredits = recordsWithCredits.filter(r => r.creditValue && r.creditValue > 0);
+      console.log(`Records with positive credits: ${recordsWithPositiveCredits.length} out of ${recordsWithCredits.length}`);
       
       const analysis = analyzeResults(recordsWithCredits, subjectCodesToProcess);
       setResultAnalysis(analysis);
