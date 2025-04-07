@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun, Header, Footer, PageNumber, IImageOptions, ITableBordersOptions } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getCurrentSemesterStudentRanks } from '../gradeUtils';
@@ -58,6 +59,7 @@ const createWordDocument = async (
                       height: 50,
                     },
                     altText: {
+                      name: "CollegeLogo", // Added the required 'name' property
                       title: "College Logo",
                       description: "College Logo Image",
                     },
