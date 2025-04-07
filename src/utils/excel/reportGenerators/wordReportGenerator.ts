@@ -36,4 +36,446 @@ export const downloadWordReport = async (
   URL.revokeObjectURL(url);
 };
 
-[... rest of the original code, exactly as shown in the file above, with no omissions or placeholders ...]
+const createWordDocument = async (
+  analysis: ResultAnalysis,
+  records: StudentRecord[],
+  options: WordReportOptions
+): Promise<Document> => {
+  const { logoImagePath, department, departmentFullName, calculationMode } = options;
+
+  const document = new Document({
+    sections: [
+      {
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                children: [
+                  logoImagePath ? new ImageRun({
+                    data: await fileToBuffer(logoImagePath),
+                    transformation: {
+                      width: 100,
+                      height: 50,
+                    },
+                  }) : null,
+                  new TextRun({
+                    text: departmentFullName || 'College Name',
+                    bold: true,
+                    size: 24,
+                    break: 1,
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+          }),
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: 'Page',
+                    size: 10,
+                  }),
+                  new TextRun({
+                    children: [PageNumber.CURRENT],
+                    size: 10,
+                  }),
+                  new TextRun({
+                    text: ' of ',
+                    size: 10,
+                  }),
+                  new TextRun({
+                    children: [PageNumber.TOTAL_PAGES],
+                    size: 10,
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+              }),
+            ],
+          }),
+        },
+        children: [
+          new Paragraph({
+            text: 'End Semester Result Analysis',
+            heading: HeadingLevel.TITLE,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: `Department: ${department || 'N/A'}`,
+            heading: HeadingLevel.HEADING_2,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          createCollegeInformationTable(departmentFullName),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          createAnalysisSummary(analysis, calculationMode),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          ...createRankingTables(analysis, records, options),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          createGradeDistributionChart(analysis),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          createSubjectPerformanceTable(analysis),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          createPassFailRatioChart(analysis),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          createTopPerformerTable(analysis),
+          new Paragraph({ text: '', }), // Empty paragraph for spacing
+          createNeedsImprovementTable(analysis),
+        ],
+      },
+    ],
+  });
+
+  return document;
+};
+
+// Helper function to convert image file to buffer
+const fileToBuffer = async (url: string): Promise<Buffer> => {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+};
+
+// Define Header and Footer classes
+class Header extends docx.Header {
+  constructor(options: docx.IHeaderOptions) {
+    super(options);
+  }
+}
+
+class Footer extends docx.Footer {
+  constructor(options: docx.IFooterOptions) {
+    super(options);
+  }
+}
+
+// Define PageNumber class
+const PageNumber = docx.PageNumber;
+
+// Create college information table
+const createCollegeInformationTable = (departmentFullName?: string): Table => {
+  const rows = [
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ text: 'College Name', bold: true })],
+          borders: getCellBorders(),
+        }),
+        new TableCell({
+          children: [new Paragraph({ text: departmentFullName || 'N/A' })],
+          borders: getCellBorders(),
+        }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ text: 'Accreditation', bold: true })],
+          borders: getCellBorders(),
+        }),
+        new TableCell({
+          children: [new Paragraph({ text: 'NBA', })],
+          borders: getCellBorders(),
+        }),
+      ],
+    }),
+  ];
+
+  return new Table({
+    rows: rows,
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+  });
+};
+
+// Create analysis summary table
+const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa' | 'cgpa'): Table => {
+  const rows = [
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ text: 'Total Students', bold: true })],
+          borders: getCellBorders(),
+        }),
+        new TableCell({
+          children: [new Paragraph({ text: analysis.totalStudents.toString() })],
+          borders: getCellBorders(),
+        }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ text: `Average ${calculationMode.toUpperCase()}`, bold: true })],
+          borders: getCellBorders(),
+        }),
+        new TableCell({
+          children: [new Paragraph({ text: analysis.averageCGPA.toString() })],
+          borders: getCellBorders(),
+        }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ text: 'Highest SGPA', bold: true })],
+          borders: getCellBorders(),
+        }),
+        new TableCell({
+          children: [new Paragraph({ text: analysis.highestSGPA.toString() })],
+          borders: getCellBorders(),
+        }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ text: 'Lowest SGPA', bold: true })],
+          borders: getCellBorders(),
+        }),
+        new TableCell({
+          children: [new Paragraph({ text: analysis.lowestSGPA.toString() })],
+          borders: getCellBorders(),
+        }),
+      ],
+    }),
+  ];
+
+  return new Table({
+    rows: rows,
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+  });
+};
+
+// Create rankings tables for the report
+const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[], options: WordReportOptions): Table[] => {
+  const tables: Table[] = [];
+  let rankData;
+  
+  if (options.calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+    // For CGPA mode, we create two tables
+    
+    // Rank up to this semester (based on CGPA)
+    const cgpaRankData = analysis.cgpaAnalysis.studentCGPAs
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .slice(0, 10)
+      .map((student, index) => {
+        const rankNumber = index + 1;
+        return [rankNumber.toString(), student.id, student.cgpa.toString()];
+      });
+    
+    tables.push(createRankTable('Rank up to this semester', ['Rank', 'Register Number', 'CGPA'], cgpaRankData));
+    
+    // Rank in this semester (based on current semester SGPA only)
+    // Get current semester records
+    if (analysis.currentSemesterFile) {
+      const currentSemesterRecords = records.filter(
+        record => record.fileSource === analysis.currentSemesterFile
+      );
+      
+      // Calculate SGPAs for current semester only
+      const currentSemesterRanks = getCurrentSemesterStudentRanks(currentSemesterRecords);
+      
+      const sgpaRankData = currentSemesterRanks
+        .slice(0, 10)
+        .map((student, index) => {
+          const rankNumber = index + 1;
+          return [rankNumber.toString(), student.id, student.sgpa.toString()];
+        });
+      
+      tables.push(createRankTable('Rank in this semester', ['Rank', 'Register Number', 'SGPA'], sgpaRankData));
+    }
+    
+  } else {
+    // For SGPA mode, just create one table with current SGPA
+    const sgpaRankData = analysis.studentSgpaDetails
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .slice(0, 10)
+      .map((student, index) => {
+        const rankNumber = index + 1;
+        return [rankNumber.toString(), student.id, student.sgpa.toString()];
+      });
+      
+    tables.push(createRankTable('Rank Analysis', ['Rank', 'Register Number', 'SGPA'], sgpaRankData));
+  }
+  
+  return tables;
+};
+
+// Create a single rank table
+const createRankTable = (title: string, headers: string[], data: string[][]): Table => {
+  const headerRow = new TableRow({
+    children: headers.map(header => new TableCell({
+      children: [new Paragraph({ text: header, bold: true })],
+      borders: getCellBorders(),
+    })),
+  });
+
+  const dataRows = data.map(row => new TableRow({
+    children: row.map(cell => new TableCell({
+      children: [new Paragraph({ text: cell })],
+      borders: getCellBorders(),
+    })),
+  }));
+
+  return new Table({
+    rows: [headerRow, ...dataRows],
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+  });
+};
+
+// Create grade distribution chart
+const createGradeDistributionChart = (analysis: ResultAnalysis): Paragraph => {
+  return new Paragraph({
+    text: 'Grade Distribution Chart - Placeholder',
+    italics: true,
+  });
+};
+
+// Create subject performance table
+const createSubjectPerformanceTable = (analysis: ResultAnalysis): Table => {
+  const headers = ['Subject Code', 'Pass Percentage', 'Fail Percentage'];
+
+  const headerRow = new TableRow({
+    children: headers.map(header => new TableCell({
+      children: [new Paragraph({ text: header, bold: true })],
+      borders: getCellBorders(),
+    })),
+  });
+
+  const dataRows = analysis.subjectPerformance.map(subject => new TableRow({
+    children: [
+      new TableCell({
+        children: [new Paragraph({ text: subject.subject })],
+        borders: getCellBorders(),
+      }),
+      new TableCell({
+        children: [new Paragraph({ text: subject.pass.toString() })],
+        borders: getCellBorders(),
+      }),
+      new TableCell({
+        children: [new Paragraph({ text: subject.fail.toString() })],
+        borders: getCellBorders(),
+      }),
+    ],
+  }));
+
+  return new Table({
+    rows: [headerRow, ...dataRows],
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+  });
+};
+
+// Create pass/fail ratio chart
+const createPassFailRatioChart = (analysis: ResultAnalysis): Paragraph => {
+  return new Paragraph({
+    text: 'Pass/Fail Ratio Chart - Placeholder',
+    italics: true,
+  });
+};
+
+// Create top performer table
+const createTopPerformerTable = (analysis: ResultAnalysis): Table => {
+  const headers = ['Rank', 'Register Number', 'SGPA', 'Best Grade'];
+
+  const headerRow = new TableRow({
+    children: headers.map(header => new TableCell({
+      children: [new Paragraph({ text: header, bold: true })],
+      borders: getCellBorders(),
+    })),
+  });
+
+  const dataRows = analysis.topPerformers.map((student, index) => new TableRow({
+    children: [
+      new TableCell({
+        children: [new Paragraph({ text: (index + 1).toString() })],
+        borders: getCellBorders(),
+      }),
+      new TableCell({
+        children: [new Paragraph({ text: student.id })],
+        borders: getCellBorders(),
+      }),
+      new TableCell({
+        children: [new Paragraph({ text: student.sgpa.toString() })],
+        borders: getCellBorders(),
+      }),
+      new TableCell({
+        children: [new Paragraph({ text: student.grade })],
+        borders: getCellBorders(),
+      }),
+    ],
+  }));
+
+  return new Table({
+    rows: [headerRow, ...dataRows],
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+  });
+};
+
+// Create needs improvement table
+const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
+  const headers = ['Register Number', 'SGPA', 'Arrears'];
+
+  const headerRow = new TableRow({
+    children: headers.map(header => new TableCell({
+      children: [new Paragraph({ text: header, bold: true })],
+      borders: getCellBorders(),
+    })),
+  });
+
+  const dataRows = analysis.needsImprovement.map(student => new TableRow({
+    children: [
+      new TableCell({
+        children: [new Paragraph({ text: student.id })],
+        borders: getCellBorders(),
+      }),
+      new TableCell({
+        children: [new Paragraph({ text: student.sgpa.toString() })],
+        borders: getCellBorders(),
+      }),
+      new TableCell({
+        children: [new Paragraph({ text: student.subjects })],
+        borders: getCellBorders(),
+      }),
+    ],
+  }));
+
+  return new Table({
+    rows: [headerRow, ...dataRows],
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+  });
+};
+
+// Helper function to get cell borders
+const getCellBorders = (): docx.IBorders => {
+  const borderStyle: BorderStyle = BorderStyle.SINGLE;
+  const borderWidth = 1;
+  const borderColor = '000000';
+
+  return {
+    top: { color: borderColor, style: borderStyle, size: borderWidth },
+    bottom: { color: borderColor, style: borderStyle, size: borderWidth },
+    left: { color: borderColor, style: borderStyle, size: borderWidth },
+    right: { color: borderColor, style: borderStyle, size: borderWidth },
+  };
+};
