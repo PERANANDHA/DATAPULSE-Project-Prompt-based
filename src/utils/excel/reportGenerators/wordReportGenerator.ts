@@ -1,5 +1,4 @@
-
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun, Header, Footer, PageNumber, IImageOptions, ITableBorderOptions } from 'docx';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun, Header, Footer, PageNumber, IImageOptions, ITableBordersOptions } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getCurrentSemesterStudentRanks } from '../gradeUtils';
 
@@ -59,10 +58,10 @@ const createWordDocument = async (
                       height: 50,
                     },
                     altText: {
-                      name: "College Logo",
                       title: "College Logo",
                       description: "College Logo Image",
-                    }
+                    },
+                    type: "png",
                   }) : null,
                   new TextRun({
                     text: departmentFullName || 'College Name',
@@ -137,14 +136,12 @@ const createWordDocument = async (
   return document;
 };
 
-// Helper function to convert image file to buffer
 const fileToBuffer = async (url: string): Promise<Buffer> => {
   const response = await fetch(url);
   const arrayBuffer = await response.arrayBuffer();
   return Buffer.from(arrayBuffer);
 };
 
-// Create college information table
 const createCollegeInformationTable = (departmentFullName?: string): Table => {
   const rows = [
     new TableRow({
@@ -196,7 +193,6 @@ const createCollegeInformationTable = (departmentFullName?: string): Table => {
   });
 };
 
-// Create analysis summary table
 const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa' | 'cgpa'): Table => {
   const rows = [
     new TableRow({
@@ -286,14 +282,10 @@ const createAnalysisSummary = (analysis: ResultAnalysis, calculationMode: 'sgpa'
   });
 };
 
-// Create rankings tables for the report
 const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[], options: WordReportOptions): Table[] => {
   const tables: Table[] = [];
   
   if (options.calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
-    // For CGPA mode, we create two tables
-    
-    // Rank up to this semester (based on CGPA)
     const cgpaRankData = analysis.cgpaAnalysis.studentCGPAs
       .sort((a, b) => b.cgpa - a.cgpa)
       .slice(0, 10)
@@ -304,14 +296,11 @@ const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[],
     
     tables.push(createRankTable('Rank up to this semester', ['Rank', 'Register Number', 'CGPA'], cgpaRankData));
     
-    // Rank in this semester (based on current semester SGPA only)
-    // Get current semester records
     if (analysis.currentSemesterFile) {
       const currentSemesterRecords = records.filter(
         record => record.fileSource === analysis.currentSemesterFile
       );
       
-      // Calculate SGPAs for current semester only
       const currentSemesterRanks = getCurrentSemesterStudentRanks(currentSemesterRecords);
       
       const sgpaRankData = currentSemesterRanks
@@ -325,7 +314,6 @@ const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[],
     }
     
   } else {
-    // For SGPA mode, just create one table with current SGPA
     const sgpaRankData = analysis.studentSgpaDetails
       ?.sort((a, b) => b.sgpa - a.sgpa)
       .slice(0, 10)
@@ -340,7 +328,6 @@ const createRankingTables = (analysis: ResultAnalysis, records: StudentRecord[],
   return tables;
 };
 
-// Create a single rank table
 const createRankTable = (title: string, headers: string[], data: string[][]): Table => {
   const headerRow = new TableRow({
     children: headers.map(header => new TableCell({
@@ -372,7 +359,6 @@ const createRankTable = (title: string, headers: string[], data: string[][]): Ta
   });
 };
 
-// Create grade distribution chart
 const createGradeDistributionChart = (analysis: ResultAnalysis): Paragraph => {
   return new Paragraph({
     children: [
@@ -384,7 +370,6 @@ const createGradeDistributionChart = (analysis: ResultAnalysis): Paragraph => {
   });
 };
 
-// Create subject performance table
 const createSubjectPerformanceTable = (analysis: ResultAnalysis): Table => {
   const headers = ['Subject Code', 'Pass Percentage', 'Fail Percentage'];
 
@@ -428,7 +413,6 @@ const createSubjectPerformanceTable = (analysis: ResultAnalysis): Table => {
   });
 };
 
-// Create pass/fail ratio chart
 const createPassFailRatioChart = (analysis: ResultAnalysis): Paragraph => {
   return new Paragraph({
     children: [
@@ -440,7 +424,6 @@ const createPassFailRatioChart = (analysis: ResultAnalysis): Paragraph => {
   });
 };
 
-// Create top performer table
 const createTopPerformerTable = (analysis: ResultAnalysis): Table => {
   const headers = ['Rank', 'Register Number', 'SGPA', 'Best Grade'];
 
@@ -488,7 +471,6 @@ const createTopPerformerTable = (analysis: ResultAnalysis): Table => {
   });
 };
 
-// Create needs improvement table
 const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
   const headers = ['Register Number', 'SGPA', 'Arrears'];
 
@@ -532,8 +514,7 @@ const createNeedsImprovementTable = (analysis: ResultAnalysis): Table => {
   });
 };
 
-// Helper function to get cell borders
-const getTableBorders = (): {} => {
+const getTableBorders = (): ITableBordersOptions => {
   return {
     top: {
       style: BorderStyle.SINGLE,
