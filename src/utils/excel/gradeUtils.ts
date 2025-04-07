@@ -98,10 +98,14 @@ export const getCurrentSemesterSGPAData = (
   const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
   
   // Calculate SGPA for each student in the current semester
-  const sgpaData = studentIds.map(id => ({
-    id,
-    sgpa: calculateSGPA(currentSemesterRecords, id)
-  }));
+  const sgpaData = studentIds.map(id => {
+    // Make sure we properly calculate SGPA using only current semester records
+    const sgpa = calculateSGPA(currentSemesterRecords, id);
+    return {
+      id,
+      sgpa
+    };
+  });
   
   // Sort by SGPA in descending order
   return sgpaData.sort((a, b) => b.sgpa - a.sgpa);

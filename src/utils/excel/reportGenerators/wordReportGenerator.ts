@@ -792,10 +792,18 @@ const createWordDocument = async (
     }
   } else {
     // For CGPA mode, calculate SGPA for each student using ONLY the current semester data
-    currentSemesterStudentData = getCurrentSemesterSGPAData(currentSemesterRecords);
+    if (currentSemesterRecords && currentSemesterRecords.length > 0) {
+      console.log(`Calculating current semester SGPA data with ${currentSemesterRecords.length} records`);
+      currentSemesterStudentData = getCurrentSemesterSGPAData(currentSemesterRecords);
+      console.log(`Generated ${currentSemesterStudentData.length} student SGPA entries for current semester`);
+    } else {
+      console.log('No current semester records found for SGPA calculation');
+      currentSemesterStudentData = [];
+    }
   }
   
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
+  console.log('Top current semester students:', topCurrentSemesterStudents);
   
   // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
   let topCumulativeStudents: { id: string; cgpa: number }[] = [];
