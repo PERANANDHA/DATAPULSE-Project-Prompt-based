@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
@@ -884,4 +885,84 @@ const createWordDocument = async (
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
   console.log('Final top current semester students for table:');
   topCurrentSemesterStudents.forEach((student, i) => {
-    console.
+    console.log(`Rank ${i+1}: Student ${student.id} - SGPA ${student.sgpa}`);
+  });
+  
+  // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
+  let topCumulativeStudents: { id: string; cgpa: number }[] = [];
+  
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
+    // For CGPA mode, use the actual CGPA data
+    topCumulativeStudents = [...analysis.cgpaAnalysis.studentCGPAs]
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .slice(0, 3);
+  }
+  
+  // Create table headers for Rank Analysis
+  const rankRows = [
+    new TableRow({
+      children: [
+        createTableCell("Rank in this semester", true, { colspan: 3, alignment: 'CENTER' }),
+        createTableCell("Rank up to this semester", true, { colspan: 3, alignment: 'CENTER' }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        createHeaderCell("Rank", { alignment: 'CENTER' }),
+        createHeaderCell("Register No", { alignment: 'CENTER' }),
+        createHeaderCell("SGPA", { alignment: 'CENTER' }),
+        createHeaderCell("Rank", { alignment: 'CENTER' }),
+        createHeaderCell("Register No", { alignment: 'CENTER' }),
+        createHeaderCell("CGPA", { alignment: 'CENTER' }),
+      ],
+    }),
+  ];
+  
+  // Add top 3 students from current semester to the rank table
+  for (let i = 0; i < 3; i++) {
+    const thisSemesterStudent = i < topCurrentSemesterStudents.length ? topCurrentSemesterStudents[i] : null;
+    const cumulativeStudent = calculationMode === 'cgpa' && i < topCumulativeStudents.length ? topCumulativeStudents[i] : null;
+    
+    const row = new TableRow({
+      children: [
+        // Current semester ranking
+        createTableCell((i + 1).toString(), false, { alignment: 'CENTER' }),
+        createTableCell(thisSemesterStudent ? thisSemesterStudent.id : "N/A", false, { alignment: 'CENTER' }),
+        createTableCell(thisSemesterStudent ? thisSemesterStudent.sgpa.toFixed(2) : "N/A", false, { alignment: 'CENTER' }),
+        // Cumulative ranking
+        createTableCell((i + 1).toString(), false, { alignment: 'CENTER' }),
+        createTableCell(cumulativeStudent ? cumulativeStudent.id : "N/A", false, { alignment: 'CENTER' }),
+        createTableCell(cumulativeStudent ? cumulativeStudent.cgpa.toFixed(2) : "N/A", false, { alignment: 'CENTER' }),
+      ],
+    });
+    
+    rankRows.push(row);
+  }
+  
+  // Create the rank analysis table
+  const rankTable = new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1 },
+      bottom: { style: BorderStyle.SINGLE, size: 1 },
+      left: { style: BorderStyle.SINGLE, size: 1 },
+      right: { style: BorderStyle.SINGLE, size: 1 },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+    },
+    columnWidths: [400, 1800, 800, 400, 1800, 800],
+    rows: rankRows,
+  });
+  
+  sections.push(rankTable);
+  
+  // Finally, create the document with all the sections
+  return new Document({
+    sections: [{
+      children: sections,
+    }],
+  });
+};
