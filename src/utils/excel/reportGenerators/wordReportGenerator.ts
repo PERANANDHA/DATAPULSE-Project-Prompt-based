@@ -1,40 +1,6 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
-
-// Helper functions for creating table cells
-const createHeaderCell = (text: string, options: any = {}) => {
-  return new TableCell({
-    children: [
-      new Paragraph({
-        children: [new TextRun({ text, bold: true })],
-        alignment: options.alignment || AlignmentType.LEFT
-      }),
-    ],
-    verticalAlign: AlignmentType.CENTER,
-    ...options
-  });
-};
-
-const createTableCell = (text: string, bold: boolean = false, options: any = {}) => {
-  return new TableCell({
-    children: [
-      new Paragraph({
-        children: [new TextRun({ text, bold })],
-        alignment: options.alignment || AlignmentType.LEFT
-      }),
-    ],
-    verticalAlign: AlignmentType.CENTER,
-    ...options
-  });
-};
-
-const createTableRow = (cells: string[]) => {
-  return new TableRow({
-    children: cells.map(text => createTableCell(text)),
-  });
-};
 
 interface WordReportOptions {
   logoImagePath?: string;
@@ -802,65 +768,46 @@ const createWordDocument = async (
     }),
   );
   
-  // Get current semester student data for the "Rank in This Semester" table
-  // FIXED: More robust approach to get accurate SGPA data from current semester
+  // Improved approach for determining the current semester data
   let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
   
+  // For CGPA mode, we need to ensure we're using only the current semester records
   if (calculationMode === 'cgpa' && analysis.currentSemesterFile) {
-    console.log(`CGPA mode: Getting current semester SGPA data for "${analysis.currentSemesterFile}"`);
+    console.log(`CGPA mode: Using records from "${analysis.currentSemesterFile}" as current semester`);
+    const currentSemesterRecords = records.filter(record => record.fileSource === analysis.currentSemesterFile);
+    console.log(`Filtered ${currentSemesterRecords.length} records for current semester out of ${records.length} total`);
     
-    // Filter records for the current semester
-    const currentSemRecords = records.filter(record => record.fileSource === analysis.currentSemesterFile);
-    console.log(`Found ${currentSemRecords.length} records for current semester file`);
-    
-    // Get unique student IDs
-    const studentIds = [...new Set(currentSemRecords.map(record => record.REGNO))];
-    console.log(`Found ${studentIds.length} unique students in current semester`);
-    
-    // For each student, calculate their SGPA based on the current semester records only
-    studentIds.forEach(studentId => {
-      // Get all records for this student in the current semester
-      const studentSemRecords = currentSemRecords.filter(record => record.REGNO === studentId);
+    if (currentSemesterRecords.length > 0) {
+      // Get unique student IDs from current semester
+      const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+      console.log(`Found ${studentIds.length} unique students in current semester`);
       
-      // Debug to verify credit values
-      const recordsWithCredits = studentSemRecords.filter(r => r.creditValue && r.creditValue > 0);
-      console.log(`Student ${studentId}: ${recordsWithCredits.length}/${studentSemRecords.length} records have credits`);
-      
-      if (recordsWithCredits.length === 0) {
-        console.warn(`WARNING: Student ${studentId} has no records with valid credits!`);
-      }
-      
-      let totalPoints = 0;
-      let totalCredits = 0;
-      
-      // Manual SGPA calculation to ensure control
-      studentSemRecords.forEach(record => {
-        if (record.GR in gradePointMap) {
-          const gradePoint = gradePointMap[record.GR];
-          const creditValue = record.creditValue || 0;
-          
-          if (creditValue <= 0) {
-            console.warn(`Student ${studentId}, Subject ${record.SCODE}: Credit value is ${creditValue}`);
-          } else {
-            totalPoints += gradePoint * creditValue;
+      // Calculate SGPA for each student using only current semester data
+      currentSemesterStudentData = studentIds.map(id => {
+        const studentRecords = currentSemesterRecords.filter(record => record.REGNO === id);
+        let totalCredits = 0;
+        let weightedSum = 0;
+        
+        studentRecords.forEach(record => {
+          if (record.GR in gradePointMap) {
+            const gradePoint = gradePointMap[record.GR];
+            const creditValue = record.creditValue || 0;
+            weightedSum += gradePoint * creditValue;
             totalCredits += creditValue;
-            console.log(`Student ${studentId}, Subject ${record.SCODE}: Grade ${record.GR} (${gradePoint}) × Credit ${creditValue}`);
           }
-        }
+        });
+        
+        const sgpa = totalCredits > 0 ? Number((weightedSum / totalCredits).toFixed(2)) : 0;
+        console.log(`Student ${id}: SGPA calculated = ${sgpa}`);
+        return { id, sgpa };
       });
       
-      const sgpa = totalCredits > 0 ? parseFloat((totalPoints / totalCredits).toFixed(2)) : 0;
-      console.log(`Student ${studentId} final SGPA: ${sgpa} (from ${totalPoints}/${totalCredits})`);
-      
-      currentSemesterStudentData.push({ id: studentId, sgpa });
-    });
-    
-    // Sort by SGPA in descending order
-    currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
-    console.log('Current semester students sorted by SGPA:');
-    currentSemesterStudentData.slice(0, 3).forEach((student, i) => {
-      console.log(`Rank ${i+1}: Student ${student.id} - SGPA ${student.sgpa}`);
-    });
+      // Sort by SGPA in descending order
+      currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
+      console.log(`Top 3 students current semester SGPA: ${JSON.stringify(currentSemesterStudentData.slice(0, 3))}`);
+    } else {
+      console.warn('No records found for current semester in CGPA mode');
+    }
   } else if (calculationMode === 'sgpa') {
     // For SGPA mode, use the studentSgpaDetails data
     if (analysis.studentSgpaDetails) {
@@ -883,10 +830,7 @@ const createWordDocument = async (
   
   // Get top 3 students from current semester
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
-  console.log('Final top current semester students for table:');
-  topCurrentSemesterStudents.forEach((student, i) => {
-    console.log(`Rank ${i+1}: Student ${student.id} - SGPA ${student.sgpa}`);
-  });
+  console.log('Final top current semester students:', JSON.stringify(topCurrentSemesterStudents));
   
   // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
   let topCumulativeStudents: { id: string; cgpa: number }[] = [];
@@ -896,6 +840,10 @@ const createWordDocument = async (
     topCumulativeStudents = [...analysis.cgpaAnalysis.studentCGPAs]
       .sort((a, b) => b.cgpa - a.cgpa)
       .slice(0, 3);
+      
+    // Add debug log to show the difference between current semester ranking and cumulative ranking
+    console.log(`CGPA mode - Current Semester Ranking: ${JSON.stringify(topCurrentSemesterStudents)}`);
+    console.log(`CGPA mode - Cumulative Ranking: ${JSON.stringify(topCumulativeStudents)}`);
   }
   
   // Create table headers for Rank Analysis
@@ -908,38 +856,57 @@ const createWordDocument = async (
     }),
     new TableRow({
       children: [
-        createHeaderCell("Rank", { alignment: 'CENTER' }),
-        createHeaderCell("Register No", { alignment: 'CENTER' }),
-        createHeaderCell("SGPA", { alignment: 'CENTER' }),
-        createHeaderCell("Rank", { alignment: 'CENTER' }),
-        createHeaderCell("Register No", { alignment: 'CENTER' }),
-        createHeaderCell("CGPA", { alignment: 'CENTER' }),
+        createHeaderCell("RANK"),
+        createHeaderCell("Name of the student"),
+        createHeaderCell("SGPA"),
+        createHeaderCell("RANK"),
+        createHeaderCell("Name of the student"),
+        createHeaderCell("CGPA"),
       ],
     }),
   ];
   
-  // Add top 3 students from current semester to the rank table
+  // Add data rows for top 3 ranks
   for (let i = 0; i < 3; i++) {
-    const thisSemesterStudent = i < topCurrentSemesterStudents.length ? topCurrentSemesterStudents[i] : null;
-    const cumulativeStudent = calculationMode === 'cgpa' && i < topCumulativeStudents.length ? topCumulativeStudents[i] : null;
+    const rank = i + 1;
     
-    const row = new TableRow({
-      children: [
-        // Current semester ranking
-        createTableCell((i + 1).toString(), false, { alignment: 'CENTER' }),
-        createTableCell(thisSemesterStudent ? thisSemesterStudent.id : "N/A", false, { alignment: 'CENTER' }),
-        createTableCell(thisSemesterStudent ? thisSemesterStudent.sgpa.toFixed(2) : "N/A", false, { alignment: 'CENTER' }),
-        // Cumulative ranking
-        createTableCell((i + 1).toString(), false, { alignment: 'CENTER' }),
-        createTableCell(cumulativeStudent ? cumulativeStudent.id : "N/A", false, { alignment: 'CENTER' }),
-        createTableCell(cumulativeStudent ? cumulativeStudent.cgpa.toFixed(2) : "N/A", false, { alignment: 'CENTER' }),
-      ],
-    });
+    // Current semester student data (ensure we have data)
+    const semesterStudent = topCurrentSemesterStudents[i] || { id: "", sgpa: 0 };
     
-    rankRows.push(row);
+    if (calculationMode === 'sgpa') {
+      // For SGPA mode, only fill "Rank in this semester" section, leave "Rank up to this semester" empty
+      rankRows.push(
+        new TableRow({
+          children: [
+            createTableCell(rank.toString()),
+            createTableCell(semesterStudent.id),
+            createTableCell(semesterStudent.sgpa.toFixed(2)),
+            createTableCell(""), // Empty for SGPA mode
+            createTableCell(""), // Empty for SGPA mode
+            createTableCell(""), // Empty for SGPA mode
+          ],
+        })
+      );
+    } else {
+      // For CGPA mode, fill both sections with appropriate data
+      const cumulativeStudent = topCumulativeStudents[i] || { id: "", cgpa: 0 };
+      
+      rankRows.push(
+        new TableRow({
+          children: [
+            createTableCell(rank.toString()),
+            createTableCell(semesterStudent.id),
+            createTableCell(semesterStudent.sgpa.toFixed(2)),  // Current semester SGPA
+            createTableCell(rank.toString()),
+            createTableCell(cumulativeStudent.id),
+            createTableCell(cumulativeStudent.cgpa.toFixed(2)),  // Cumulative CGPA
+          ],
+        })
+      );
+    }
   }
   
-  // Create the rank analysis table
+  // Create and add rank table to sections
   const rankTable = new Table({
     width: {
       size: 100,
@@ -953,16 +920,330 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [400, 1800, 800, 400, 1800, 800],
+    columnWidths: [800, 2000, 1000, 800, 2000, 1000],
     rows: rankRows,
   });
   
   sections.push(rankTable);
   
-  // Finally, create the document with all the sections
+  // Individual Student Performance Section - ADDED FOR BOTH SGPA AND CGPA MODE
+  sections.push(
+    new Paragraph({
+      spacing: {
+        before: 200,
+        after: 100,
+      },
+      children: [
+        new TextRun({
+          text: "Individual Student Performance",
+          bold: true,
+          size: 28,
+          color: "2E3192",
+        }),
+      ],
+    }),
+  );
+  
+  // Get appropriate student data based on mode
+  let studentPerformanceData = [];
+  
+  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
+    // For SGPA mode, use the SGPA data
+    studentPerformanceData = [...analysis.studentSgpaDetails]
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .map(student => ({
+        id: student.id,
+        gpValue: student.sgpa,
+        hasArrears: student.hasArrears
+      }));
+  } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+    // For CGPA mode, use the CGPA data
+    studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .map(student => {
+        // For CGPA mode, we need to check if the student has arrears in any semester
+        const hasArrears = records.some(record => 
+          record.REGNO === student.id && record.GR === 'U'
+        );
+        
+        return {
+          id: student.id,
+          gpValue: student.cgpa,
+          hasArrears
+        };
+      });
+  }
+  
+  // Build the table rows
+  const studentRows = [
+    new TableRow({
+      children: [
+        createHeaderCell("S.No"),
+        createHeaderCell("Register Number"),
+        createHeaderCell(calculationMode === 'sgpa' ? "SGPA" : "CGPA"),
+        createHeaderCell("Status"),
+      ],
+    }),
+  ];
+  
+  // Add student rows
+  studentPerformanceData.forEach((student, index) => {
+    // Determine status based on GP value and arrears
+    let status = "";
+    
+    if (student.hasArrears) {
+      // Students with arrears
+      if (student.gpValue >= 6.5) {
+        status = "First Class With Arrear"; // Changed from "First Class" to "First Class With Arrear"
+      } else if (student.gpValue >= 5.0) {
+        status = "Second Class with Arrears";
+      } else {
+        status = "Has Arrears";
+      }
+    } else {
+      // Students without arrears
+      if (student.gpValue >= 8.5) {
+        status = "Distinction";
+      } else if (student.gpValue >= 6.5) {
+        status = "First Class";
+      } else {
+        status = "Second Class";
+      }
+    }
+    
+    studentRows.push(
+      new TableRow({
+        children: [
+          createTableCell((index + 1).toString()),
+          createTableCell(student.id),
+          createTableCell(student.gpValue.toFixed(2)),
+          createTableCell(status),
+        ],
+      })
+    );
+  });
+  
+  const studentTable = new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1 },
+      bottom: { style: BorderStyle.SINGLE, size: 1 },
+      left: { style: BorderStyle.SINGLE, size: 1 },
+      right: { style: BorderStyle.SINGLE, size: 1 },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+    },
+    columnWidths: [1000, 2800, 1400, 3400],
+    rows: studentRows,
+  });
+  
+  sections.push(studentTable);
+  
+  // Signature section
+  sections.push(
+    new Paragraph({
+      children: [new TextRun("")],
+      spacing: {
+        before: 500,
+      },
+    }),
+    new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE,
+      },
+      borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.NONE },
+      },
+      columnWidths: [2000, 2000, 2000, 2000],
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "CLASS ADVISOR",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "HOD/CSE",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "DEAN ACADEMICS",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "PRINCIPAL",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+          ],
+        }),
+      ],
+    })
+  );
+  
   return new Document({
-    sections: [{
-      children: sections,
-    }],
+    sections: [
+      {
+        properties: {},
+        children: sections,
+      },
+    ],
+  });
+};
+
+// Helper function for creating table cells with better alignment and text control
+function createTableCell(
+  text: string, 
+  isHeader = false,
+  options: {
+    colspan?: number;
+    rowspan?: number;
+    alignment?: keyof typeof AlignmentType;
+    rightIndent?: number;
+    bold?: boolean;
+    verticalMerge?: 'restart' | 'continue';
+  } = {}
+): TableCell {
+  const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
+  
+  return new TableCell({
+    children: [
+      new Paragraph({
+        alignment: alignment ? AlignmentType[alignment] : AlignmentType.CENTER,
+        indent: rightIndent !== undefined ? { right: rightIndent } : undefined,
+        children: [
+          new TextRun({
+            text,
+            bold: bold,
+            size: 20,
+          }),
+        ],
+      }),
+    ],
+    columnSpan: colspan,
+    rowSpan: rowspan,
+    margins: {
+      top: 80,
+      bottom: 80,
+      left: 100,
+      right: 100
+    },
+    verticalAlign: AlignmentType.CENTER,
+    verticalMerge: verticalMerge,
+  });
+}
+
+function createHeaderCell(
+  text: string,
+  options: {
+    colspan?: number;
+    rowspan?: number;
+    alignment?: keyof typeof AlignmentType;
+    rightIndent?: number;
+  } = {}
+): TableCell {
+  return createTableCell(text, true, {
+    ...options,
+    alignment: options.alignment || 'CENTER',
+  });
+}
+
+// Original helper function for simple table rows
+const createTableRow = (cells: string[], isHeader = false): TableRow => {
+  return new TableRow({
+    children: cells.map(text => 
+      new TableCell({
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+        },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            indent: { right: -0.06 },
+            children: [
+              new TextRun({
+                text,
+                bold: isHeader,
+                size: 20,
+              }),
+            ],
+          }),
+        ],
+        margins: {
+          top: 80,
+          bottom: 80,
+          left: 100,
+          right: 100
+        },
+        verticalAlign: AlignmentType.CENTER,
+      })
+    ),
   });
 };
