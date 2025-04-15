@@ -2,6 +2,39 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Borde
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
 
+// Helper functions for creating table cells
+const createHeaderCell = (text: string, options: any = {}) => {
+  return new TableCell({
+    children: [
+      new Paragraph({
+        children: [new TextRun({ text, bold: true })],
+        alignment: options.alignment || AlignmentType.LEFT
+      }),
+    ],
+    verticalAlign: AlignmentType.CENTER,
+    ...options
+  });
+};
+
+const createTableCell = (text: string, bold: boolean = false, options: any = {}) => {
+  return new TableCell({
+    children: [
+      new Paragraph({
+        children: [new TextRun({ text, bold })],
+        alignment: options.alignment || AlignmentType.LEFT
+      }),
+    ],
+    verticalAlign: AlignmentType.CENTER,
+    ...options
+  });
+};
+
+const createTableRow = (cells: string[]) => {
+  return new TableRow({
+    children: cells.map(text => createTableCell(text)),
+  });
+};
+
 interface WordReportOptions {
   logoImagePath?: string;
   department?: string;
@@ -851,22 +884,4 @@ const createWordDocument = async (
   const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
   console.log('Final top current semester students for table:');
   topCurrentSemesterStudents.forEach((student, i) => {
-    console.log(`Rank ${i+1}: Student ${student.id} - SGPA ${student.sgpa}`);
-  });
-  
-  // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
-  let topCumulativeStudents: { id: string; cgpa: number }[] = [];
-  
-  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
-    // For CGPA mode, use the actual CGPA data
-    topCumulativeStudents = [...analysis.cgpaAnalysis.studentCGPAs]
-      .sort((a, b) => b.cgpa - a.cgpa)
-      .slice(0, 3);
-  }
-  
-  // Create table headers for Rank Analysis
-  const rankRows = [
-    new TableRow({
-      children: [
-        createTableCell("Rank in this semester", true, { colspan: 3, alignment: 'CENTER' }),
-        createTableCell("Rank up to
+    console.
