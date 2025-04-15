@@ -774,11 +774,41 @@ const createWordDocument = async (
   // For CGPA mode, we need to ensure we're using only the current semester records
   if (calculationMode === 'cgpa' && analysis.currentSemesterFile) {
     console.log(`CGPA mode: Using records from "${analysis.currentSemesterFile}" as current semester`);
-    currentSemesterRecords = records.filter(record => record.fileSource === analysis.currentSemesterFile);
+    const currentSemesterRecords = records.filter(record => record.fileSource === analysis.currentSemesterFile);
     console.log(`Filtered ${currentSemesterRecords.length} records for current semester out of ${records.length} total`);
-  }
-  
-  if (calculationMode === 'sgpa') {
+    
+    if (currentSemesterRecords.length > 0) {
+      // Get unique student IDs from current semester
+      const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+      console.log(`Found ${studentIds.length} unique students in current semester`);
+      
+      // Calculate SGPA for each student using only current semester data
+      currentSemesterStudentData = studentIds.map(id => {
+        const studentRecords = currentSemesterRecords.filter(record => record.REGNO === id);
+        let totalCredits = 0;
+        let weightedSum = 0;
+        
+        studentRecords.forEach(record => {
+          if (record.GR in gradePointMap) {
+            const gradePoint = gradePointMap[record.GR];
+            const creditValue = record.creditValue || 0;
+            weightedSum += gradePoint * creditValue;
+            totalCredits += creditValue;
+          }
+        });
+        
+        const sgpa = totalCredits > 0 ? Number((weightedSum / totalCredits).toFixed(2)) : 0;
+        console.log(`Student ${id}: SGPA calculated = ${sgpa}`);
+        return { id, sgpa };
+      });
+      
+      // Sort by SGPA in descending order
+      currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
+      console.log(`Top 3 students current semester SGPA: ${JSON.stringify(currentSemesterStudentData.slice(0, 3))}`);
+    } else {
+      console.warn('No records found for current semester in CGPA mode');
+    }
+  } else if (calculationMode === 'sgpa') {
     // For SGPA mode, use the studentSgpaDetails data
     if (analysis.studentSgpaDetails) {
       currentSemesterStudentData = [...analysis.studentSgpaDetails]
@@ -796,40 +826,11 @@ const createWordDocument = async (
       });
       currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
     }
-  } else {
-    // For CGPA mode, calculate SGPA for each student using ONLY the current semester data
-    if (currentSemesterRecords && currentSemesterRecords.length > 0) {
-      console.log(`Calculating current semester SGPA data with ${currentSemesterRecords.length} records`);
-      
-      // Get unique student IDs for current semester
-      const currentSemStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
-      console.log(`Found ${currentSemStudentIds.length} students in current semester`);
-      
-      // Use the enhanced function from gradeUtils
-      currentSemesterStudentData = getCurrentSemesterSGPAData(currentSemesterRecords);
-      
-      // Log the top students to verify calculations
-      const top3 = currentSemesterStudentData.slice(0, 3);
-      console.log(`Current semester top 3 students: ${JSON.stringify(top3)}`);
-    } else {
-      console.log('No current semester records found for SGPA calculation');
-      currentSemesterStudentData = [];
-    }
   }
   
-  // Always use getCurrentSemesterSGPAData for current semester rankings in CGPA mode
-  // to ensure most accurate calculation based on the current semester file
-  if (calculationMode === 'cgpa' && analysis.currentSemesterFile) {
-    // Double-check to make sure we're using the correct calculation method
-    currentSemesterStudentData = getCurrentSemesterSGPAData(
-      records.filter(record => record.fileSource === analysis.currentSemesterFile)
-    );
-    console.log(`Ensured current semester ranks use data from "${analysis.currentSemesterFile}"`);
-    console.log(`Verified top current semester students: ${JSON.stringify(currentSemesterStudentData.slice(0, 3))}`);
-  }
-  
-  let topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
-  console.log('Top current semester students:', topCurrentSemesterStudents);
+  // Get top 3 students from current semester
+  const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
+  console.log('Final top current semester students:', JSON.stringify(topCurrentSemesterStudents));
   
   // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
   let topCumulativeStudents: { id: string; cgpa: number }[] = [];
@@ -841,8 +842,8 @@ const createWordDocument = async (
       .slice(0, 3);
       
     // Add debug log to show the difference between current semester ranking and cumulative ranking
-    console.log(`CGPA mode - Current Semester Ranking: ${JSON.stringify(topCurrentSemesterStudents.slice(0, 3))}`);
-    console.log(`CGPA mode - Cumulative Ranking: ${JSON.stringify(topCumulativeStudents.slice(0, 3))}`);
+    console.log(`CGPA mode - Current Semester Ranking: ${JSON.stringify(topCurrentSemesterStudents)}`);
+    console.log(`CGPA mode - Cumulative Ranking: ${JSON.stringify(topCumulativeStudents)}`);
   }
   
   // Create table headers for Rank Analysis
