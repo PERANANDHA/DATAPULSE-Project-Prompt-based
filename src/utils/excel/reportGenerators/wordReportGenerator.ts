@@ -817,7 +817,18 @@ const createWordDocument = async (
     }
   }
   
-  const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
+  // Always use getCurrentSemesterSGPAData for current semester rankings in CGPA mode
+  // to ensure most accurate calculation based on the current semester file
+  if (calculationMode === 'cgpa' && analysis.currentSemesterFile) {
+    // Double-check to make sure we're using the correct calculation method
+    currentSemesterStudentData = getCurrentSemesterSGPAData(
+      records.filter(record => record.fileSource === analysis.currentSemesterFile)
+    );
+    console.log(`Ensured current semester ranks use data from "${analysis.currentSemesterFile}"`);
+    console.log(`Verified top current semester students: ${JSON.stringify(currentSemesterStudentData.slice(0, 3))}`);
+  }
+  
+  let topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
   console.log('Top current semester students:', topCurrentSemesterStudents);
   
   // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
@@ -828,6 +839,10 @@ const createWordDocument = async (
     topCumulativeStudents = [...analysis.cgpaAnalysis.studentCGPAs]
       .sort((a, b) => b.cgpa - a.cgpa)
       .slice(0, 3);
+      
+    // Add debug log to show the difference between current semester ranking and cumulative ranking
+    console.log(`CGPA mode - Current Semester Ranking: ${JSON.stringify(topCurrentSemesterStudents.slice(0, 3))}`);
+    console.log(`CGPA mode - Cumulative Ranking: ${JSON.stringify(topCumulativeStudents.slice(0, 3))}`);
   }
   
   // Create table headers for Rank Analysis
