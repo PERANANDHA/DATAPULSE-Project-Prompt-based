@@ -869,4 +869,4 @@ const createWordDocument = async (
     new TableRow({
       children: [
         createTableCell("Rank in this semester", true, { colspan: 3, alignment: 'CENTER' }),
-        createTableCell("
+        createTableCell("Rank up to
