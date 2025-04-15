@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
@@ -750,7 +751,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section - Fixed to properly display top three students
+  // Rank Analysis Section - FIXED to properly display top three students with correct SGPA data
   sections.push(
     new Paragraph({
       spacing: {
@@ -768,82 +769,36 @@ const createWordDocument = async (
     }),
   );
   
-  // Improved approach for determining the current semester data
-  let currentSemesterStudentData: { id: string; sgpa: number }[] = [];
+  // FIXED: Get current semester student data with SGPA for the "Rank in This Semester" table
+  // Get data directly from studentSgpaDetails which has been fixed in analyzer.ts
+  let topCurrentSemesterStudents = [];
+  let topCumulativeStudents = [];
   
-  // For CGPA mode, we need to ensure we're using only the current semester records
-  if (calculationMode === 'cgpa' && analysis.currentSemesterFile) {
-    console.log(`CGPA mode: Using records from "${analysis.currentSemesterFile}" as current semester`);
-    const currentSemesterRecords = records.filter(record => record.fileSource === analysis.currentSemesterFile);
-    console.log(`Filtered ${currentSemesterRecords.length} records for current semester out of ${records.length} total`);
+  // For current semester, always use SGPA data
+  if (analysis.studentSgpaDetails && analysis.studentSgpaDetails.length > 0) {
+    // Use the pre-calculated SGPA data which is now correctly calculated in analyzer.ts
+    const sortedStudentsByCurrentSGPA = [...analysis.studentSgpaDetails].sort((a, b) => b.sgpa - a.sgpa);
+    topCurrentSemesterStudents = sortedStudentsByCurrentSGPA.slice(0, 3).map((student, index) => ({
+      rank: index + 1,
+      id: student.id,
+      value: student.sgpa
+    }));
     
-    if (currentSemesterRecords.length > 0) {
-      // Get unique student IDs from current semester
-      const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
-      console.log(`Found ${studentIds.length} unique students in current semester`);
-      
-      // Calculate SGPA for each student using only current semester data
-      currentSemesterStudentData = studentIds.map(id => {
-        const studentRecords = currentSemesterRecords.filter(record => record.REGNO === id);
-        let totalCredits = 0;
-        let weightedSum = 0;
-        
-        studentRecords.forEach(record => {
-          if (record.GR in gradePointMap) {
-            const gradePoint = gradePointMap[record.GR];
-            const creditValue = record.creditValue || 0;
-            weightedSum += gradePoint * creditValue;
-            totalCredits += creditValue;
-          }
-        });
-        
-        const sgpa = totalCredits > 0 ? Number((weightedSum / totalCredits).toFixed(2)) : 0;
-        console.log(`Student ${id}: SGPA calculated = ${sgpa}`);
-        return { id, sgpa };
-      });
-      
-      // Sort by SGPA in descending order
-      currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
-      console.log(`Top 3 students current semester SGPA: ${JSON.stringify(currentSemesterStudentData.slice(0, 3))}`);
-    } else {
-      console.warn('No records found for current semester in CGPA mode');
-    }
-  } else if (calculationMode === 'sgpa') {
-    // For SGPA mode, use the studentSgpaDetails data
-    if (analysis.studentSgpaDetails) {
-      currentSemesterStudentData = [...analysis.studentSgpaDetails]
-        .sort((a, b) => b.sgpa - a.sgpa)
-        .map(student => ({
-          id: student.id,
-          sgpa: student.sgpa
-        }));
-    } else {
-      // Fallback calculation from records if studentSgpaDetails is not available
-      const studentIds = [...new Set(records.map(record => record.REGNO))];
-      studentIds.forEach(studentId => {
-        const sgpa = calculateSGPA(records, studentId);
-        currentSemesterStudentData.push({ id: studentId, sgpa });
-      });
-      currentSemesterStudentData.sort((a, b) => b.sgpa - a.sgpa);
-    }
+    console.log("Top current semester students for Rank table:", topCurrentSemesterStudents);
   }
   
-  // Get top 3 students from current semester
-  const topCurrentSemesterStudents = currentSemesterStudentData.slice(0, 3);
-  console.log('Final top current semester students:', JSON.stringify(topCurrentSemesterStudents));
-  
-  // For CGPA mode only - get cumulative ranks for "Rank up to this semester"
-  let topCumulativeStudents: { id: string; cgpa: number }[] = [];
-  
-  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.studentCGPAs) {
-    // For CGPA mode, use the actual CGPA data
-    topCumulativeStudents = [...analysis.cgpaAnalysis.studentCGPAs]
-      .sort((a, b) => b.cgpa - a.cgpa)
-      .slice(0, 3);
-      
-    // Add debug log to show the difference between current semester ranking and cumulative ranking
-    console.log(`CGPA mode - Current Semester Ranking: ${JSON.stringify(topCurrentSemesterStudents)}`);
-    console.log(`CGPA mode - Cumulative Ranking: ${JSON.stringify(topCumulativeStudents)}`);
+  // For cumulative data, use CGPA data if available (CGPA mode only)
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.toppersList) {
+    topCumulativeStudents = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
+      rank: index + 1,
+      id: student.id,
+      value: student.cgpa
+    }));
+    
+    console.log("Top cumulative students for Rank table:", topCumulativeStudents);
+  } else {
+    // In SGPA mode, just use the same data for both tables
+    topCumulativeStudents = topCurrentSemesterStudents;
   }
   
   // Create table headers for Rank Analysis
@@ -861,7 +816,7 @@ const createWordDocument = async (
         createHeaderCell("SGPA"),
         createHeaderCell("RANK"),
         createHeaderCell("Name of the student"),
-        createHeaderCell("CGPA"),
+        createHeaderCell(calculationMode === 'cgpa' ? "CGPA" : "SGPA"),
       ],
     }),
   ];
@@ -871,39 +826,23 @@ const createWordDocument = async (
     const rank = i + 1;
     
     // Current semester student data (ensure we have data)
-    const semesterStudent = topCurrentSemesterStudents[i] || { id: "", sgpa: 0 };
+    const semesterStudent = topCurrentSemesterStudents[i] || { id: "", value: 0 };
     
-    if (calculationMode === 'sgpa') {
-      // For SGPA mode, only fill "Rank in this semester" section, leave "Rank up to this semester" empty
-      rankRows.push(
-        new TableRow({
-          children: [
-            createTableCell(rank.toString()),
-            createTableCell(semesterStudent.id),
-            createTableCell(semesterStudent.sgpa.toFixed(2)),
-            createTableCell(""), // Empty for SGPA mode
-            createTableCell(""), // Empty for SGPA mode
-            createTableCell(""), // Empty for SGPA mode
-          ],
-        })
-      );
-    } else {
-      // For CGPA mode, fill both sections with appropriate data
-      const cumulativeStudent = topCumulativeStudents[i] || { id: "", cgpa: 0 };
-      
-      rankRows.push(
-        new TableRow({
-          children: [
-            createTableCell(rank.toString()),
-            createTableCell(semesterStudent.id),
-            createTableCell(semesterStudent.sgpa.toFixed(2)),  // Current semester SGPA
-            createTableCell(rank.toString()),
-            createTableCell(cumulativeStudent.id),
-            createTableCell(cumulativeStudent.cgpa.toFixed(2)),  // Cumulative CGPA
-          ],
-        })
-      );
-    }
+    // Cumulative student data (ensure we have data)
+    const cumulativeStudent = topCumulativeStudents[i] || { id: "", value: 0 };
+    
+    rankRows.push(
+      new TableRow({
+        children: [
+          createTableCell(rank.toString()),
+          createTableCell(semesterStudent.id),
+          createTableCell(semesterStudent.value.toFixed(2)),
+          createTableCell(rank.toString()),
+          createTableCell(cumulativeStudent.id),
+          createTableCell(cumulativeStudent.value.toFixed(2)),
+        ],
+      })
+    );
   }
   
   // Create and add rank table to sections
