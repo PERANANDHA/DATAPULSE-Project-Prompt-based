@@ -639,7 +639,7 @@ const createWordDocument = async (
           }),
           createTableCell("Second class", true, { 
             colspan: 2, 
-            alignment: 'CENTER',\
+            alignment: 'CENTER',
             bold: true
           }),
           createTableCell("Fail", true, { 
