@@ -8,6 +8,7 @@ interface WordReportOptions {
   department?: string;
   departmentFullName?: string;
   calculationMode: 'sgpa' | 'cgpa';
+  includeArrearsInRankUpToThisSemester?: boolean;
 }
 
 export const downloadWordReport = async (
@@ -47,7 +48,8 @@ const createWordDocument = async (
     logoImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png", // Updated to use the new logo
     department = "CSE",
     departmentFullName = "Computer Science and Engineering",
-    calculationMode
+    calculationMode,
+    includeArrearsInRankUpToThisSemester = false
   } = options;
   
   // Create sections for the document
@@ -501,7 +503,7 @@ const createWordDocument = async (
     
     // Adding actual subject data with faculty names
     uniqueSubjects.forEach((subject, index) => {
-      const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
+      const subjectRecords = nonArrearCurrentSemesterRecords.filter(record => record.SCODE === subject);
       const totalStudents = subjectRecords.length;
       const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
       const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;
@@ -782,7 +784,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section - FIXED to properly display top three students with correct SGPA data
+  // Rank Analysis Section - Updated to properly handle arrear subjects in "Rank up to this semester"
   sections.push(
     new Paragraph({
       spacing: {
@@ -800,14 +802,13 @@ const createWordDocument = async (
     }),
   );
   
-  // FIXED: Get current semester student data with SGPA for the "Rank in This Semester" table
-  // Get data directly from studentSgpaDetails which has been fixed in analyzer.ts
+  // Get current semester student data with SGPA for the "Rank in This Semester" table
   let topCurrentSemesterStudents = [];
   let topCumulativeStudents = [];
   
-  // For current semester, always use SGPA data
+  // For current semester, always use SGPA data (excluding arrear subjects)
   if (analysis.studentSgpaDetails && analysis.studentSgpaDetails.length > 0) {
-    // Use the pre-calculated SGPA data which is now correctly calculated in analyzer.ts
+    // Use the pre-calculated SGPA data which excludes arrear subjects
     const sortedStudentsByCurrentSGPA = [...analysis.studentSgpaDetails].sort((a, b) => b.sgpa - a.sgpa);
     topCurrentSemesterStudents = sortedStudentsByCurrentSGPA.slice(0, 3).map((student, index) => ({
       rank: index + 1,
@@ -818,15 +819,25 @@ const createWordDocument = async (
     console.log("Top current semester students for Rank table:", topCurrentSemesterStudents);
   }
   
-  // For cumulative data, use CGPA data if available (CGPA mode only)
-  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.toppersList) {
-    topCumulativeStudents = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
-      rank: index + 1,
-      id: student.id,
-      value: student.cgpa
-    }));
-    
-    console.log("Top cumulative students for Rank table:", topCumulativeStudents);
+  // For cumulative data in CGPA mode, use appropriate CGPA data based on user preference
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+    if (includeArrearsInRankUpToThisSemester && analysis.cgpaAnalysis.toppersListWithArrears) {
+      // Use CGPA that includes arrear subjects for "Rank up to this semester" if requested
+      topCumulativeStudents = analysis.cgpaAnalysis.toppersListWithArrears.slice(0, 3).map((student, index) => ({
+        rank: index + 1,
+        id: student.id,
+        value: student.cgpa
+      }));
+      console.log("Top cumulative students (with arrears) for Rank table:", topCumulativeStudents);
+    } else if (analysis.cgpaAnalysis.toppersList) {
+      // Use CGPA that excludes arrear subjects for "Rank up to this semester"
+      topCumulativeStudents = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
+        rank: index + 1,
+        id: student.id,
+        value: student.cgpa
+      }));
+      console.log("Top cumulative students (without arrears) for Rank table:", topCumulativeStudents);
+    }
   } else {
     // In SGPA mode, just use the same data for both tables
     topCumulativeStudents = topCurrentSemesterStudents;
@@ -837,7 +848,7 @@ const createWordDocument = async (
     new TableRow({
       children: [
         createTableCell("Rank in this semester", true, { colspan: 3, alignment: 'CENTER' }),
-        createTableCell("Rank up to this semester", true, { colspan: 3, alignment: 'CENTER' }),
+        createTableCell(`Rank up to this semester${includeArrearsInRankUpToThisSemester ? ' (Including Arrears)' : ''}`, true, { colspan: 3, alignment: 'CENTER' }),
       ],
     }),
     new TableRow({
@@ -896,7 +907,7 @@ const createWordDocument = async (
   
   sections.push(rankTable);
   
-  // Individual Student Performance Section - ADDED FOR BOTH SGPA AND CGPA MODE
+  // Individual Student Performance Section - For both SGPA and CGPA mode
   sections.push(
     new Paragraph({
       spacing: {
@@ -964,7 +975,7 @@ const createWordDocument = async (
     if (student.hasArrears) {
       // Students with arrears
       if (student.gpValue >= 6.5) {
-        status = "First Class With Arrear"; // Changed from "First Class" to "First Class With Arrear"
+        status = "First Class With Arrear"; 
       } else if (student.gpValue >= 5.0) {
         status = "Second Class with Arrears";
       } else {
