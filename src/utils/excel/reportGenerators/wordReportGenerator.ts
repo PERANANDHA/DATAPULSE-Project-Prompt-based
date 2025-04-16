@@ -127,8 +127,7 @@ const createWordDocument = async (
                   }),
                 ],
               }),
-            ],
-            verticalAlign: AlignmentType.CENTER,
+            ],\n            verticalAlign: AlignmentType.CENTER,
             margins: {
               top: 100,
               bottom: 100,
@@ -161,10 +160,8 @@ const createWordDocument = async (
               right: 150
             },
           }),
-        ],
-      }),
-    ],
-  });
+        ],\n      }),
+    ],\n  });
   
   sections.push(headerTable);
   
@@ -776,8 +773,7 @@ const createWordDocument = async (
           }),
         ],
       }),
-    ],
-  });
+    ],\n  });
   
   sections.push(classificationTable);
   
