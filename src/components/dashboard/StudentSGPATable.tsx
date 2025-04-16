@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ResultAnalysis } from '@/utils/excelProcessor';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StudentSGPATableProps {
   analysis: ResultAnalysis;
@@ -32,8 +31,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
         rank: index + 1,
         id: student.id,
         value: student.cgpa,
-        isCGPA: true,
-        arrearSubjects: (analysis.cgpaAnalysis?.studentCGPAs.find(s => s.id === student.id)?.arrearSubjects || '')
+        isCGPA: true
       }));
       tableTitle = 'Student CGPA Rank Analysis';
       tableDescription = 'Top 3 students by Cumulative Grade Point Average';
@@ -49,8 +47,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
           rank: index + 1,
           id: student.id,
           value: student.sgpa,
-          isCGPA: false,
-          arrearSubjects: student.arrearSubjects || ''
+          isCGPA: false
         }));
         tableTitle = 'Student SGPA Rank Analysis';
         tableDescription = 'Top 3 students by Semester Grade Point Average (Current Semester)';
@@ -70,8 +67,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
       rank: index + 1,
       id: student.id,
       value: student.sgpa,
-      isCGPA: false,
-      arrearSubjects: student.arrearSubjects || ''
+      isCGPA: false
     }));
     tableTitle = 'Student SGPA Rank Analysis';
     tableDescription = 'Top 3 students by Semester Grade Point Average';
@@ -101,7 +97,6 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
                 <TableHead className="text-center">
                   {useCumulativeData ? 'CGPA' : 'SGPA'}
                 </TableHead>
-                <TableHead className="text-center">Arrear Subjects</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,24 +111,6 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
                   </TableCell>
                   <TableCell className="text-center">{student.id}</TableCell>
                   <TableCell className="text-center font-medium">{student.value.toFixed(2)}</TableCell>
-                  <TableCell className="text-center">
-                    {student.arrearSubjects ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge variant="outline" className="bg-red-100 hover:bg-red-200 cursor-help">
-                              Has Arrears
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="font-mono text-xs">{student.arrearSubjects}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : (
-                      <Badge variant="outline" className="bg-green-100">None</Badge>
-                    )}
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
