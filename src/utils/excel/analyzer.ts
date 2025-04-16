@@ -1,6 +1,6 @@
 
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
-import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals, calculateCGPAWithArrears } from './gradeUtils';
+import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
 // Analyze student records and generate comprehensive result analysis
 export const analyzeResults = (records: StudentRecord[], assignedSubjects?: string[]): ResultAnalysis => {
@@ -74,15 +74,8 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
       cgpa: calculateCGPA(records, id, fileGroups)
     }));
     
-    // Also calculate CGPA with arrear subjects included
-    const studentCGPAsWithArrears = studentIds.map(id => ({
-      id,
-      cgpa: calculateCGPAWithArrears(records, id, fileGroups)
-    }));
-    
     // Sort by CGPA in descending order for toppers list
     studentCGPAs.sort((a, b) => b.cgpa - a.cgpa);
-    studentCGPAsWithArrears.sort((a, b) => b.cgpa - a.cgpa);
     
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
     cgpaAnalysis = {
@@ -91,7 +84,6 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
       highestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.max(...cgpaValues)) : 0,
       lowestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.min(...cgpaValues)) : 0,
       toppersList: studentCGPAs.slice(0, 10), // Get top 10 students
-      toppersListWithArrears: studentCGPAsWithArrears.slice(0, 10), // Get top 10 students including arrear subjects
       currentSemesterFile: currentSemesterFile // Use the file with highest sem value as current semester
     };
   }
@@ -131,7 +123,7 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     let totalCredits = 0;
     
     studentRecords.forEach(record => {
-      if (record.GR in gradePointMap && !record.isArrear) {
+      if (record.GR in gradePointMap) {
         const gradePoint = gradePointMap[record.GR];
         const creditValue = record.creditValue || 0;
         
@@ -285,12 +277,7 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   // Classification table calculations - these follow the specified rules
   // For CGPA mode, current semester is the file with highest semester number
   const currentSemesterRecordsForClassification = currentSemesterFile ? fileGroups[currentSemesterFile] : records;
-  
-  // Filter out arrear subjects for current semester classification
-  const nonArrearCurrentSemesterRecordsForClassification = currentSemesterRecordsForClassification.filter(record => !record.isArrear);
-  
-  const currentSemesterStudentIds = [...new Set(nonArrearCurrentSemesterRecordsForClassification.map(record => record.REGNO))];
-  const currentSemesterStudentSgpaDetails = currentSemesterStudentIds.map(studentId => {
+  const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecordsForClassification.map(record => record.REGNO))].map(studentId => {
     return studentSgpaDetails.find(detail => detail.id === studentId) || {
       id: studentId,
       sgpa: 0,
@@ -298,7 +285,7 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     };
   });
   
-  const singleFileClassification = calculateSingleFileClassification(nonArrearCurrentSemesterRecordsForClassification, currentSemesterStudentSgpaDetails);
+  const singleFileClassification = calculateSingleFileClassification(currentSemesterRecordsForClassification, currentSemesterStudentSgpaDetails);
   const multipleFileClassification = fileCount > 1 
     ? calculateMultipleFileClassification(records, fileGroups, cgpaAnalysis)
     : singleFileClassification; // Fallback to single file data if no multiple files
