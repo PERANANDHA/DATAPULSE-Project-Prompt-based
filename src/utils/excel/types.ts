@@ -33,10 +33,10 @@ export interface ResultAnalysis {
   lowestSGPA: number;
   gradeDistribution: { name: string; count: number; fill: string }[];
   totalGrades: number;
-  subjectPerformance: { subject: string; pass: number; fail: number }[];
+  subjectPerformance: { subject: string; pass: number; fail: number; subjectName?: string }[];
   topPerformers: { id: string; sgpa: number; grade: string }[];
   needsImprovement: { id: string; sgpa: number; subjects: string }[];
-  studentSgpaDetails?: { id: string; sgpa: number; hasArrears: boolean }[];
+  studentSgpaDetails?: { id: string; sgpa: number; hasArrears: boolean; arrearSubjects?: string }[];
   passFailData: { name: string; value: number; fill: string }[];
   subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] };
   fileCount?: number; // Number of files processed
@@ -49,11 +49,11 @@ export interface ResultAnalysis {
     } 
   }; // Analysis per file
   cgpaAnalysis?: {
-    studentCGPAs: { id: string; cgpa: number }[];
+    studentCGPAs: { id: string; cgpa: number; arrearSubjects?: string }[];
     averageCGPA: number;
     highestCGPA: number;
     lowestCGPA: number;
-    toppersList?: { id: string; cgpa: number }[]; // Added for toppers list
+    toppersList?: { id: string; cgpa: number; arrearSubjects?: string }[]; // Added arrear subjects info
     currentSemesterFile?: string; // File representing the current semester
   }; // CGPA analysis when multiple files
   singleFileClassification: ClassificationData; // Classification for single file/semester
