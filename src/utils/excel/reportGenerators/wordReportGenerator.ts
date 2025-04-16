@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
@@ -34,6 +35,55 @@ export const downloadWordReport = async (
   // Clean up
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+// Helper function to create table cells for headers
+const createHeaderCell = (text: string, options: any = {}) => {
+  return new TableCell({
+    children: [
+      new Paragraph({
+        alignment: options.alignment || AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text,
+            bold: true,
+            size: 24,
+          }),
+        ],
+      }),
+    ],
+    ...options,
+  });
+};
+
+// Helper function to create table cells
+const createTableCell = (text: string, isHeader = false, options: any = {}) => {
+  return new TableCell({
+    children: [
+      new Paragraph({
+        alignment: options.alignment || AlignmentType.LEFT,
+        children: [
+          new TextRun({
+            text,
+            bold: isHeader,
+            size: 24,
+          }),
+        ],
+      }),
+    ],
+    ...options,
+  });
+};
+
+// Helper function to create table rows
+const createTableRow = (cells: string[]) => {
+  return new TableRow({
+    children: cells.map((cell, index) => 
+      index === 0 
+        ? createTableCell(cell, true) 
+        : createTableCell(cell)
+    ),
+  });
 };
 
 const createWordDocument = async (
@@ -127,7 +177,8 @@ const createWordDocument = async (
                   }),
                 ],
               }),
-            ],\n            verticalAlign: AlignmentType.CENTER,
+            ],
+            verticalAlign: AlignmentType.CENTER,
             margins: {
               top: 100,
               bottom: 100,
@@ -160,8 +211,10 @@ const createWordDocument = async (
               right: 150
             },
           }),
-        ],\n      }),
-    ],\n  });
+        ],
+      }),
+    ],
+  });
   
   sections.push(headerTable);
   
@@ -885,4 +938,19 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [800,
+    columnWidths: [800, 2000, 1000, 800, 2000, 1000], // Complete the columnWidths array
+    rows: rankRows,
+  });
+  
+  sections.push(rankTable);
+  
+  // Create the document with all sections
+  return new Document({
+    sections: [
+      {
+        properties: {},
+        children: sections,
+      },
+    ],
+  });
+};
