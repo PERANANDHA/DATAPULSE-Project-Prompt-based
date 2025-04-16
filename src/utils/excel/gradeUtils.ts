@@ -45,7 +45,8 @@ export const calculateSGPA = (records: StudentRecord[], studentId: string): numb
 export const calculateCGPA = (
   records: StudentRecord[], 
   studentId: string, 
-  fileGroups: { [fileName: string]: StudentRecord[] }
+  fileGroups: { [fileName: string]: StudentRecord[] },
+  includeArrears: boolean = false // New parameter to control whether to include arrear subjects
 ): number => {
   const allSemesters = Object.keys(fileGroups);
   if (allSemesters.length <= 1) {
@@ -59,10 +60,10 @@ export const calculateCGPA = (
   // For each semester (file)
   allSemesters.forEach(semester => {
     const semesterRecords = fileGroups[semester];
-    // Filter out arrear subjects
+    // Filter student records, optionally excluding arrear subjects
     const studentSemRecords = semesterRecords.filter(record => 
       record.REGNO === studentId && 
-      !record.isArrear // Exclude arrear subjects
+      (includeArrears || !record.isArrear) // Only filter out arrears if includeArrears is false
     );
     
     // Calculate this semester's contribution
@@ -86,6 +87,15 @@ export const calculateCGPA = (
   
   // Ensure exactly 2 decimal places with proper rounding
   return totalCredits === 0 ? 0 : formatTo2Decimals(totalWeightedSum / totalCredits);
+};
+
+// Calculate CGPA including arrear subjects
+export const calculateCGPAWithArrears = (
+  records: StudentRecord[],
+  studentId: string,
+  fileGroups: { [fileName: string]: StudentRecord[] }
+): number => {
+  return calculateCGPA(records, studentId, fileGroups, true);
 };
 
 // Check if student has arrears (U grade)

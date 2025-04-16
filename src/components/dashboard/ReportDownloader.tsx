@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ReportDownloaderProps {
   analysis: ResultAnalysis | null;
@@ -29,6 +30,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<'word' | 'pdf' | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [includeArrearsInRankUpToThisSemester, setIncludeArrearsInRankUpToThisSemester] = useState(true);
   const { toast } = useToast();
   
   // Create memoized handlers to prevent unnecessary re-renders
@@ -83,7 +85,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
           logoImagePath: headerImagePath,
           department: departmentCode,
           departmentFullName: departmentFullName,
-          calculationMode: mode
+          calculationMode: mode,
+          includeArrearsInRankUpToThisSemester: includeArrearsInRankUpToThisSemester
         };
         
         if (selectedFormat === 'word') {
@@ -121,7 +124,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       setDownloadProgress(0);
       setSelectedFormat(null);
     }
-  }, [analysis, studentRecords, departmentCode, departmentFullName, calculationMode, selectedFormat, toast, startProgressSimulation, isDownloading]);
+  }, [analysis, studentRecords, departmentCode, departmentFullName, calculationMode, selectedFormat, toast, startProgressSimulation, isDownloading, includeArrearsInRankUpToThisSemester]);
 
   return (
     <>
@@ -204,6 +207,24 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
                 This will be used in the End Semester Result Analysis table.
               </p>
             </div>
+            
+            {calculationMode === 'cgpa' && (
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="include-arrears" 
+                  checked={includeArrearsInRankUpToThisSemester}
+                  onCheckedChange={(checked) => 
+                    setIncludeArrearsInRankUpToThisSemester(checked === true)
+                  }
+                />
+                <label 
+                  htmlFor="include-arrears" 
+                  className="text-sm font-medium"
+                >
+                  Include arrear subjects in "Rank up to this semester" table
+                </label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDepartmentDialogOpen(false)}>

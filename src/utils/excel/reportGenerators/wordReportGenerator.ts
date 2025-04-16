@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
@@ -8,6 +7,7 @@ interface WordReportOptions {
   department?: string;
   departmentFullName?: string;
   calculationMode: 'sgpa' | 'cgpa';
+  includeArrearsInRankUpToThisSemester?: boolean;
 }
 
 export const downloadWordReport = async (
@@ -47,7 +47,8 @@ const createWordDocument = async (
     logoImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png", // Updated to use the new logo
     department = "CSE",
     departmentFullName = "Computer Science and Engineering",
-    calculationMode
+    calculationMode,
+    includeArrearsInRankUpToThisSemester
   } = options;
   
   // Create sections for the document
@@ -287,7 +288,7 @@ const createWordDocument = async (
   const performanceParagraphs = [];
   
   if (calculationMode === 'sgpa') {
-    // For SGPA mode
+    // For SGPA mode - ensure we're excluding arrear subjects here
     performanceParagraphs.push(
       new Paragraph({
         children: [
@@ -315,7 +316,7 @@ const createWordDocument = async (
       }),
     );
   } else {
-    // For CGPA mode - MODIFIED to use correct CGPA values
+    // For CGPA mode - MODIFIED to use correct CGPA values excluding arrear subjects
     if (analysis.cgpaAnalysis) {
       performanceParagraphs.push(
         new Paragraph({
@@ -452,7 +453,7 @@ const createWordDocument = async (
   // End Semester Result Analysis Section - Using actual subject data with faculty names
   // Made table much wider to match exact PDF layout
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
-    // For current semester table, filter out arrear subjects
+    // For current semester table, filter out arrear subjects - this is critical
     const nonArrearCurrentSemesterRecords = currentSemesterRecords.filter(record => !record.isArrear);
     console.log(`Excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects from End Semester Analysis`);
     
@@ -499,9 +500,10 @@ const createWordDocument = async (
       }),
     ];
     
-    // Adding actual subject data with faculty names
+    // Adding actual subject data with faculty names - only for non-arrear subjects
     uniqueSubjects.forEach((subject, index) => {
-      const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
+      // Use only non-arrear records for the subject analysis
+      const subjectRecords = nonArrearCurrentSemesterRecords.filter(record => record.SCODE === subject);
       const totalStudents = subjectRecords.length;
       const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
       const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;
@@ -593,6 +595,7 @@ const createWordDocument = async (
   );
   
   // Classification Table - Improved alignment and consistent appearance
+  // No changes needed to the table structure, just ensure the data is correct
   const classificationTable = new Table({
     width: {
       size: 108.7,
@@ -782,7 +785,7 @@ const createWordDocument = async (
   
   sections.push(classificationTable);
   
-  // Rank Analysis Section - FIXED to properly display top three students with correct SGPA data
+  // Rank Analysis Section - MODIFIED to properly handle arrear subjects
   sections.push(
     new Paragraph({
       spacing: {
@@ -800,14 +803,14 @@ const createWordDocument = async (
     }),
   );
   
-  // FIXED: Get current semester student data with SGPA for the "Rank in This Semester" table
-  // Get data directly from studentSgpaDetails which has been fixed in analyzer.ts
+  // MODIFIED: Get current semester student data (excluding arrears) for "Rank in This Semester" table
   let topCurrentSemesterStudents = [];
+  // MODIFIED: Get cumulative student data (including arrears) for "Rank up to this semester" table
   let topCumulativeStudents = [];
   
-  // For current semester, always use SGPA data
+  // For current semester, always use SGPA data (excluding arrears)
   if (analysis.studentSgpaDetails && analysis.studentSgpaDetails.length > 0) {
-    // Use the pre-calculated SGPA data which is now correctly calculated in analyzer.ts
+    // Use the pre-calculated SGPA data which already excludes arrear subjects
     const sortedStudentsByCurrentSGPA = [...analysis.studentSgpaDetails].sort((a, b) => b.sgpa - a.sgpa);
     topCurrentSemesterStudents = sortedStudentsByCurrentSGPA.slice(0, 3).map((student, index) => ({
       rank: index + 1,
@@ -815,18 +818,31 @@ const createWordDocument = async (
       value: student.sgpa
     }));
     
-    console.log("Top current semester students for Rank table:", topCurrentSemesterStudents);
+    console.log("Top current semester students for Rank table (excluding arrears):", topCurrentSemesterStudents);
   }
   
-  // For cumulative data, use CGPA data if available (CGPA mode only)
-  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis && analysis.cgpaAnalysis.toppersList) {
-    topCumulativeStudents = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
-      rank: index + 1,
-      id: student.id,
-      value: student.cgpa
-    }));
-    
-    console.log("Top cumulative students for Rank table:", topCumulativeStudents);
+  // MODIFIED: For cumulative data, use CGPA data that INCLUDES arrear subjects if available
+  if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+    // First try to use the topperWithArrearsIncluded list, which includes arrear subjects
+    if (includeArrearsInRankUpToThisSemester && analysis.cgpaAnalysis.topperWithArrearsIncluded) {
+      topCumulativeStudents = analysis.cgpaAnalysis.topperWithArrearsIncluded.slice(0, 3).map((student, index) => ({
+        rank: index + 1,
+        id: student.id,
+        value: student.cgpa
+      }));
+      
+      console.log("Top cumulative students for Rank table (including arrears):", topCumulativeStudents);
+    } 
+    // Fall back to regular toppersList if topperWithArrearsIncluded is not available
+    else if (analysis.cgpaAnalysis.toppersList) {
+      topCumulativeStudents = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
+        rank: index + 1,
+        id: student.id,
+        value: student.cgpa
+      }));
+      
+      console.log("Top cumulative students for Rank table (fallback, may not include arrears):", topCumulativeStudents);
+    }
   } else {
     // In SGPA mode, just use the same data for both tables
     topCumulativeStudents = topCurrentSemesterStudents;
@@ -860,360 +876,4 @@ const createWordDocument = async (
     const semesterStudent = topCurrentSemesterStudents[i] || { id: "", value: 0 };
     
     // Cumulative student data (ensure we have data)
-    const cumulativeStudent = topCumulativeStudents[i] || { id: "", value: 0 };
-    
-    rankRows.push(
-      new TableRow({
-        children: [
-          createTableCell(rank.toString()),
-          createTableCell(semesterStudent.id),
-          createTableCell(semesterStudent.value.toFixed(2)),
-          createTableCell(rank.toString()),
-          createTableCell(cumulativeStudent.id),
-          createTableCell(cumulativeStudent.value.toFixed(2)),
-        ],
-      })
-    );
-  }
-  
-  // Create and add rank table to sections
-  const rankTable = new Table({
-    width: {
-      size: 100,
-      type: WidthType.PERCENTAGE,
-    },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1 },
-      bottom: { style: BorderStyle.SINGLE, size: 1 },
-      left: { style: BorderStyle.SINGLE, size: 1 },
-      right: { style: BorderStyle.SINGLE, size: 1 },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-    },
-    columnWidths: [800, 2000, 1000, 800, 2000, 1000],
-    rows: rankRows,
-  });
-  
-  sections.push(rankTable);
-  
-  // Individual Student Performance Section - ADDED FOR BOTH SGPA AND CGPA MODE
-  sections.push(
-    new Paragraph({
-      spacing: {
-        before: 200,
-        after: 100,
-      },
-      children: [
-        new TextRun({
-          text: "Individual Student Performance",
-          bold: true,
-          size: 28,
-          color: "2E3192",
-        }),
-      ],
-    }),
-  );
-  
-  // Get appropriate student data based on mode
-  let studentPerformanceData = [];
-  
-  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
-    // For SGPA mode, use the SGPA data
-    studentPerformanceData = [...analysis.studentSgpaDetails]
-      .sort((a, b) => b.sgpa - a.sgpa)
-      .map(student => ({
-        id: student.id,
-        gpValue: student.sgpa,
-        hasArrears: student.hasArrears
-      }));
-  } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
-    // For CGPA mode, use the CGPA data
-    studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
-      .sort((a, b) => b.cgpa - a.cgpa)
-      .map(student => {
-        // For CGPA mode, we need to check if the student has arrears in any semester
-        const hasArrears = records.some(record => 
-          record.REGNO === student.id && record.GR === 'U'
-        );
-        
-        return {
-          id: student.id,
-          gpValue: student.cgpa,
-          hasArrears
-        };
-      });
-  }
-  
-  // Build the table rows
-  const studentRows = [
-    new TableRow({
-      children: [
-        createHeaderCell("S.No"),
-        createHeaderCell("Register Number"),
-        createHeaderCell(calculationMode === 'sgpa' ? "SGPA" : "CGPA"),
-        createHeaderCell("Status"),
-      ],
-    }),
-  ];
-  
-  // Add student rows
-  studentPerformanceData.forEach((student, index) => {
-    // Determine status based on GP value and arrears
-    let status = "";
-    
-    if (student.hasArrears) {
-      // Students with arrears
-      if (student.gpValue >= 6.5) {
-        status = "First Class With Arrear"; // Changed from "First Class" to "First Class With Arrear"
-      } else if (student.gpValue >= 5.0) {
-        status = "Second Class with Arrears";
-      } else {
-        status = "Has Arrears";
-      }
-    } else {
-      // Students without arrears
-      if (student.gpValue >= 8.5) {
-        status = "Distinction";
-      } else if (student.gpValue >= 6.5) {
-        status = "First Class";
-      } else {
-        status = "Second Class";
-      }
-    }
-    
-    studentRows.push(
-      new TableRow({
-        children: [
-          createTableCell((index + 1).toString()),
-          createTableCell(student.id),
-          createTableCell(student.gpValue.toFixed(2)),
-          createTableCell(status),
-        ],
-      })
-    );
-  });
-  
-  const studentTable = new Table({
-    width: {
-      size: 100,
-      type: WidthType.PERCENTAGE,
-    },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1 },
-      bottom: { style: BorderStyle.SINGLE, size: 1 },
-      left: { style: BorderStyle.SINGLE, size: 1 },
-      right: { style: BorderStyle.SINGLE, size: 1 },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-    },
-    columnWidths: [1000, 2800, 1400, 3400],
-    rows: studentRows,
-  });
-  
-  sections.push(studentTable);
-  
-  // Signature section
-  sections.push(
-    new Paragraph({
-      children: [new TextRun("")],
-      spacing: {
-        before: 500,
-      },
-    }),
-    new Table({
-      width: {
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      borders: {
-        top: { style: BorderStyle.NONE },
-        bottom: { style: BorderStyle.NONE },
-        left: { style: BorderStyle.NONE },
-        right: { style: BorderStyle.NONE },
-        insideHorizontal: { style: BorderStyle.NONE },
-        insideVertical: { style: BorderStyle.NONE },
-      },
-      columnWidths: [2000, 2000, 2000, 2000],
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              borders: {
-                top: { style: BorderStyle.NONE },
-                bottom: { style: BorderStyle.NONE },
-                left: { style: BorderStyle.NONE },
-                right: { style: BorderStyle.NONE },
-              },
-              children: [
-                new Paragraph({
-                  text: "CLASS ADVISOR",
-                  alignment: AlignmentType.CENTER,
-                }),
-              ],
-              width: {
-                size: 25,
-                type: WidthType.PERCENTAGE,
-              },
-            }),
-            new TableCell({
-              borders: {
-                top: { style: BorderStyle.NONE },
-                bottom: { style: BorderStyle.NONE },
-                left: { style: BorderStyle.NONE },
-                right: { style: BorderStyle.NONE },
-              },
-              children: [
-                new Paragraph({
-                  text: "HOD/CSE",
-                  alignment: AlignmentType.CENTER,
-                }),
-              ],
-              width: {
-                size: 25,
-                type: WidthType.PERCENTAGE,
-              },
-            }),
-            new TableCell({
-              borders: {
-                top: { style: BorderStyle.NONE },
-                bottom: { style: BorderStyle.NONE },
-                left: { style: BorderStyle.NONE },
-                right: { style: BorderStyle.NONE },
-              },
-              children: [
-                new Paragraph({
-                  text: "DEAN ACADEMICS",
-                  alignment: AlignmentType.CENTER,
-                }),
-              ],
-              width: {
-                size: 25,
-                type: WidthType.PERCENTAGE,
-              },
-            }),
-            new TableCell({
-              borders: {
-                top: { style: BorderStyle.NONE },
-                bottom: { style: BorderStyle.NONE },
-                left: { style: BorderStyle.NONE },
-                right: { style: BorderStyle.NONE },
-              },
-              children: [
-                new Paragraph({
-                  text: "PRINCIPAL",
-                  alignment: AlignmentType.CENTER,
-                }),
-              ],
-              width: {
-                size: 25,
-                type: WidthType.PERCENTAGE,
-              },
-            }),
-          ],
-        }),
-      ],
-    })
-  );
-  
-  return new Document({
-    sections: [
-      {
-        properties: {},
-        children: sections,
-      },
-    ],
-  });
-};
-
-// Helper function for creating table cells with better alignment and text control
-function createTableCell(
-  text: string, 
-  isHeader = false,
-  options: {
-    colspan?: number;
-    rowspan?: number;
-    alignment?: keyof typeof AlignmentType;
-    rightIndent?: number;
-    bold?: boolean;
-    verticalMerge?: 'restart' | 'continue';
-  } = {}
-): TableCell {
-  const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
-  
-  return new TableCell({
-    children: [
-      new Paragraph({
-        alignment: alignment ? AlignmentType[alignment] : AlignmentType.CENTER,
-        indent: rightIndent !== undefined ? { right: rightIndent } : undefined,
-        children: [
-          new TextRun({
-            text,
-            bold: bold,
-            size: 20,
-          }),
-        ],
-      }),
-    ],
-    columnSpan: colspan,
-    rowSpan: rowspan,
-    margins: {
-      top: 80,
-      bottom: 80,
-      left: 100,
-      right: 100
-    },
-    verticalAlign: AlignmentType.CENTER,
-    verticalMerge: verticalMerge,
-  });
-}
-
-function createHeaderCell(
-  text: string,
-  options: {
-    colspan?: number;
-    rowspan?: number;
-    alignment?: keyof typeof AlignmentType;
-    rightIndent?: number;
-  } = {}
-): TableCell {
-  return createTableCell(text, true, {
-    ...options,
-    alignment: options.alignment || 'CENTER',
-  });
-}
-
-// Original helper function for simple table rows
-const createTableRow = (cells: string[], isHeader = false): TableRow => {
-  return new TableRow({
-    children: cells.map(text => 
-      new TableCell({
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-        },
-        children: [
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            indent: { right: -0.06 },
-            children: [
-              new TextRun({
-                text,
-                bold: isHeader,
-                size: 20,
-              }),
-            ],
-          }),
-        ],
-        margins: {
-          top: 80,
-          bottom: 80,
-          left: 100,
-          right: 100
-        },
-        verticalAlign: AlignmentType.CENTER,
-      })
-    ),
-  });
-};
+    const cumulativeStudent = topCumulativeStudents[i] || { id: "", value:
