@@ -54,7 +54,6 @@ export interface ResultAnalysis {
     highestCGPA: number;
     lowestCGPA: number;
     toppersList?: { id: string; cgpa: number }[]; // Added for toppers list
-    topperWithArrearsIncluded?: { id: string; cgpa: number }[]; // New field for CGPA including arrear subjects
     currentSemesterFile?: string; // File representing the current semester
   }; // CGPA analysis when multiple files
   singleFileClassification: ClassificationData; // Classification for single file/semester

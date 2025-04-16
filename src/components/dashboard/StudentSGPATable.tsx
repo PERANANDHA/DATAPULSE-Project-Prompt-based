@@ -9,14 +9,12 @@ interface StudentSGPATableProps {
   analysis: ResultAnalysis;
   calculationMode: 'sgpa' | 'cgpa' | null;
   useCumulativeData?: boolean; // New prop to determine which dataset to use
-  includeArrears?: boolean; // New prop to control whether to include arrear subjects
 }
 
 const StudentSGPATable: React.FC<StudentSGPATableProps> = ({ 
   analysis, 
   calculationMode,
-  useCumulativeData = false, // Default to current semester data
-  includeArrears = false // Default to excluding arrears
+  useCumulativeData = false // Default to current semester data
 }) => {
   const isCgpaMode = calculationMode === 'cgpa';
   
@@ -26,30 +24,17 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
   let tableDescription = "";
   
   if (isCgpaMode) {
-    if (useCumulativeData) {
-      // This is the "Rank up to this semester" table in CGPA mode
-      // For cumulative data, we'll now respect the includeArrears flag to decide which data to use
-      if (includeArrears && analysis.cgpaAnalysis?.topperWithArrearsIncluded) {
-        // Use CGPA data that includes arrear subjects
-        topStudentsData = analysis.cgpaAnalysis.topperWithArrearsIncluded.slice(0, 3).map((student, index) => ({
-          rank: index + 1,
-          id: student.id,
-          value: student.cgpa,
-          isCGPA: true
-        }));
-        tableTitle = 'Student CGPA Rank Analysis (With Arrear Subjects)';
-        tableDescription = 'Top 3 students by Cumulative Grade Point Average including arrear subjects';
-      } else if (analysis.cgpaAnalysis?.toppersList) {
-        // Use CGPA data that excludes arrear subjects
-        topStudentsData = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
-          rank: index + 1,
-          id: student.id,
-          value: student.cgpa,
-          isCGPA: true
-        }));
-        tableTitle = 'Student CGPA Rank Analysis';
-        tableDescription = 'Top 3 students by Cumulative Grade Point Average';
-      }
+    if (useCumulativeData && analysis.cgpaAnalysis?.toppersList) {
+      // This is the "Rank up to this semester" table in CGPA mode - use CGPA data
+      // Include data from all semesters but exclude arrear subjects (already handled in the data)
+      topStudentsData = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
+        rank: index + 1,
+        id: student.id,
+        value: student.cgpa,
+        isCGPA: true
+      }));
+      tableTitle = 'Student CGPA Rank Analysis';
+      tableDescription = 'Top 3 students by Cumulative Grade Point Average';
     } else {
       // This is the "Rank in this semester" table in CGPA mode - use SGPA data from current semester only
       // Check if we have studentSgpaDetails (should have current semester SGPA)
@@ -89,7 +74,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
   }
 
   // Debug logging for troubleshooting
-  console.log(`StudentSGPATable - Mode: ${calculationMode}, useCumulativeData: ${useCumulativeData}, includeArrears: ${includeArrears}`);
+  console.log(`StudentSGPATable - Mode: ${calculationMode}, useCumulativeData: ${useCumulativeData}`);
   console.log("Top students data:", topStudentsData);
 
   return (
