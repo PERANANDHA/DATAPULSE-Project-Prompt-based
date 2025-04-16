@@ -18,7 +18,12 @@ export const getUniqueDepartmentCodes = (records: StudentRecord[]): string[] => 
 
 // Calculate SGPA for a given student
 export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
-  const studentRecords = records.filter(record => record.REGNO === studentId);
+  // Get all records for this student, but exclude those marked as arrear
+  const studentRecords = records.filter(record => 
+    record.REGNO === studentId && 
+    !record.isArrear // Exclude arrear subjects
+  );
+  
   let totalCredits = 0;
   let weightedSum = 0;
 
@@ -54,7 +59,11 @@ export const calculateCGPA = (
   // For each semester (file)
   allSemesters.forEach(semester => {
     const semesterRecords = fileGroups[semester];
-    const studentSemRecords = semesterRecords.filter(record => record.REGNO === studentId);
+    // Filter out arrear subjects
+    const studentSemRecords = semesterRecords.filter(record => 
+      record.REGNO === studentId && 
+      !record.isArrear // Exclude arrear subjects
+    );
     
     // Calculate this semester's contribution
     let semCredits = 0;
@@ -100,16 +109,21 @@ export const getCurrentSemesterSGPAData = (
   }
 
   console.log(`Raw records in getCurrentSemesterSGPAData: ${currentSemesterRecords.length}`);
+  
+  // Filter out arrear subjects
+  const nonArrearRecords = currentSemesterRecords.filter(record => !record.isArrear);
+  console.log(`Filtered out ${currentSemesterRecords.length - nonArrearRecords.length} arrear subjects`);
+  
   // Check if credits are assigned properly
-  const recordsWithCredits = currentSemesterRecords.filter(r => r.creditValue && r.creditValue > 0);
-  console.log(`Records with credits: ${recordsWithCredits.length} out of ${currentSemesterRecords.length}`);
+  const recordsWithCredits = nonArrearRecords.filter(r => r.creditValue && r.creditValue > 0);
+  console.log(`Records with credits: ${recordsWithCredits.length} out of ${nonArrearRecords.length}`);
   
   if (recordsWithCredits.length === 0) {
     console.warn("WARNING: No records have credit values assigned! This will result in all SGPAs being 0.");
   }
 
   // Get unique student IDs from the current semester
-  const studentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+  const studentIds = [...new Set(nonArrearRecords.map(record => record.REGNO))];
   
   console.log(`Computing SGPA for ${studentIds.length} students in current semester`);
   

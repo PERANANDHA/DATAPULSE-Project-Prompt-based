@@ -26,6 +26,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
   if (isCgpaMode) {
     if (useCumulativeData && analysis.cgpaAnalysis?.toppersList) {
       // This is the "Rank up to this semester" table in CGPA mode - use CGPA data
+      // Include data from all semesters but exclude arrear subjects (already handled in the data)
       topStudentsData = analysis.cgpaAnalysis.toppersList.slice(0, 3).map((student, index) => ({
         rank: index + 1,
         id: student.id,
@@ -38,6 +39,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
       // This is the "Rank in this semester" table in CGPA mode - use SGPA data from current semester only
       // Check if we have studentSgpaDetails (should have current semester SGPA)
       if (analysis.studentSgpaDetails && analysis.studentSgpaDetails.length > 0) {
+        // Filter out students with arrear data (already handled during processing)
         const currentSemesterStudents = [...analysis.studentSgpaDetails];
         currentSemesterStudents.sort((a, b) => b.sgpa - a.sgpa);
         

@@ -23,6 +23,7 @@ interface SubjectCredit {
   creditValue: number;
   subjectName?: string;
   facultyName?: string;
+  isArrear?: boolean; // Flag to identify arrear subjects
 }
 
 interface ProfileInfo {
@@ -110,19 +111,30 @@ const Dashboard = () => {
         const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
         
         if (creditInfo) {
+          // Log subjects marked as arrear
+          if (creditInfo.isArrear) {
+            console.log(`Subject ${record.SCODE} marked as arrear for student ${record.REGNO}`);
+          }
+          
           return {
             ...record,
             creditValue: creditInfo.creditValue,
             subjectName: creditInfo.subjectName,
-            facultyName: creditInfo.facultyName
+            facultyName: creditInfo.facultyName,
+            isArrear: creditInfo.isArrear || false // Pass the arrear flag
           };
         }
         
         return {
           ...record,
-          creditValue: 3
+          creditValue: 3,
+          isArrear: false
         };
       });
+      
+      // Log how many records have arrear flag
+      const arrearRecords = recordsWithCredits.filter(record => record.isArrear);
+      console.log(`Total ${arrearRecords.length} records marked as arrear out of ${recordsWithCredits.length}`);
       
       console.log(`Applied credits to ${recordsWithCredits.length} records`);
       const recordsWithPositiveCredits = recordsWithCredits.filter(r => r.creditValue && r.creditValue > 0);

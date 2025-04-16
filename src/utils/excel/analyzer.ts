@@ -97,11 +97,15 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   
   console.log(`Using ${currentSemesterRecords.length} records from "${currentSemesterFile}" for current semester SGPA calculation`);
   
-  // Calculate SGPA for each student based on current semester only
+  // Filter out arrear subjects for SGPA calculation
+  const nonArrearCurrentSemesterRecords = currentSemesterRecords.filter(record => !record.isArrear);
+  console.log(`Excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects for SGPA calculation`);
+  
+  // Calculate SGPA for each student based on current semester only (excluding arrear subjects)
   const studentSgpaMap: { [studentId: string]: number } = {};
   const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
   
-  const currentSemStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+  const currentSemStudentIds = [...new Set(nonArrearCurrentSemesterRecords.map(record => record.REGNO))];
   
   // Check if records have credit values
   const recordsWithCredits = currentSemesterRecords.filter(r => r.creditValue && r.creditValue > 0);
@@ -170,8 +174,15 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   const totalGrades = records.filter(record => record.GR in gradePointMap).length;
   
   // Subject-wise performance - Now includes preservation of subject names
+  // For current semester, use non-arrear records
+  const recordsForSubjectAnalysis = currentSemesterFile ? 
+    currentSemesterRecords.filter(record => !record.isArrear) : 
+    records.filter(record => !record.isArrear);
+  
+  console.log(`Using ${recordsForSubjectAnalysis.length} non-arrear records for subject performance analysis`);
+  
   const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number; subjectName?: string } } = {};
-  records.forEach(record => {
+  recordsForSubjectAnalysis.forEach(record => {
     // Skip records with invalid grades
     if (!(record.GR in gradePointMap)) return;
     
@@ -242,10 +253,11 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
 
   // Subject-wise grade distribution
   const subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] } = {};
-  const uniqueSubjects = [...new Set(records.map(record => record.SCODE))];
+  const uniqueSubjects = [...new Set(recordsForSubjectAnalysis.map(record => record.SCODE))];
 
   uniqueSubjects.forEach(subject => {
-    const subjectRecords = records.filter(record => record.SCODE === subject);
+    // Filter out arrear subjects for grade distribution analysis
+    const subjectRecords = recordsForSubjectAnalysis.filter(record => record.SCODE === subject);
     const gradeCounts: { [grade: string]: number } = {};
 
     subjectRecords.forEach(record => {

@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader, Trash2 } from 'lucide-react';
+import { Loader, Trash2, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,6 +13,7 @@ interface SubjectCredit {
   creditValue: number;
   subjectName?: string;
   facultyName?: string; // Added faculty name field
+  isArrear?: boolean; // Flag to identify arrear subjects
 }
 
 interface SubjectCreditInputProps {
@@ -36,7 +38,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
         subjectCode: subject,
         creditValue: 3,
         subjectName: '',
-        facultyName: '' // Initialize with empty faculty name
+        facultyName: '', // Initialize with empty faculty name
+        isArrear: false // Initialize with not arrear
       }));
       setSubjectCredits(initialCredits);
       validateInputs(initialCredits);
@@ -85,6 +88,25 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     validateInputs(updatedCredits);
   };
 
+  const handleToggleArrear = (subjectCode: string) => {
+    const updatedCredits = subjectCredits.map((credit) => 
+      credit.subjectCode === subjectCode 
+        ? { ...credit, isArrear: !credit.isArrear } 
+        : credit
+    );
+    
+    setSubjectCredits(updatedCredits);
+    validateInputs(updatedCredits);
+    
+    const subject = updatedCredits.find(credit => credit.subjectCode === subjectCode);
+    if (subject) {
+      toast({
+        title: subject.isArrear ? "Subject marked as Arrear" : "Subject unmarked as Arrear",
+        description: `Subject ${subjectCode} has been ${subject.isArrear ? "marked" : "unmarked"} as arrear.`,
+      });
+    }
+  };
+
   const handleRemoveSubject = (subjectCode: string) => {
     const updatedCredits = subjectCredits.filter(credit => credit.subjectCode !== subjectCode);
     setSubjectCredits(updatedCredits);
@@ -103,6 +125,10 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
         credit.creditValue >= 1 && 
         credit.creditValue <= 10
       );
+    
+    // Log which subjects are marked as arrear
+    const arrearSubjects = credits.filter(credit => credit.isArrear);
+    console.log(`${arrearSubjects.length} subjects marked as arrear: ${arrearSubjects.map(s => s.subjectCode).join(', ')}`);
     
     setIsValid(allValid);
   };
@@ -155,13 +181,21 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
                 <TableHead>Credit Value</TableHead>
                 <TableHead>Subject Name</TableHead>
                 <TableHead>Faculty Name</TableHead>
-                <TableHead className="w-20">Actions</TableHead>
+                <TableHead className="w-[150px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {subjectCredits.map((subject) => (
-                <TableRow key={subject.subjectCode}>
-                  <TableCell className="font-medium">{subject.subjectCode}</TableCell>
+                <TableRow 
+                  key={subject.subjectCode} 
+                  className={subject.isArrear ? "bg-red-50 dark:bg-red-900/20" : ""}
+                >
+                  <TableCell className="font-medium">
+                    {subject.subjectCode}
+                    {subject.isArrear && (
+                      <Badge variant="destructive" className="ml-2">Arrear</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Input
                       type="number"
@@ -191,14 +225,25 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
                     />
                   </TableCell>
                   <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleRemoveSubject(subject.subjectCode)}
-                      className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex space-x-1">
+                      <Button 
+                        variant={subject.isArrear ? "destructive" : "outline"}
+                        size="sm"
+                        onClick={() => handleToggleArrear(subject.subjectCode)}
+                        className="text-xs"
+                      >
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Arrear
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleRemoveSubject(subject.subjectCode)}
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

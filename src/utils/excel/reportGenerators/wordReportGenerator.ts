@@ -349,6 +349,32 @@ const createWordDocument = async (
   // Add performance paragraphs
   sections.push(...performanceParagraphs);
   
+  // Add a note about arrear subjects if any were excluded
+  const arrearSubjects = records.filter(r => r.isArrear);
+  if (arrearSubjects.length > 0) {
+    const uniqueArrearSubjectCodes = [...new Set(arrearSubjects.map(r => r.SCODE))];
+    
+    sections.push(
+      new Paragraph({
+        spacing: {
+          before: 100,
+          after: 100,
+        },
+        children: [
+          new TextRun({
+            text: "Note: ",
+            bold: true,
+            size: 24,
+          }),
+          new TextRun({
+            text: `The following subjects were marked as Arrear and excluded from SGPA/CGPA calculations: ${uniqueArrearSubjectCodes.join(', ')}`,
+            size: 24,
+          }),
+        ],
+      }),
+    );
+  }
+    
   // File Analysis section for CGPA mode
   if (calculationMode === 'cgpa' && analysis.fileWiseAnalysis) {
     sections.push(
@@ -426,7 +452,12 @@ const createWordDocument = async (
   // End Semester Result Analysis Section - Using actual subject data with faculty names
   // Made table much wider to match exact PDF layout
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
-    const uniqueSubjects = [...new Set(currentSemesterRecords.map(record => record.SCODE))];
+    // For current semester table, filter out arrear subjects
+    const nonArrearCurrentSemesterRecords = currentSemesterRecords.filter(record => !record.isArrear);
+    console.log(`Excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects from End Semester Analysis`);
+    
+    // Use non-arrear subjects for analysis in SGPA mode and current semester in CGPA mode
+    const uniqueSubjects = [...new Set(nonArrearCurrentSemesterRecords.map(record => record.SCODE))];
     
     sections.push(
       new Paragraph({
