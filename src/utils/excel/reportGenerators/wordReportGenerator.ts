@@ -499,9 +499,9 @@ const createWordDocument = async (
       }),
     ];
     
-    // Adding actual subject data with faculty names
+    // Adding actual subject data with faculty names - ONLY for non-arrear subjects
     uniqueSubjects.forEach((subject, index) => {
-      const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
+      const subjectRecords = nonArrearCurrentSemesterRecords.filter(record => record.SCODE === subject);
       const totalStudents = subjectRecords.length;
       const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
       const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;
