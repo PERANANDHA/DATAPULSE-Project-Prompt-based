@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,6 @@ import { Loader, Trash2, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { useToast } from '@/hooks/use-toast';
-
 interface SubjectCredit {
   subjectCode: string;
   creditValue: number;
@@ -15,13 +13,11 @@ interface SubjectCredit {
   facultyName?: string; // Added faculty name field
   isArrear?: boolean; // Flag to identify if the subject is marked for current semester
 }
-
 interface SubjectCreditInputProps {
   uploadedSubjects: string[];
   onCreditAssigned: (credits: SubjectCredit[]) => void;
   isProcessing: boolean;
 }
-
 const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
   uploadedSubjects,
   onCreditAssigned,
@@ -29,8 +25,9 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
 }) => {
   const [subjectCredits, setSubjectCredits] = useState<SubjectCredit[]>([]);
   const [isValid, setIsValid] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     // Initialize with default credit value of 3, empty subject name, and empty faculty name
     if (uploadedSubjects.length > 0) {
@@ -49,7 +46,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       setIsValid(false);
     }
   }, [uploadedSubjects]);
-
   const handleCreditChange = (subjectCode: string, value: string) => {
     const numValue = parseInt(value, 10);
     if (isNaN(numValue) || numValue < 1 || numValue > 10) {
@@ -62,7 +58,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     setSubjectCredits(updatedCredits);
     validateInputs(updatedCredits);
   };
-
   const handleSubjectNameChange = (subjectCode: string, name: string) => {
     const updatedCredits = subjectCredits.map(credit => credit.subjectCode === subjectCode ? {
       ...credit,
@@ -71,7 +66,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     setSubjectCredits(updatedCredits);
     validateInputs(updatedCredits);
   };
-
   const handleFacultyNameChange = (subjectCode: string, name: string) => {
     const updatedCredits = subjectCredits.map(credit => credit.subjectCode === subjectCode ? {
       ...credit,
@@ -80,7 +74,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     setSubjectCredits(updatedCredits);
     validateInputs(updatedCredits);
   };
-
   const handleToggleArrear = (subjectCode: string) => {
     const updatedCredits = subjectCredits.map(credit => credit.subjectCode === subjectCode ? {
       ...credit,
@@ -96,7 +89,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       });
     }
   };
-
   const handleRemoveSubject = (subjectCode: string) => {
     const updatedCredits = subjectCredits.filter(credit => credit.subjectCode !== subjectCode);
     setSubjectCredits(updatedCredits);
@@ -106,7 +98,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       description: `Subject ${subjectCode} has been removed from the list.`
     });
   };
-
   const validateInputs = (credits: SubjectCredit[]) => {
     // Check if all credits are assigned with valid values
     const allValid = credits.length > 0 && credits.every(credit => credit.creditValue >= 1 && credit.creditValue <= 10);
@@ -114,10 +105,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     // Log which subjects are marked as current semester
     const currentSemesterSubjects = credits.filter(credit => credit.isArrear);
     console.log(`${currentSemesterSubjects.length} subjects marked as current semester: ${currentSemesterSubjects.map(s => s.subjectCode).join(', ')}`);
-
     setIsValid(allValid);
   };
-
   const handleSubmit = () => {
     if (!isValid) {
       toast({
@@ -133,7 +122,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       description: "Subject credits have been successfully assigned."
     });
   };
-
   if (uploadedSubjects.length === 0) {
     return <Card className="col-span-1 lg:col-span-2 shadow-md overflow-hidden">
       <CardHeader className="pb-2">
@@ -144,7 +132,6 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       </CardHeader>
     </Card>;
   }
-
   return <Card className="col-span-1 lg:col-span-2 shadow-md">
     <CardHeader className="pb-2">
       <CardTitle>Assign Subject Details</CardTitle>
@@ -181,7 +168,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
               </TableCell>
               <TableCell>
                 <div className="flex space-x-1">
-                  <Button variant={subject.isArrear ? "secondary" : "outline"} size="sm" onClick={() => handleToggleArrear(subject.subjectCode)} className="Current Semester">
+                  <Button variant={subject.isArrear ? "secondary" : "outline"} size="sm" onClick={() => handleToggleArrear(subject.subjectCode)} className="Current Semester bg-zinc-300 hover:bg-zinc-200 text-lime-600">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     Current Semester
                   </Button>
@@ -205,5 +192,4 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     </CardContent>
   </Card>;
 };
-
 export default SubjectCreditInput;
