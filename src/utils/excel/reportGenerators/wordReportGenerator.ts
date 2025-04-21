@@ -499,9 +499,9 @@ const createWordDocument = async (
       }),
     ];
     
-    // Adding actual subject data with faculty names - ONLY for non-arrear subjects
+    // Adding actual subject data with faculty names
     uniqueSubjects.forEach((subject, index) => {
-      const subjectRecords = nonArrearCurrentSemesterRecords.filter(record => record.SCODE === subject);
+      const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
       const totalStudents = subjectRecords.length;
       const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
       const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;
@@ -890,106 +890,231 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [800, 2500, 1000, 800, 2500, 1000],
+    columnWidths: [800, 2000, 1000, 800, 2000, 1000],
     rows: rankRows,
   });
   
   sections.push(rankTable);
   
-  // Prepare signature section
+  // Individual Student Performance Section - ADDED FOR BOTH SGPA AND CGPA MODE
   sections.push(
     new Paragraph({
       spacing: {
-        before: 600,
+        before: 200,
+        after: 100,
       },
-    })
+      children: [
+        new TextRun({
+          text: "Individual Student Performance",
+          bold: true,
+          size: 28,
+          color: "2E3192",
+        }),
+      ],
+    }),
   );
   
-  // Signature Lines - Using a table for better alignment
-  const signatureTable = new Table({
+  // Get appropriate student data based on mode
+  let studentPerformanceData = [];
+  
+  if (calculationMode === 'sgpa' && analysis.studentSgpaDetails) {
+    // For SGPA mode, use the SGPA data
+    studentPerformanceData = [...analysis.studentSgpaDetails]
+      .sort((a, b) => b.sgpa - a.sgpa)
+      .map(student => ({
+        id: student.id,
+        gpValue: student.sgpa,
+        hasArrears: student.hasArrears
+      }));
+  } else if (calculationMode === 'cgpa' && analysis.cgpaAnalysis) {
+    // For CGPA mode, use the CGPA data
+    studentPerformanceData = [...analysis.cgpaAnalysis.studentCGPAs]
+      .sort((a, b) => b.cgpa - a.cgpa)
+      .map(student => {
+        // For CGPA mode, we need to check if the student has arrears in any semester
+        const hasArrears = records.some(record => 
+          record.REGNO === student.id && record.GR === 'U'
+        );
+        
+        return {
+          id: student.id,
+          gpValue: student.cgpa,
+          hasArrears
+        };
+      });
+  }
+  
+  // Build the table rows
+  const studentRows = [
+    new TableRow({
+      children: [
+        createHeaderCell("S.No"),
+        createHeaderCell("Register Number"),
+        createHeaderCell(calculationMode === 'sgpa' ? "SGPA" : "CGPA"),
+        createHeaderCell("Status"),
+      ],
+    }),
+  ];
+  
+  // Add student rows
+  studentPerformanceData.forEach((student, index) => {
+    // Determine status based on GP value and arrears
+    let status = "";
+    
+    if (student.hasArrears) {
+      // Students with arrears
+      if (student.gpValue >= 6.5) {
+        status = "First Class With Arrear"; // Changed from "First Class" to "First Class With Arrear"
+      } else if (student.gpValue >= 5.0) {
+        status = "Second Class with Arrears";
+      } else {
+        status = "Has Arrears";
+      }
+    } else {
+      // Students without arrears
+      if (student.gpValue >= 8.5) {
+        status = "Distinction";
+      } else if (student.gpValue >= 6.5) {
+        status = "First Class";
+      } else {
+        status = "Second Class";
+      }
+    }
+    
+    studentRows.push(
+      new TableRow({
+        children: [
+          createTableCell((index + 1).toString()),
+          createTableCell(student.id),
+          createTableCell(student.gpValue.toFixed(2)),
+          createTableCell(status),
+        ],
+      })
+    );
+  });
+  
+  const studentTable = new Table({
     width: {
       size: 100,
       type: WidthType.PERCENTAGE,
     },
     borders: {
-      top: { style: BorderStyle.NONE },
-      bottom: { style: BorderStyle.NONE },
-      left: { style: BorderStyle.NONE },
-      right: { style: BorderStyle.NONE },
-      insideHorizontal: { style: BorderStyle.NONE },
-      insideVertical: { style: BorderStyle.NONE },
+      top: { style: BorderStyle.SINGLE, size: 1 },
+      bottom: { style: BorderStyle.SINGLE, size: 1 },
+      left: { style: BorderStyle.SINGLE, size: 1 },
+      right: { style: BorderStyle.SINGLE, size: 1 },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    rows: [
-      new TableRow({
-        children: [
-          new TableCell({
-            borders: {
-              top: { style: BorderStyle.NONE },
-              bottom: { style: BorderStyle.NONE },
-              left: { style: BorderStyle.NONE },
-              right: { style: BorderStyle.NONE },
-            },
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: "FACULTY ADVISOR",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-              }),
-            ],
-          }),
-          new TableCell({
-            borders: {
-              top: { style: BorderStyle.NONE },
-              bottom: { style: BorderStyle.NONE },
-              left: { style: BorderStyle.NONE },
-              right: { style: BorderStyle.NONE },
-            },
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: "PROGRAMME COORDINATOR",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-              }),
-            ],
-          }),
-          new TableCell({
-            borders: {
-              top: { style: BorderStyle.NONE },
-              bottom: { style: BorderStyle.NONE },
-              left: { style: BorderStyle.NONE },
-              right: { style: BorderStyle.NONE },
-            },
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({
-                    text: "HEAD OF THE DEPARTMENT",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-    ],
+    columnWidths: [1000, 2800, 1400, 3400],
+    rows: studentRows,
   });
   
-  sections.push(signatureTable);
+  sections.push(studentTable);
   
-  // Create and return the document
+  // Signature section
+  sections.push(
+    new Paragraph({
+      children: [new TextRun("")],
+      spacing: {
+        before: 500,
+      },
+    }),
+    new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE,
+      },
+      borders: {
+        top: { style: BorderStyle.NONE },
+        bottom: { style: BorderStyle.NONE },
+        left: { style: BorderStyle.NONE },
+        right: { style: BorderStyle.NONE },
+        insideHorizontal: { style: BorderStyle.NONE },
+        insideVertical: { style: BorderStyle.NONE },
+      },
+      columnWidths: [2000, 2000, 2000, 2000],
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "CLASS ADVISOR",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "HOD/CSE",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "DEAN ACADEMICS",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+            new TableCell({
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  text: "PRINCIPAL",
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              width: {
+                size: 25,
+                type: WidthType.PERCENTAGE,
+              },
+            }),
+          ],
+        }),
+      ],
+    })
+  );
+  
   return new Document({
     sections: [
       {
@@ -1000,72 +1125,95 @@ const createWordDocument = async (
   });
 };
 
-// Helper function to create a table row with simple cells
-const createTableRow = (cellTexts: string[]): TableRow => {
-  return new TableRow({
-    children: cellTexts.map(text => new TableCell({
-      children: [new Paragraph(text)],
-    })),
-  });
-};
-
-// Helper to create a table cell with text
-const createTableCell = (
+// Helper function for creating table cells with better alignment and text control
+function createTableCell(
   text: string, 
-  isHeader: boolean = false, 
-  options?: { 
-    colspan?: number; 
-    rowspan?: number; 
-    alignment?: string;
+  isHeader = false,
+  options: {
+    colspan?: number;
+    rowspan?: number;
+    alignment?: keyof typeof AlignmentType;
+    rightIndent?: number;
     bold?: boolean;
     verticalMerge?: 'restart' | 'continue';
-    rightIndent?: number;
-  }
-): TableCell => {
+  } = {}
+): TableCell {
+  const { colspan, rowspan, alignment = 'CENTER', rightIndent, bold = isHeader, verticalMerge } = options;
   
-  // Set default options
-  const cellOptions = options || {};
-  const cellText = text || "";
-  
-  const textRun = new TextRun({
-    text: cellText,
-    bold: isHeader || cellOptions.bold,
-    size: isHeader ? 24 : 22,
-  });
-  
-  // Create the paragraph with alignment if specified
-  const paragraph = new Paragraph({
-    alignment: cellOptions.alignment === 'CENTER' ? AlignmentType.CENTER : AlignmentType.LEFT,
-    indent: cellOptions.rightIndent !== undefined ? { right: cellOptions.rightIndent * 1440 } : undefined,
-    children: [textRun],
-  });
-  
-  // Create and return the cell with options
   return new TableCell({
-    children: [paragraph],
-    columnSpan: cellOptions.colspan,
-    rowSpan: cellOptions.rowspan,
-    verticalMerge: cellOptions.verticalMerge,
-    verticalAlign: AlignmentType.CENTER,
+    children: [
+      new Paragraph({
+        alignment: alignment ? AlignmentType[alignment] : AlignmentType.CENTER,
+        indent: rightIndent !== undefined ? { right: rightIndent } : undefined,
+        children: [
+          new TextRun({
+            text,
+            bold: bold,
+            size: 20,
+          }),
+        ],
+      }),
+    ],
+    columnSpan: colspan,
+    rowSpan: rowspan,
     margins: {
       top: 80,
       bottom: 80,
       left: 100,
-      right: 100,
+      right: 100
     },
+    verticalAlign: AlignmentType.CENTER,
+    verticalMerge: verticalMerge,
   });
-};
+}
 
-// Helper to create header cells with consistent styling
-const createHeaderCell = (
-  text: string, 
-  options?: { 
-    alignment?: string;
+function createHeaderCell(
+  text: string,
+  options: {
+    colspan?: number;
+    rowspan?: number;
+    alignment?: keyof typeof AlignmentType;
     rightIndent?: number;
-  }
-): TableCell => {
+  } = {}
+): TableCell {
   return createTableCell(text, true, {
     ...options,
-    bold: true,
+    alignment: options.alignment || 'CENTER',
+  });
+}
+
+// Original helper function for simple table rows
+const createTableRow = (cells: string[], isHeader = false): TableRow => {
+  return new TableRow({
+    children: cells.map(text => 
+      new TableCell({
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+        },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            indent: { right: -0.06 },
+            children: [
+              new TextRun({
+                text,
+                bold: isHeader,
+                size: 20,
+              }),
+            ],
+          }),
+        ],
+        margins: {
+          top: 80,
+          bottom: 80,
+          left: 100,
+          right: 100
+        },
+        verticalAlign: AlignmentType.CENTER,
+      })
+    ),
   });
 };

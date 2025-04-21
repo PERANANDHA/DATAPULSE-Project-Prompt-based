@@ -31,8 +31,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
         rank: index + 1,
         id: student.id,
         value: student.cgpa,
-        isCGPA: true,
-        arrearSubjects: analysis.studentSgpaDetails?.find(s => s.id === student.id)?.arrearSubjects
+        isCGPA: true
       }));
       tableTitle = 'Student CGPA Rank Analysis';
       tableDescription = 'Top 3 students by Cumulative Grade Point Average';
@@ -48,8 +47,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
           rank: index + 1,
           id: student.id,
           value: student.sgpa,
-          isCGPA: false,
-          arrearSubjects: student.arrearSubjects
+          isCGPA: false
         }));
         tableTitle = 'Student SGPA Rank Analysis';
         tableDescription = 'Top 3 students by Semester Grade Point Average (Current Semester)';
@@ -69,8 +67,7 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
       rank: index + 1,
       id: student.id,
       value: student.sgpa,
-      isCGPA: false,
-      arrearSubjects: student.arrearSubjects
+      isCGPA: false
     }));
     tableTitle = 'Student SGPA Rank Analysis';
     tableDescription = 'Top 3 students by Semester Grade Point Average';
@@ -100,7 +97,6 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
                 <TableHead className="text-center">
                   {useCumulativeData ? 'CGPA' : 'SGPA'}
                 </TableHead>
-                <TableHead className="text-center">Arrear Subjects</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -115,15 +111,6 @@ const StudentSGPATable: React.FC<StudentSGPATableProps> = ({
                   </TableCell>
                   <TableCell className="text-center">{student.id}</TableCell>
                   <TableCell className="text-center font-medium">{student.value.toFixed(2)}</TableCell>
-                  <TableCell className="text-center">
-                    {student.arrearSubjects && student.arrearSubjects.length > 0 ? (
-                      <div className="text-xs text-red-500">
-                        {student.arrearSubjects.join(', ')}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-green-500">None</span>
-                    )}
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
