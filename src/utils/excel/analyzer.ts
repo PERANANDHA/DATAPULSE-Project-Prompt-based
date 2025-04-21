@@ -1,3 +1,4 @@
+
 import { StudentRecord, ResultAnalysis, gradePointMap, passFailColors } from './types';
 import { calculateSGPA, calculateCGPA, hasArrears, getSubjectsWithArrears, getGradeColor, formatTo2Decimals } from './gradeUtils';
 
@@ -88,33 +89,54 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   }
   
   const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
-
-  // [MOD] Current semester stats: filter out 'isArrear'
-  const currentSemesterRecords = currentSemesterFile
-    ? records.filter(record => record.fileSource === currentSemesterFile && !record.isArrear)
-    : records.filter(record => !record.isArrear);
   
-  // Calculate SGPA (exclude arrear-marked) for "current" stats/table/classification
+  // IMPORTANT FIX: Calculate SGPA specifically for current semester records
+  const currentSemesterRecords = currentSemesterFile ? 
+    records.filter(record => record.fileSource === currentSemesterFile) : 
+    records;
+  
+  console.log(`Using ${currentSemesterRecords.length} records from "${currentSemesterFile}" for current semester SGPA calculation`);
+  
+  // Filter out arrear subjects for SGPA calculation
+  const nonArrearCurrentSemesterRecords = currentSemesterRecords.filter(record => !record.isArrear);
+  console.log(`Excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects for SGPA calculation`);
+  
+  // Calculate SGPA for each student based on current semester only (excluding arrear subjects)
   const studentSgpaMap: { [studentId: string]: number } = {};
   const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
-  const currentSemStudentIds = [...new Set(currentSemesterRecords.map(record => record.REGNO))];
+  
+  const currentSemStudentIds = [...new Set(nonArrearCurrentSemesterRecords.map(record => record.REGNO))];
+  
+  // Check if records have credit values
   const recordsWithCredits = currentSemesterRecords.filter(r => r.creditValue && r.creditValue > 0);
+  console.log(`Records with credits for SGPA: ${recordsWithCredits.length} out of ${currentSemesterRecords.length}`);
+  
+  if (recordsWithCredits.length === 0 && currentSemesterRecords.length > 0) {
+    console.warn("WARNING: No records have credit values assigned in SGPA calculation! This will result in all SGPAs being 0.");
+  }
 
   currentSemStudentIds.forEach(studentId => {
     const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
+    
+    // Manual SGPA calculation for better control and debugging
     let totalPoints = 0;
     let totalCredits = 0;
+    
     studentRecords.forEach(record => {
       if (record.GR in gradePointMap) {
         const gradePoint = gradePointMap[record.GR];
         const creditValue = record.creditValue || 0;
+        
         if (creditValue > 0) {
           totalPoints += gradePoint * creditValue;
           totalCredits += creditValue;
         }
       }
     });
+    
     const sgpa = totalCredits > 0 ? formatTo2Decimals(totalPoints / totalCredits) : 0;
+    console.log(`Student ${studentId}: SGPA calculated = ${sgpa}`);
+    
     studentSgpaMap[studentId] = sgpa;
     studentSgpaDetails.push({
       id: studentId,
@@ -122,16 +144,18 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
       hasArrears: hasArrears(studentRecords, studentId)
     });
   });
+  
+  // Sort by registration number
   studentSgpaDetails.sort((a, b) => a.id.localeCompare(b.id));
-
-  // -- Current semester average CGPA from SGPA values (excludes arrear-marked)
-  const averageCGPA = totalStudents > 0
-    ? formatTo2Decimals(studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents)
-    : 0;
-  const highestSGPA = studentSgpaDetails.length > 0
-    ? formatTo2Decimals(Math.max(...studentSgpaDetails.map(student => student.sgpa))) : 0;
-  const lowestSGPA = studentSgpaDetails.length > 0
-    ? formatTo2Decimals(Math.min(...studentSgpaDetails.map(student => student.sgpa))) : 0;
+  
+  const averageCGPA = totalStudents > 0 ? 
+    formatTo2Decimals(studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents) : 0;
+  
+  const highestSGPA = studentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.max(...studentSgpaDetails.map(student => student.sgpa))) : 0;
+  
+  const lowestSGPA = studentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.min(...studentSgpaDetails.map(student => student.sgpa))) : 0;
   
   // Grade distribution - filter out any non-standard grades
   const gradeDistribution: { [grade: string]: number } = {};
@@ -148,35 +172,46 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   }));
   
   const totalGrades = records.filter(record => record.GR in gradePointMap).length;
-
-  // Subject-wise performance (again, NOT including 'isArrear')
-  const recordsForSubjectAnalysis = currentSemesterFile
-    ? records.filter(record => record.fileSource === currentSemesterFile && !record.isArrear)
-    : records.filter(record => !record.isArrear);
+  
+  // Subject-wise performance - Now includes preservation of subject names
+  // For current semester, use non-arrear records
+  const recordsForSubjectAnalysis = currentSemesterFile ? 
+    currentSemesterRecords.filter(record => !record.isArrear) : 
+    records.filter(record => !record.isArrear);
+  
+  console.log(`Using ${recordsForSubjectAnalysis.length} non-arrear records for subject performance analysis`);
   
   const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number; subjectName?: string } } = {};
   recordsForSubjectAnalysis.forEach(record => {
+    // Skip records with invalid grades
     if (!(record.GR in gradePointMap)) return;
+    
     const subject = record.SCODE;
     if (!subjectPerformanceMap[subject]) {
-      subjectPerformanceMap[subject] = {
-        pass: 0,
-        fail: 0,
+      subjectPerformanceMap[subject] = { 
+        pass: 0, 
+        fail: 0, 
         total: 0,
-        subjectName: record.subjectName
+        subjectName: record.subjectName // Store subject name if available
       };
     } else if (record.subjectName && !subjectPerformanceMap[subject].subjectName) {
+      // Update subject name if it was previously not set but is now available
       subjectPerformanceMap[subject].subjectName = record.subjectName;
     }
+    
     subjectPerformanceMap[subject].total++;
-    if (record.GR !== 'U') subjectPerformanceMap[subject].pass++;
-    else subjectPerformanceMap[subject].fail++;
+    if (record.GR !== 'U') {
+      subjectPerformanceMap[subject].pass++;
+    } else {
+      subjectPerformanceMap[subject].fail++;
+    }
   });
+  
   const subjectPerformanceData = Object.entries(subjectPerformanceMap).map(([subject, data]) => ({
     subject: subject,
     pass: data.total > 0 ? formatTo2Decimals((data.pass / data.total) * 100) : 0,
     fail: data.total > 0 ? formatTo2Decimals((data.fail / data.total) * 100) : 0,
-    subjectName: data.subjectName
+    subjectName: data.subjectName // Include subject name in the result
   }));
   
   // Top performers
@@ -216,18 +251,22 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     { name: 'Fail', value: failPercentage, fill: passFailColors.fail },
   ];
 
-  // Subject-wise grade distribution (still, NOT including arrears)
+  // Subject-wise grade distribution
   const subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] } = {};
   const uniqueSubjects = [...new Set(recordsForSubjectAnalysis.map(record => record.SCODE))];
 
   uniqueSubjects.forEach(subject => {
+    // Filter out arrear subjects for grade distribution analysis
     const subjectRecords = recordsForSubjectAnalysis.filter(record => record.SCODE === subject);
     const gradeCounts: { [grade: string]: number } = {};
+
     subjectRecords.forEach(record => {
+      // Only count valid grades
       if (record.GR in gradePointMap) {
         gradeCounts[record.GR] = (gradeCounts[record.GR] || 0) + 1;
       }
     });
+
     subjectGradeDistribution[subject] = Object.entries(gradeCounts).map(([grade, count]) => ({
       name: grade,
       count: count,
@@ -237,29 +276,19 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   
   // Classification table calculations - these follow the specified rules
   // For CGPA mode, current semester is the file with highest semester number
-
-  // Calculate classification for current semester: pass studentSgpaDetails *excluding arrears* (from above)
-  const currentSemesterRecordsForClassification = records.filter(
-    record => record.fileSource === currentSemesterFile && !record.isArrear
-  );
-  const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecordsForClassification.map(record => record.REGNO))]
-    .map(studentId => {
-      return studentSgpaDetails.find(detail => detail.id === studentId) || {
-        id: studentId,
-        sgpa: 0,
-        hasArrears: hasArrears(currentSemesterRecordsForClassification, studentId)
-      };
-    });
-
-  const singleFileClassification = calculateSingleFileClassification(
-    currentSemesterRecordsForClassification,
-    currentSemesterStudentSgpaDetails
-  );
-
-  // For cumulative: use ALL records for classification + cgpaAnalysis
-  const multipleFileClassification = fileCount > 1
+  const currentSemesterRecordsForClassification = currentSemesterFile ? fileGroups[currentSemesterFile] : records;
+  const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecordsForClassification.map(record => record.REGNO))].map(studentId => {
+    return studentSgpaDetails.find(detail => detail.id === studentId) || {
+      id: studentId,
+      sgpa: 0,
+      hasArrears: hasArrears(currentSemesterRecordsForClassification, studentId)
+    };
+  });
+  
+  const singleFileClassification = calculateSingleFileClassification(currentSemesterRecordsForClassification, currentSemesterStudentSgpaDetails);
+  const multipleFileClassification = fileCount > 1 
     ? calculateMultipleFileClassification(records, fileGroups, cgpaAnalysis)
-    : singleFileClassification;
+    : singleFileClassification; // Fallback to single file data if no multiple files
   
   return {
     totalStudents,
