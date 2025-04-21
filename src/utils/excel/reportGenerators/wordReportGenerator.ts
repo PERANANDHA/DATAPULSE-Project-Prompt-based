@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
@@ -889,4 +890,182 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    columnWidths: [800,
+    columnWidths: [800, 2500, 1000, 800, 2500, 1000],
+    rows: rankRows,
+  });
+  
+  sections.push(rankTable);
+  
+  // Prepare signature section
+  sections.push(
+    new Paragraph({
+      spacing: {
+        before: 600,
+      },
+    })
+  );
+  
+  // Signature Lines - Using a table for better alignment
+  const signatureTable = new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: { style: BorderStyle.NONE },
+      bottom: { style: BorderStyle.NONE },
+      left: { style: BorderStyle.NONE },
+      right: { style: BorderStyle.NONE },
+      insideHorizontal: { style: BorderStyle.NONE },
+      insideVertical: { style: BorderStyle.NONE },
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+            },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "FACULTY ADVISOR",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+            },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "PROGRAMME COORDINATOR",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+            },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: "HEAD OF THE DEPARTMENT",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+  
+  sections.push(signatureTable);
+  
+  // Create and return the document
+  return new Document({
+    sections: [
+      {
+        properties: {},
+        children: sections,
+      },
+    ],
+  });
+};
+
+// Helper function to create a table row with simple cells
+const createTableRow = (cellTexts: string[]): TableRow => {
+  return new TableRow({
+    children: cellTexts.map(text => new TableCell({
+      children: [new Paragraph(text)],
+    })),
+  });
+};
+
+// Helper to create a table cell with text
+const createTableCell = (
+  text: string, 
+  isHeader: boolean = false, 
+  options?: { 
+    colspan?: number; 
+    rowspan?: number; 
+    alignment?: string;
+    bold?: boolean;
+    verticalMerge?: 'restart' | 'continue';
+    rightIndent?: number;
+  }
+): TableCell => {
+  
+  // Set default options
+  const cellOptions = options || {};
+  const cellText = text || "";
+  
+  const textRun = new TextRun({
+    text: cellText,
+    bold: isHeader || cellOptions.bold,
+    size: isHeader ? 24 : 22,
+  });
+  
+  // Create the paragraph with alignment if specified
+  const paragraph = new Paragraph({
+    alignment: cellOptions.alignment === 'CENTER' ? AlignmentType.CENTER : AlignmentType.LEFT,
+    indent: cellOptions.rightIndent !== undefined ? { right: cellOptions.rightIndent * 1440 } : undefined,
+    children: [textRun],
+  });
+  
+  // Create and return the cell with options
+  return new TableCell({
+    children: [paragraph],
+    columnSpan: cellOptions.colspan,
+    rowSpan: cellOptions.rowspan,
+    verticalMerge: cellOptions.verticalMerge,
+    verticalAlign: AlignmentType.CENTER,
+    margins: {
+      top: 80,
+      bottom: 80,
+      left: 100,
+      right: 100,
+    },
+  });
+};
+
+// Helper to create header cells with consistent styling
+const createHeaderCell = (
+  text: string, 
+  options?: { 
+    alignment?: string;
+    rightIndent?: number;
+  }
+): TableCell => {
+  return createTableCell(text, true, {
+    ...options,
+    bold: true,
+  });
+};
