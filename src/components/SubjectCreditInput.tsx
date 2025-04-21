@@ -155,7 +155,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
             {subjectCredits.map(subject => <TableRow key={subject.subjectCode} className={subject.isArrear ? "bg-blue-50 dark:bg-blue-900/20" : ""}>
               <TableCell className="font-medium">
                 {subject.subjectCode}
-                {subject.isArrear && <Badge variant="secondary" className="ml-2">Current Semester</Badge>}
+                {subject.isArrear && <Badge variant="secondary" className="ml-2 bg-green-600">CS</Badge>}
               </TableCell>
               <TableCell>
                 <Input type="number" min={1} max={10} value={subject.creditValue} onChange={e => handleCreditChange(subject.subjectCode, e.target.value)} className="w-20 mx-auto text-center" />
@@ -168,7 +168,7 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
               </TableCell>
               <TableCell>
                 <div className="flex space-x-1">
-                  <Button variant={subject.isArrear ? "secondary" : "outline"} size="sm" onClick={() => handleToggleArrear(subject.subjectCode)} className="Current Semester bg-zinc-300 hover:bg-zinc-200 text-lime-600">
+                  <Button variant={subject.isArrear ? "secondary" : "outline"} size="sm" onClick={() => handleToggleArrear(subject.subjectCode)} className="Current Semester bg-zinc-300 hover:bg-zinc-200 text-green-600">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     Current Semester
                   </Button>
