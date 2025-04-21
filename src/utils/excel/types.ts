@@ -33,10 +33,10 @@ export interface ResultAnalysis {
   lowestSGPA: number;
   gradeDistribution: { name: string; count: number; fill: string }[];
   totalGrades: number;
-  subjectPerformance: { subject: string; pass: number; fail: number }[];
+  subjectPerformance: { subject: string; pass: number; fail: number; subjectName?: string }[];
   topPerformers: { id: string; sgpa: number; grade: string }[];
   needsImprovement: { id: string; sgpa: number; subjects: string }[];
-  studentSgpaDetails?: { id: string; sgpa: number; hasArrears: boolean }[];
+  studentSgpaDetails?: { id: string; sgpa: number; hasArrears: boolean; arrearSubjects?: string[] }[];
   passFailData: { name: string; value: number; fill: string }[];
   subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] };
   fileCount?: number; // Number of files processed
