@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
@@ -460,22 +459,17 @@ const createWordDocument = async (
     sections.push(fileAnalysisTable);
   }
   
-  // End Semester Result Analysis Section - Using actual subject data with faculty names
-  // Made table much wider to match exact PDF layout
+  // End Semester Result Analysis Section - ONLY include dashboard-selected subjects with full info
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
-    // Check if we have subjects explicitly marked as current semester
-    const explicitlyMarkedSubjects = currentSemesterRecords.filter(record => record.isArrear === true);
-    
-    // IMPORTANT FIX: Use explicitly marked current semester subjects if available, otherwise use non-arrear
-    const recordsForEndSemesterAnalysis = explicitlyMarkedSubjects.length > 0 
-      ? explicitlyMarkedSubjects 
-      : currentSemesterRecords.filter(record => !record.isArrear);
-    
-    console.log(`End Semester Analysis: Using ${recordsForEndSemesterAnalysis.length} records out of ${currentSemesterRecords.length} total`);
-    
-    // Use only the selected subjects for analysis in SGPA mode and current semester in CGPA mode
-    const uniqueSubjects = [...new Set(recordsForEndSemesterAnalysis.map(record => record.SCODE))];
-    
+    // (1) Get all unique subject codes that the user actually selected/assigned via the dashboard.
+    // This is guaranteed by SubjectCreditInput and credit assignment during dashboard flow
+    const dashboardSubjectCodes = [
+      ...new Set(records.map(r => r.SCODE))
+    ];
+
+    // (2) Use only subjects actually in the dashboard's record set (not all codes in the semester's Excel)
+    const uniqueSubjects = dashboardSubjectCodes;
+
     sections.push(
       new Paragraph({
         spacing: {
@@ -492,9 +486,7 @@ const createWordDocument = async (
         ],
       }),
     );
-    
-    // Subject Analysis Table - Make it wider with increased width for subject and faculty name columns
-    // Ensuring better alignment and consistent sizing
+
     const subjectRows = [
       new TableRow({
         tableHeader: true,
@@ -515,47 +507,36 @@ const createWordDocument = async (
         ],
       }),
     ];
-    
-    // Adding actual subject data with faculty names
+
     uniqueSubjects.forEach((subject, index) => {
-      // Keep consistent with our earlier approach and only use records for this subject that are part of the current semester analysis
-      const explicitlyMarkedRecords = currentSemesterRecords.filter(
-        record => record.SCODE === subject && record.isArrear === true
-      );
-      
-      // Use explicitly marked records if available, otherwise use non-arrear records
-      const subjectRecords = explicitlyMarkedRecords.length > 0
-        ? explicitlyMarkedRecords
-        : currentSemesterRecords.filter(record => record.SCODE === subject && !record.isArrear);
+      // Filter records only for this subject (from DASHBOARD/selected)
+      const subjectRecords = records.filter(record => record.SCODE === subject);
+
       const totalStudents = subjectRecords.length;
       const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
       const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;
       const passPercentage = totalStudents > 0 ? (passedStudents / totalStudents) * 100 : 0;
-      
-      // Find the highest grade
+
+      // Highest grade logic
       const grades = subjectRecords.map(record => record.GR);
       const validGrades = grades.filter(grade => grade in gradePointMap);
       const highestGrade = validGrades.length > 0 
         ? validGrades.sort((a, b) => (gradePointMap[b] || 0) - (gradePointMap[a] || 0))[0] 
-        : '';
-      
-      // Count students with highest grade
+        : "";
+
       const studentsWithHighestGrade = highestGrade 
         ? subjectRecords.filter(record => record.GR === highestGrade).length 
         : 0;
-      
-      // Find a record with subject name and faculty name
+
+      // Find record with display info
       const recordWithInfo = subjectRecords.find(record => record.subjectName || record.facultyName);
-      
-      // Get subject name and faculty name
       let subjectName = "";
       let facultyName = "";
-      
       if (recordWithInfo) {
         subjectName = recordWithInfo.subjectName || "";
         facultyName = recordWithInfo.facultyName || "";
       }
-      
+
       subjectRows.push(
         new TableRow({
           children: [
@@ -576,11 +557,10 @@ const createWordDocument = async (
         })
       );
     });
-    
-    // Improved table styling for better alignment and consistent appearance
+
     const subjectAnalysisTable = new Table({
       width: {
-        size: 145, // Increased to 145% for better visibility while maintaining proportions
+        size: 145,
         type: WidthType.PERCENTAGE,
       },
       borders: {
@@ -591,11 +571,10 @@ const createWordDocument = async (
         insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
         insideVertical: { style: BorderStyle.SINGLE, size: 1 },
       },
-      // More precise column widths for better alignment
       columnWidths: [400, 800, 1500, 1500, 400, 350, 350, 400, 350, 450, 450, 450, 600],
       rows: subjectRows,
     });
-    
+
     sections.push(subjectAnalysisTable);
   }
   
@@ -631,10 +610,8 @@ const createWordDocument = async (
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
       insideVertical: { style: BorderStyle.SINGLE, size: 1 },
     },
-    // More precise column widths for better alignment
     columnWidths: [460, 460, 460, 460, 460, 300, 400, 460, 460, 460, 460, 460, 300, 400],
     rows: [
-      // First row: Current semester | Upto this semester
       new TableRow({
         children: [
           createTableCell("Current semester", true, { 
@@ -649,7 +626,6 @@ const createWordDocument = async (
           }),
         ],
       }),
-      // Second row: Headers with spans
       new TableRow({
         children: [
           createTableCell("Distinction", true, { 
@@ -710,10 +686,8 @@ const createWordDocument = async (
           }),
         ],
       }),
-      // Third row: WOA/WA headers
       new TableRow({
         children: [
-          // Skip Distinction cell (handled by rowspan above)
           createTableCell("WOA", true, { 
             alignment: 'CENTER',
             bold: true
@@ -730,9 +704,6 @@ const createWordDocument = async (
             alignment: 'CENTER',
             bold: true
           }),
-          // Skip Fail cell (handled by rowspan above)
-          // Skip % of pass cell (handled by rowspan above)
-          // Skip Distinction cell (handled by rowspan above)
           createTableCell("WOA", true, { 
             alignment: 'CENTER',
             bold: true
@@ -749,14 +720,22 @@ const createWordDocument = async (
             alignment: 'CENTER',
             bold: true
           }),
-          // Skip Fail cell (handled by rowspan above)
-          // Skip % of pass cell (handled by rowspan above)
+          createTableCell("WOA", true, { 
+            alignment: 'CENTER',
+            bold: true
+          }),
+          createTableCell("WA", true, { 
+            alignment: 'CENTER',
+            bold: true
+          }),
+          createTableCell("WOA", true, { 
+            alignment: 'CENTER',
+            bold: true
+          }),
         ],
       }),
-      // Fourth row: Data values
       new TableRow({
         children: [
-          // Current semester data
           createTableCell(analysis.singleFileClassification.distinction.toString(), false, { 
             alignment: 'CENTER' 
           }),
@@ -778,7 +757,6 @@ const createWordDocument = async (
           createTableCell(analysis.singleFileClassification.passPercentage.toFixed(1), false, { 
             alignment: 'CENTER' 
           }),
-          // Cumulative data (up to this semester)
           createTableCell(analysis.multipleFileClassification.distinction.toString(), false, { 
             alignment: 'CENTER' 
           }),
