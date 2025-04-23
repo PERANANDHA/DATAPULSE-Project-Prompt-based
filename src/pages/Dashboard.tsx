@@ -23,7 +23,7 @@ interface SubjectCredit {
   creditValue: number;
   subjectName?: string;
   facultyName?: string;
-  isArrear?: boolean; // Flag to identify arrear subjects
+  isArrear?: boolean; // When true, indicates this subject is explicitly marked as a current semester subject
 }
 
 interface ProfileInfo {
@@ -111,9 +111,9 @@ const Dashboard = () => {
         const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
         
         if (creditInfo) {
-          // Log subjects marked as arrear
+          // Log subjects marked as current semester
           if (creditInfo.isArrear) {
-            console.log(`Subject ${record.SCODE} marked as arrear for student ${record.REGNO}`);
+            console.log(`Subject ${record.SCODE} marked as current semester for student ${record.REGNO}`);
           }
           
           return {
@@ -132,9 +132,9 @@ const Dashboard = () => {
         };
       });
       
-      // Log how many records have arrear flag
-      const arrearRecords = recordsWithCredits.filter(record => record.isArrear);
-      console.log(`Total ${arrearRecords.length} records marked as arrear out of ${recordsWithCredits.length}`);
+      // Log how many records are marked as current semester
+      const currentSemesterRecords = recordsWithCredits.filter(record => record.isArrear);
+      console.log(`Total ${currentSemesterRecords.length} records marked as current semester out of ${recordsWithCredits.length}`);
       
       console.log(`Applied credits to ${recordsWithCredits.length} records`);
       const recordsWithPositiveCredits = recordsWithCredits.filter(r => r.creditValue && r.creditValue > 0);

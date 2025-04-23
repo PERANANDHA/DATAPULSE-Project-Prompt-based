@@ -12,7 +12,7 @@ export interface StudentRecord {
   subjectName?: string; // Added for storing subject names
   facultyName?: string; // Added for storing faculty names
   fileSource?: string; // To track which file the record came from
-  isArrear?: boolean; // Flag to identify arrear subjects (marked by user)
+  isArrear?: boolean; // When true, indicates this subject is explicitly marked as a current semester subject by the user
 }
 
 export interface ClassificationData {

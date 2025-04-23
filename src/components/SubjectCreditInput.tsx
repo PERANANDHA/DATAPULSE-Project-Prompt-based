@@ -11,7 +11,7 @@ interface SubjectCredit {
   creditValue: number;
   subjectName?: string;
   facultyName?: string; // Added faculty name field
-  isArrear?: boolean; // Flag to identify if the subject is marked for current semester
+  isArrear?: boolean; // When true, indicates this subject is explicitly marked as a current semester subject
 }
 interface SubjectCreditInputProps {
   uploadedSubjects: string[];
@@ -84,8 +84,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     const subject = updatedCredits.find(credit => credit.subjectCode === subjectCode);
     if (subject) {
       toast({
-        title: subject.isArrear ? "Subject marked as Current Semester" : "Subject unmarked as Current Semester",
-        description: `Subject ${subjectCode} has been ${subject.isArrear ? "marked" : "unmarked"} as current semester.`
+        title: subject.isArrear ? "Subject added to Current Semester" : "Subject removed from Current Semester",
+        description: `Subject ${subjectCode} has been ${subject.isArrear ? "added to" : "removed from"} current semester subjects.`
       });
     }
   };
@@ -168,9 +168,14 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
               </TableCell>
               <TableCell>
                 <div className="flex space-x-1">
-                  <Button variant={subject.isArrear ? "secondary" : "outline"} size="sm" onClick={() => handleToggleArrear(subject.subjectCode)} className="Current Semester bg-zinc-300 hover:bg-zinc-200 text-green-600">
+                  <Button 
+                    variant={subject.isArrear ? "secondary" : "outline"} 
+                    size="sm" 
+                    onClick={() => handleToggleArrear(subject.subjectCode)} 
+                    className={subject.isArrear ? "bg-green-600 hover:bg-green-700 text-white" : "bg-zinc-300 hover:bg-zinc-200 text-green-600"}
+                  >
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    Current Semester
+                    {subject.isArrear ? "Current Semester ✓" : "Mark as Current"}
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => handleRemoveSubject(subject.subjectCode)} className="text-destructive hover:text-destructive/90 hover:bg-destructive/10">
                     <Trash2 className="h-4 w-4" />

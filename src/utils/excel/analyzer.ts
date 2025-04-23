@@ -97,9 +97,18 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   
   console.log(`Using ${currentSemesterRecords.length} records from "${currentSemesterFile}" for current semester SGPA calculation`);
   
-  // Filter out arrear subjects for SGPA calculation
-  const nonArrearCurrentSemesterRecords = currentSemesterRecords.filter(record => !record.isArrear);
-  console.log(`Excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects for SGPA calculation`);
+  // Only include records that were explicitly marked as "current semester" by the user
+  const currentSemesterOnlyRecords = currentSemesterRecords.filter(record => record.isArrear === true);
+  console.log(`Including ${currentSemesterOnlyRecords.length} subjects explicitly marked as current semester for SGPA calculation`);
+  
+  // If no subjects are marked as current semester, fall back to default behavior
+  const nonArrearCurrentSemesterRecords = currentSemesterOnlyRecords.length > 0 ? 
+    currentSemesterOnlyRecords : 
+    currentSemesterRecords.filter(record => !record.isArrear);
+  
+  if (currentSemesterOnlyRecords.length === 0) {
+    console.log(`No subjects marked as current semester. Falling back to default behavior (excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects)`);
+  }
   
   // Calculate SGPA for each student based on current semester only (excluding arrear subjects)
   const studentSgpaMap: { [studentId: string]: number } = {};
@@ -174,12 +183,17 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   const totalGrades = records.filter(record => record.GR in gradePointMap).length;
   
   // Subject-wise performance - Now includes preservation of subject names
-  // For current semester, use non-arrear records
-  const recordsForSubjectAnalysis = currentSemesterFile ? 
-    currentSemesterRecords.filter(record => !record.isArrear) : 
-    records.filter(record => !record.isArrear);
+  // For current semester, use only records explicitly marked as current semester
+  const currentSemesterMarkedRecords = currentSemesterRecords.filter(record => record.isArrear === true);
   
-  console.log(`Using ${recordsForSubjectAnalysis.length} non-arrear records for subject performance analysis`);
+  // If explicit current semester subjects are marked, use only those
+  const recordsForSubjectAnalysis = currentSemesterMarkedRecords.length > 0 ?
+    currentSemesterMarkedRecords :
+    (currentSemesterFile ? 
+      currentSemesterRecords.filter(record => !record.isArrear) : 
+      records.filter(record => !record.isArrear));
+  
+  console.log(`Using ${recordsForSubjectAnalysis.length} records for subject performance analysis`);
   
   const subjectPerformanceMap: { [subject: string]: { pass: number; fail: number; total: number; subjectName?: string } } = {};
   recordsForSubjectAnalysis.forEach(record => {
