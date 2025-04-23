@@ -18,10 +18,10 @@ export const getUniqueDepartmentCodes = (records: StudentRecord[]): string[] => 
 
 // Calculate SGPA for a given student
 export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
-  // Get all records for this student, but exclude those marked as arrear
+  // Get all records for this student, but exclude those not marked as current semester
+  // The records passed to this function should already be filtered for explicit current semester subjects
   const studentRecords = records.filter(record => 
-    record.REGNO === studentId && 
-    !record.isArrear // Exclude arrear subjects
+    record.REGNO === studentId
   );
   
   let totalCredits = 0;
@@ -37,6 +37,9 @@ export const calculateSGPA = (records: StudentRecord[], studentId: string): numb
     }
   });
 
+  // Log the detailed calculation for debugging
+  console.log(`SGPA calculation for student ${studentId}: ${weightedSum} / ${totalCredits} = ${totalCredits === 0 ? 0 : weightedSum / totalCredits}`);
+  
   // Ensure exactly 2 decimal places with proper rounding
   return totalCredits === 0 ? 0 : formatTo2Decimals(weightedSum / totalCredits);
 };
@@ -59,11 +62,20 @@ export const calculateCGPA = (
   // For each semester (file)
   allSemesters.forEach(semester => {
     const semesterRecords = fileGroups[semester];
-    // Filter out arrear subjects
-    const studentSemRecords = semesterRecords.filter(record => 
-      record.REGNO === studentId && 
-      !record.isArrear // Exclude arrear subjects
+    
+    // Check if we have explicitly marked current semester subjects
+    const markedCurrentSemesterRecords = semesterRecords.filter(record => 
+      record.REGNO === studentId && record.isArrear === true
     );
+    
+    // Use explicitly marked subjects if available, otherwise use non-arrear subjects
+    const studentSemRecords = markedCurrentSemesterRecords.length > 0
+      ? markedCurrentSemesterRecords
+      : semesterRecords.filter(record => 
+          record.REGNO === studentId && !record.isArrear
+        );
+    
+    console.log(`CGPA calculation for student ${studentId} in semester ${semester}: Using ${studentSemRecords.length} records`);
     
     // Calculate this semester's contribution
     let semCredits = 0;
@@ -79,13 +91,18 @@ export const calculateCGPA = (
       }
     });
     
+    console.log(`Semester ${semester} contribution: ${semWeightedSum} grade points from ${semCredits} credits`);
+    
     // Add to overall totals
     totalWeightedSum += semWeightedSum;
     totalCredits += semCredits;
   });
   
+  const cgpa = totalCredits === 0 ? 0 : formatTo2Decimals(totalWeightedSum / totalCredits);
+  console.log(`Final CGPA for student ${studentId}: ${cgpa} (${totalWeightedSum}/${totalCredits})`);
+  
   // Ensure exactly 2 decimal places with proper rounding
-  return totalCredits === 0 ? 0 : formatTo2Decimals(totalWeightedSum / totalCredits);
+  return cgpa;
 };
 
 // Check if student has arrears (U grade)

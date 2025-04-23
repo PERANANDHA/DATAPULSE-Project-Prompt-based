@@ -15,6 +15,17 @@ export const downloadWordReport = async (
   records: StudentRecord[],
   options: WordReportOptions
 ): Promise<void> => {
+  // Check if we need to recalculate averageCGPA and averageSGPA for current semester subjects
+  console.log("Report generation - checking for current semester subjects...");
+  
+  // Log the current values
+  if (options.calculationMode === 'sgpa') {
+    console.log(`Average SGPA in report: ${analysis.averageCGPA}`);
+  } else if (analysis.cgpaAnalysis) {
+    console.log(`Average CGPA in report: ${analysis.cgpaAnalysis.averageCGPA}`);
+  }
+  
+  // Prepare document
   const doc = await createWordDocument(analysis, records, options);
   
   // Save the document
@@ -452,12 +463,18 @@ const createWordDocument = async (
   // End Semester Result Analysis Section - Using actual subject data with faculty names
   // Made table much wider to match exact PDF layout
   if (calculationMode === 'sgpa' || (calculationMode === 'cgpa' && currentSemesterRecords.length > 0)) {
-    // For current semester table, filter out arrear subjects
-    const nonArrearCurrentSemesterRecords = currentSemesterRecords.filter(record => !record.isArrear);
-    console.log(`Excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects from End Semester Analysis`);
+    // Check if we have subjects explicitly marked as current semester
+    const explicitlyMarkedSubjects = currentSemesterRecords.filter(record => record.isArrear === true);
     
-    // Use non-arrear subjects for analysis in SGPA mode and current semester in CGPA mode
-    const uniqueSubjects = [...new Set(nonArrearCurrentSemesterRecords.map(record => record.SCODE))];
+    // IMPORTANT FIX: Use explicitly marked current semester subjects if available, otherwise use non-arrear
+    const recordsForEndSemesterAnalysis = explicitlyMarkedSubjects.length > 0 
+      ? explicitlyMarkedSubjects 
+      : currentSemesterRecords.filter(record => !record.isArrear);
+    
+    console.log(`End Semester Analysis: Using ${recordsForEndSemesterAnalysis.length} records out of ${currentSemesterRecords.length} total`);
+    
+    // Use only the selected subjects for analysis in SGPA mode and current semester in CGPA mode
+    const uniqueSubjects = [...new Set(recordsForEndSemesterAnalysis.map(record => record.SCODE))];
     
     sections.push(
       new Paragraph({
@@ -501,7 +518,15 @@ const createWordDocument = async (
     
     // Adding actual subject data with faculty names
     uniqueSubjects.forEach((subject, index) => {
-      const subjectRecords = currentSemesterRecords.filter(record => record.SCODE === subject);
+      // Keep consistent with our earlier approach and only use records for this subject that are part of the current semester analysis
+      const explicitlyMarkedRecords = currentSemesterRecords.filter(
+        record => record.SCODE === subject && record.isArrear === true
+      );
+      
+      // Use explicitly marked records if available, otherwise use non-arrear records
+      const subjectRecords = explicitlyMarkedRecords.length > 0
+        ? explicitlyMarkedRecords
+        : currentSemesterRecords.filter(record => record.SCODE === subject && !record.isArrear);
       const totalStudents = subjectRecords.length;
       const passedStudents = subjectRecords.filter(record => record.GR !== 'U').length;
       const failedStudents = subjectRecords.filter(record => record.GR === 'U').length;

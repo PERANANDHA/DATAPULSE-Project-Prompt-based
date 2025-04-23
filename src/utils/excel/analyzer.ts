@@ -30,10 +30,21 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     // Get the semester name if available (assuming all records in a file have the same semester)
     const semName = fileRecords[0]?.SEM || '';
     
-    // Calculate average SGPA for this file
+    // Calculate average SGPA for this file, only using explicitly marked current semester subjects if available
     let totalSGPA = 0;
+    
+    // Check if we have current semester subjects explicitly marked
+    const markedCurrentSemesterRecords = fileRecords.filter(record => record.isArrear === true);
+    const recordsToUseForSGPA = markedCurrentSemesterRecords.length > 0 
+      ? markedCurrentSemesterRecords 
+      : fileRecords.filter(record => !record.isArrear);
+      
+    console.log(`File ${fileName}: Using ${recordsToUseForSGPA.length} records for SGPA calculation`);
+    
     fileStudentIds.forEach(studentId => {
-      totalSGPA += calculateSGPA(fileRecords, studentId);
+      const sgpa = calculateSGPA(recordsToUseForSGPA, studentId);
+      totalSGPA += sgpa;
+      console.log(`Student ${studentId} in file ${fileName}: SGPA = ${sgpa}`);
     });
     
     const avgSGPA = fileStudentCount > 0 ? formatTo2Decimals(totalSGPA / fileStudentCount) : 0;
@@ -69,23 +80,48 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   if (fileCount > 1) {
     const studentIds = [...new Set(records.map(record => record.REGNO))];
     
-    const studentCGPAs = studentIds.map(id => ({
-      id,
-      cgpa: calculateCGPA(records, id, fileGroups)
-    }));
+    // Filter out students with zero CGPA to fix the lowest CGPA issue
+    const studentCGPAs = studentIds.map(id => {
+      const cgpa = calculateCGPA(records, id, fileGroups);
+      return {
+        id,
+        cgpa
+      };
+    }).filter(student => student.cgpa > 0); // Filter out zero CGPAs
     
     // Sort by CGPA in descending order for toppers list
     studentCGPAs.sort((a, b) => b.cgpa - a.cgpa);
     
     const cgpaValues = studentCGPAs.map(s => s.cgpa);
+    
+    // Make sure we have valid values
+    const validCgpaValues = cgpaValues.filter(val => val > 0);
+    
+    console.log(`Valid CGPA values for analysis: ${validCgpaValues.length} out of ${cgpaValues.length}`);
+    console.log(`CGPA values: ${validCgpaValues.join(', ')}`);
+    
+    const avgCGPA = validCgpaValues.length > 0 
+      ? formatTo2Decimals(validCgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / validCgpaValues.length) 
+      : 0;
+      
+    const highestCGPA = validCgpaValues.length > 0 
+      ? formatTo2Decimals(Math.max(...validCgpaValues)) 
+      : 0;
+      
+    const lowestCGPA = validCgpaValues.length > 0 
+      ? formatTo2Decimals(Math.min(...validCgpaValues)) 
+      : 0;
+    
     cgpaAnalysis = {
       studentCGPAs,
-      averageCGPA: cgpaValues.length > 0 ? formatTo2Decimals(cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length) : 0,
-      highestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.max(...cgpaValues)) : 0,
-      lowestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.min(...cgpaValues)) : 0,
+      averageCGPA: avgCGPA,
+      highestCGPA: highestCGPA,
+      lowestCGPA: lowestCGPA,
       toppersList: studentCGPAs.slice(0, 10), // Get top 10 students
       currentSemesterFile: currentSemesterFile // Use the file with highest sem value as current semester
     };
+    
+    console.log(`CGPA Analysis - Average: ${avgCGPA}, Highest: ${highestCGPA}, Lowest: ${lowestCGPA}`);
   }
   
   const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
@@ -157,8 +193,15 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   // Sort by registration number
   studentSgpaDetails.sort((a, b) => a.id.localeCompare(b.id));
   
-  const averageCGPA = totalStudents > 0 ? 
-    formatTo2Decimals(studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents) : 0;
+  // Calculate average SGPA, filtering out zero values to fix the incorrect average calculation
+  const validSgpaValues = studentSgpaDetails.filter(student => student.sgpa > 0);
+  const totalValidStudents = validSgpaValues.length;
+  
+  const averageCGPA = totalValidStudents > 0 ? 
+    formatTo2Decimals(validSgpaValues.reduce((sum, student) => sum + student.sgpa, 0) / totalValidStudents) : 0;
+  
+  console.log(`Average SGPA calculated: ${averageCGPA} from ${totalValidStudents} valid students out of ${totalStudents} total`);
+  console.log(`Valid SGPA values: ${validSgpaValues.map(s => s.sgpa.toFixed(2)).join(', ')}`);
   
   const highestSGPA = studentSgpaDetails.length > 0 ? 
     formatTo2Decimals(Math.max(...studentSgpaDetails.map(student => student.sgpa))) : 0;
@@ -192,6 +235,12 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     (currentSemesterFile ? 
       currentSemesterRecords.filter(record => !record.isArrear) : 
       records.filter(record => !record.isArrear));
+      
+  console.log(`Subject Analysis: Using ${recordsForSubjectAnalysis.length} records out of ${currentSemesterRecords.length} current semester records`);
+  
+  // Log which subjects are being analyzed
+  const subjectsForAnalysis = [...new Set(recordsForSubjectAnalysis.map(record => record.SCODE))];
+  console.log(`Subjects included in analysis: ${subjectsForAnalysis.join(', ')}`);
   
   console.log(`Using ${recordsForSubjectAnalysis.length} records for subject performance analysis`);
   
