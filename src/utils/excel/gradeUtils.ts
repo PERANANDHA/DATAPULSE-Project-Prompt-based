@@ -18,15 +18,11 @@ export const getUniqueDepartmentCodes = (records: StudentRecord[]): string[] => 
 
 // Calculate SGPA for a given student
 export const calculateSGPA = (records: StudentRecord[], studentId: string): number => {
-  // Get all records for this student
-  // The records provided should already be filtered by the caller to only include
-  // appropriate current semester subjects
-  const studentRecords = records.filter(record => record.REGNO === studentId);
-  
-  if (studentRecords.length === 0) {
-    console.log(`No records found for student ${studentId} in SGPA calculation`);
-    return 0;
-  }
+  // Get all records for this student, but exclude those marked as arrear
+  const studentRecords = records.filter(record => 
+    record.REGNO === studentId && 
+    !record.isArrear // Exclude arrear subjects
+  );
   
   let totalCredits = 0;
   let weightedSum = 0;
@@ -63,22 +59,17 @@ export const calculateCGPA = (
   // For each semester (file)
   allSemesters.forEach(semester => {
     const semesterRecords = fileGroups[semester];
-    
-    // Filter to only get current semester subjects for this semester file
-    const markedCurrentSemesterRecords = semesterRecords.filter(record => 
-      record.REGNO === studentId && record.isArrear === true
+    // Filter out arrear subjects
+    const studentSemRecords = semesterRecords.filter(record => 
+      record.REGNO === studentId && 
+      !record.isArrear // Exclude arrear subjects
     );
-    
-    // If no subjects are explicitly marked, use all subjects from this semester
-    const recordsToUse = markedCurrentSemesterRecords.length > 0 ? 
-      markedCurrentSemesterRecords : 
-      semesterRecords.filter(record => record.REGNO === studentId);
     
     // Calculate this semester's contribution
     let semCredits = 0;
     let semWeightedSum = 0;
     
-    recordsToUse.forEach(record => {
+    studentSemRecords.forEach(record => {
       if (record.GR in gradePointMap) {
         const gradePoint = gradePointMap[record.GR];
         const creditValue = record.creditValue || 0;
@@ -119,33 +110,27 @@ export const getCurrentSemesterSGPAData = (
 
   console.log(`Raw records in getCurrentSemesterSGPAData: ${currentSemesterRecords.length}`);
   
-  // Filter to get only records explicitly marked as current semester
-  const markedCurrentSemesterRecords = currentSemesterRecords.filter(record => record.isArrear === true);
-  
-  // If no subjects are marked as current semester, fall back to all subjects
-  const recordsToUse = markedCurrentSemesterRecords.length > 0 ?
-    markedCurrentSemesterRecords :
-    currentSemesterRecords;
-  
-  console.log(`Using ${recordsToUse.length} records for SGPA data calculation`);
+  // Filter out arrear subjects
+  const nonArrearRecords = currentSemesterRecords.filter(record => !record.isArrear);
+  console.log(`Filtered out ${currentSemesterRecords.length - nonArrearRecords.length} arrear subjects`);
   
   // Check if credits are assigned properly
-  const recordsWithCredits = recordsToUse.filter(r => r.creditValue && r.creditValue > 0);
-  console.log(`Records with credits: ${recordsWithCredits.length} out of ${recordsToUse.length}`);
+  const recordsWithCredits = nonArrearRecords.filter(r => r.creditValue && r.creditValue > 0);
+  console.log(`Records with credits: ${recordsWithCredits.length} out of ${nonArrearRecords.length}`);
   
   if (recordsWithCredits.length === 0) {
     console.warn("WARNING: No records have credit values assigned! This will result in all SGPAs being 0.");
   }
 
   // Get unique student IDs from the current semester
-  const studentIds = [...new Set(recordsToUse.map(record => record.REGNO))];
+  const studentIds = [...new Set(nonArrearRecords.map(record => record.REGNO))];
   
   console.log(`Computing SGPA for ${studentIds.length} students in current semester`);
   
   // Calculate SGPA for each student in the current semester
   const sgpaData = studentIds.map(id => {
     // Calculate SGPA using only the current semester records for this student
-    const studentRecords = recordsToUse.filter(record => record.REGNO === id);
+    const studentRecords = currentSemesterRecords.filter(record => record.REGNO === id);
     
     let totalCredits = 0;
     let weightedSum = 0;

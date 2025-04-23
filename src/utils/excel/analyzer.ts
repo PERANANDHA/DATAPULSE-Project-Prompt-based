@@ -24,50 +24,19 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   
   filesProcessed.forEach(fileName => {
     const fileRecords = fileGroups[fileName];
-    
-    // CRITICAL FIX: Only use explicitly marked current semester subjects for SGPA calculation
-    const currentSemesterSubjects = fileRecords.filter(record => record.isArrear === true);
-    
-    // If no subjects are explicitly marked, fall back to all subjects in the file
-    const recordsForSgpaCalculation = currentSemesterSubjects.length > 0 ? 
-      currentSemesterSubjects : 
-      fileRecords;
-    
-    console.log(`File ${fileName}: ${currentSemesterSubjects.length} subjects marked as current semester out of ${fileRecords.length} total`);
-    
-    const fileStudentIds = [...new Set(recordsForSgpaCalculation.map(record => record.REGNO))];
+    const fileStudentIds = [...new Set(fileRecords.map(record => record.REGNO))];
     const fileStudentCount = fileStudentIds.length;
     
     // Get the semester name if available (assuming all records in a file have the same semester)
     const semName = fileRecords[0]?.SEM || '';
     
-    // Calculate average SGPA for this file - USING ONLY MARKED CURRENT SEMESTER SUBJECTS
+    // Calculate average SGPA for this file
     let totalSGPA = 0;
-    let studentsWithValidSgpa = 0;
-    
     fileStudentIds.forEach(studentId => {
-      // Get only marked current semester subjects for this student
-      const studentRecords = recordsForSgpaCalculation.filter(
-        record => record.REGNO === studentId
-      );
-      
-      // Ensure we have records with valid credit values
-      if (studentRecords.some(record => record.creditValue && record.creditValue > 0)) {
-        // Calculate SGPA with current semester subjects only
-        const sgpa = calculateSGPA(studentRecords, studentId);
-        
-        // Only count if the SGPA is valid
-        if (sgpa > 0) {
-          totalSGPA += sgpa;
-          studentsWithValidSgpa++;
-        }
-      }
+      totalSGPA += calculateSGPA(fileRecords, studentId);
     });
     
-    // FIX: Calculate average only for students with valid SGPA (non-zero) to prevent wrong averages
-    const avgSGPA = studentsWithValidSgpa > 0 ? formatTo2Decimals(totalSGPA / studentsWithValidSgpa) : 0;
-    
-    console.log(`File ${fileName}: Average SGPA = ${avgSGPA} from ${studentsWithValidSgpa} students with valid SGPA`);
+    const avgSGPA = fileStudentCount > 0 ? formatTo2Decimals(totalSGPA / fileStudentCount) : 0;
     
     fileWiseAnalysis[fileName] = {
       averageSGPA: avgSGPA,
@@ -100,40 +69,28 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   if (fileCount > 1) {
     const studentIds = [...new Set(records.map(record => record.REGNO))];
     
-    // For CGPA calculation, we need to ensure that each student has valid records in each semester
-    const studentCGPAs = studentIds.map(id => {
-      // For CGPA, calculate using marked current semester subjects
-      const cgpa = calculateCGPA(records, id, fileGroups);
-      return {
-        id,
-        cgpa
-      };
-    });
-    
-    // Filter out students with invalid/zero CGPA before calculating stats
-    const validCgpaStudents = studentCGPAs.filter(s => s.cgpa > 0);
+    const studentCGPAs = studentIds.map(id => ({
+      id,
+      cgpa: calculateCGPA(records, id, fileGroups)
+    }));
     
     // Sort by CGPA in descending order for toppers list
-    validCgpaStudents.sort((a, b) => b.cgpa - a.cgpa);
+    studentCGPAs.sort((a, b) => b.cgpa - a.cgpa);
     
-    const cgpaValues = validCgpaStudents.map(s => s.cgpa);
-    
-    // FIX: Calculate CGPA statistics only from students with valid (non-zero) CGPA values
+    const cgpaValues = studentCGPAs.map(s => s.cgpa);
     cgpaAnalysis = {
-      studentCGPAs: studentCGPAs, // Keep all students for reference
+      studentCGPAs,
       averageCGPA: cgpaValues.length > 0 ? formatTo2Decimals(cgpaValues.reduce((sum, cgpa) => sum + cgpa, 0) / cgpaValues.length) : 0,
       highestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.max(...cgpaValues)) : 0,
       lowestCGPA: cgpaValues.length > 0 ? formatTo2Decimals(Math.min(...cgpaValues)) : 0,
-      toppersList: validCgpaStudents.slice(0, 10), // Get top 10 students with valid CGPA
+      toppersList: studentCGPAs.slice(0, 10), // Get top 10 students
       currentSemesterFile: currentSemesterFile // Use the file with highest sem value as current semester
     };
-    
-    console.log(`CGPA Analysis: Average=${cgpaAnalysis.averageCGPA}, Highest=${cgpaAnalysis.highestCGPA}, Lowest=${cgpaAnalysis.lowestCGPA}`);
   }
   
   const totalStudents = [...new Set(records.map(record => record.REGNO))].length;
   
-  // CRITICAL FIX: Calculate SGPA specifically for current semester records - ONLY USING MARKED SUBJECTS
+  // IMPORTANT FIX: Calculate SGPA specifically for current semester records
   const currentSemesterRecords = currentSemesterFile ? 
     records.filter(record => record.fileSource === currentSemesterFile) : 
     records;
@@ -145,30 +102,30 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   console.log(`Including ${currentSemesterOnlyRecords.length} subjects explicitly marked as current semester for SGPA calculation`);
   
   // If no subjects are marked as current semester, fall back to default behavior
-  const recordsForSgpaCalculation = currentSemesterOnlyRecords.length > 0 ? 
+  const nonArrearCurrentSemesterRecords = currentSemesterOnlyRecords.length > 0 ? 
     currentSemesterOnlyRecords : 
-    currentSemesterRecords;
+    currentSemesterRecords.filter(record => !record.isArrear);
   
   if (currentSemesterOnlyRecords.length === 0) {
-    console.log(`No subjects marked as current semester. Falling back to default behavior (using all subjects in current semester file)`);
+    console.log(`No subjects marked as current semester. Falling back to default behavior (excluded ${currentSemesterRecords.length - nonArrearCurrentSemesterRecords.length} arrear subjects)`);
   }
   
-  // Calculate SGPA for each student based on current semester only
+  // Calculate SGPA for each student based on current semester only (excluding arrear subjects)
+  const studentSgpaMap: { [studentId: string]: number } = {};
   const studentSgpaDetails: { id: string; sgpa: number; hasArrears: boolean }[] = [];
   
-  const currentSemStudentIds = [...new Set(recordsForSgpaCalculation.map(record => record.REGNO))];
+  const currentSemStudentIds = [...new Set(nonArrearCurrentSemesterRecords.map(record => record.REGNO))];
   
   // Check if records have credit values
-  const recordsWithCredits = recordsForSgpaCalculation.filter(r => r.creditValue && r.creditValue > 0);
-  console.log(`Records with credits for SGPA: ${recordsWithCredits.length} out of ${recordsForSgpaCalculation.length}`);
+  const recordsWithCredits = currentSemesterRecords.filter(r => r.creditValue && r.creditValue > 0);
+  console.log(`Records with credits for SGPA: ${recordsWithCredits.length} out of ${currentSemesterRecords.length}`);
   
-  if (recordsWithCredits.length === 0 && recordsForSgpaCalculation.length > 0) {
+  if (recordsWithCredits.length === 0 && currentSemesterRecords.length > 0) {
     console.warn("WARNING: No records have credit values assigned in SGPA calculation! This will result in all SGPAs being 0.");
   }
 
   currentSemStudentIds.forEach(studentId => {
-    // Get only explicitly marked current semester records for this student
-    const studentRecords = recordsForSgpaCalculation.filter(record => record.REGNO === studentId);
+    const studentRecords = currentSemesterRecords.filter(record => record.REGNO === studentId);
     
     // Manual SGPA calculation for better control and debugging
     let totalPoints = 0;
@@ -187,8 +144,9 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     });
     
     const sgpa = totalCredits > 0 ? formatTo2Decimals(totalPoints / totalCredits) : 0;
-    console.log(`Student ${studentId}: SGPA calculated = ${sgpa} (from ${studentRecords.length} records, ${totalCredits} credits)`);
+    console.log(`Student ${studentId}: SGPA calculated = ${sgpa}`);
     
+    studentSgpaMap[studentId] = sgpa;
     studentSgpaDetails.push({
       id: studentId,
       sgpa: sgpa,
@@ -199,21 +157,18 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
   // Sort by registration number
   studentSgpaDetails.sort((a, b) => a.id.localeCompare(b.id));
   
-  // Calculate average SGPA from valid (non-zero) values only
-  const validSgpaValues = studentSgpaDetails.filter(student => student.sgpa > 0).map(student => student.sgpa);
-  const averageCGPA = validSgpaValues.length > 0 ? 
-    formatTo2Decimals(validSgpaValues.reduce((sum, sgpa) => sum + sgpa, 0) / validSgpaValues.length) : 0;
+  const averageCGPA = totalStudents > 0 ? 
+    formatTo2Decimals(studentSgpaDetails.reduce((sum, student) => sum + student.sgpa, 0) / totalStudents) : 0;
   
-  const highestSGPA = validSgpaValues.length > 0 ? 
-    formatTo2Decimals(Math.max(...validSgpaValues)) : 0;
+  const highestSGPA = studentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.max(...studentSgpaDetails.map(student => student.sgpa))) : 0;
   
-  const lowestSGPA = validSgpaValues.length > 0 ? 
-    formatTo2Decimals(Math.min(...validSgpaValues)) : 0;
+  const lowestSGPA = studentSgpaDetails.length > 0 ? 
+    formatTo2Decimals(Math.min(...studentSgpaDetails.map(student => student.sgpa))) : 0;
   
   // Grade distribution - filter out any non-standard grades
   const gradeDistribution: { [grade: string]: number } = {};
-  // Use only current semester subjects for grade distribution
-  recordsForSgpaCalculation.forEach(record => {
+  records.forEach(record => {
     if (record.GR in gradePointMap) {
       gradeDistribution[record.GR] = (gradeDistribution[record.GR] || 0) + 1;
     }
@@ -225,11 +180,18 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     fill: getGradeColor(grade),
   }));
   
-  const totalGrades = recordsForSgpaCalculation.filter(record => record.GR in gradePointMap).length;
+  const totalGrades = records.filter(record => record.GR in gradePointMap).length;
   
   // Subject-wise performance - Now includes preservation of subject names
   // For current semester, use only records explicitly marked as current semester
-  const recordsForSubjectAnalysis = recordsForSgpaCalculation;
+  const currentSemesterMarkedRecords = currentSemesterRecords.filter(record => record.isArrear === true);
+  
+  // If explicit current semester subjects are marked, use only those
+  const recordsForSubjectAnalysis = currentSemesterMarkedRecords.length > 0 ?
+    currentSemesterMarkedRecords :
+    (currentSemesterFile ? 
+      currentSemesterRecords.filter(record => !record.isArrear) : 
+      records.filter(record => !record.isArrear));
   
   console.log(`Using ${recordsForSubjectAnalysis.length} records for subject performance analysis`);
   
@@ -266,13 +228,12 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     subjectName: data.subjectName // Include subject name in the result
   }));
   
-  // Top performers - using only current semester records
+  // Top performers
   const topPerformers = studentSgpaDetails
-    .filter(student => student.sgpa > 0) // Only include students with valid SGPA
     .sort((a, b) => b.sgpa - a.sgpa)
     .slice(0, 6)
     .map(student => {
-      const studentRecords = recordsForSgpaCalculation.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
+      const studentRecords = records.filter(record => record.REGNO === student.id && record.GR in gradePointMap);
       const bestGrade = studentRecords.length > 0 ? 
         studentRecords.sort((a, b) => (gradePointMap[b.GR] || 0) - (gradePointMap[a.GR] || 0))[0].GR : 'A';
       return {
@@ -282,19 +243,18 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
       };
     });
   
-  // Needs improvement - using only current semester records
+  // Needs improvement
   const needsImprovement: { id: string; sgpa: number; subjects: string }[] = studentSgpaDetails
     .filter(student => student.sgpa < 6.5 || student.hasArrears)
     .map(student => ({
       id: student.id,
       sgpa: student.sgpa,
-      subjects: hasArrears(recordsForSgpaCalculation.filter(r => r.REGNO === student.id), student.id) ? 
-        getSubjectsWithArrears(recordsForSgpaCalculation.filter(r => r.REGNO === student.id), student.id) : '',
+      subjects: hasArrears(records, student.id) ? getSubjectsWithArrears(records, student.id) : '',
     }));
   
-  // Pass/Fail data - using only current semester records
-  const passCount = recordsForSgpaCalculation.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
-  const failCount = recordsForSgpaCalculation.filter(record => record.GR === 'U').length;
+  // Pass/Fail data
+  const passCount = records.filter(record => record.GR in gradePointMap && record.GR !== 'U').length;
+  const failCount = records.filter(record => record.GR === 'U').length;
   const totalValidGrades = passCount + failCount;
   
   const passPercentage = totalValidGrades > 0 ? formatTo2Decimals((passCount / totalValidGrades) * 100) : 0;
@@ -305,12 +265,13 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     { name: 'Fail', value: failPercentage, fill: passFailColors.fail },
   ];
 
-  // Subject-wise grade distribution - using only current semester records
+  // Subject-wise grade distribution
   const subjectGradeDistribution: { [subject: string]: { name: string; count: number; fill: string }[] } = {};
-  const uniqueSubjects = [...new Set(recordsForSgpaCalculation.map(record => record.SCODE))];
+  const uniqueSubjects = [...new Set(recordsForSubjectAnalysis.map(record => record.SCODE))];
 
   uniqueSubjects.forEach(subject => {
-    const subjectRecords = recordsForSgpaCalculation.filter(record => record.SCODE === subject);
+    // Filter out arrear subjects for grade distribution analysis
+    const subjectRecords = recordsForSubjectAnalysis.filter(record => record.SCODE === subject);
     const gradeCounts: { [grade: string]: number } = {};
 
     subjectRecords.forEach(record => {
@@ -327,8 +288,9 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     }));
   });
   
-  // Classification table calculations - use only current semester subjects
-  const currentSemesterRecordsForClassification = recordsForSgpaCalculation;
+  // Classification table calculations - these follow the specified rules
+  // For CGPA mode, current semester is the file with highest semester number
+  const currentSemesterRecordsForClassification = currentSemesterFile ? fileGroups[currentSemesterFile] : records;
   const currentSemesterStudentSgpaDetails = [...new Set(currentSemesterRecordsForClassification.map(record => record.REGNO))].map(studentId => {
     return studentSgpaDetails.find(detail => detail.id === studentId) || {
       id: studentId,
@@ -337,36 +299,10 @@ export const analyzeResults = (records: StudentRecord[], assignedSubjects?: stri
     };
   });
   
-  console.log(`Excluded ${currentSemesterRecords.length - recordsForSgpaCalculation.length} non-current-semester subjects from End Semester Analysis`);
-  
   const singleFileClassification = calculateSingleFileClassification(currentSemesterRecordsForClassification, currentSemesterStudentSgpaDetails);
   const multipleFileClassification = fileCount > 1 
     ? calculateMultipleFileClassification(records, fileGroups, cgpaAnalysis)
     : singleFileClassification; // Fallback to single file data if no multiple files
-    
-  // Log top students for debugging
-  const topSemesterStudents = [...studentSgpaDetails]
-    .filter(s => s.sgpa > 0)
-    .sort((a, b) => b.sgpa - a.sgpa)
-    .slice(0, 3)
-    .map((student, index) => ({
-      rank: index + 1,
-      id: student.id,
-      value: student.sgpa
-    }));
-  console.log(`Top current semester students for Rank table: ${JSON.stringify(topSemesterStudents, null, 2)}`);
-  
-  // Log top cumulative students for debugging
-  if (cgpaAnalysis?.toppersList) {
-    const topCumulativeStudents = cgpaAnalysis.toppersList
-      .slice(0, 3)
-      .map((student, index) => ({
-        rank: index + 1,
-        id: student.id,
-        value: student.cgpa
-      }));
-    console.log(`Top cumulative students for Rank table: ${JSON.stringify(topCumulativeStudents, null, 2)}`);
-  }
   
   return {
     totalStudents,
