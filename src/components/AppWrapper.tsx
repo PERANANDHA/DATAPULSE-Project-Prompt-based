@@ -1,10 +1,11 @@
-
 import React from 'react';
 import PageNavigator from './ui/PageNavigator';
-
-const AppWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <div className="app-wrapper min-h-screen relative">
+const AppWrapper: React.FC<{
+  children: React.ReactNode;
+}> = ({
+  children
+}) => {
+  return <div className="app-wrapper min-h-screen relative py-0">
       {/* Enhanced Realistic Background */}
       <div className="absolute inset-0 z-0">
         {/* Main gradient layer with improved realistic colors */}
@@ -33,8 +34,6 @@ const AppWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AppWrapper;

@@ -1,25 +1,16 @@
-
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
-
 const CreditsDialog = () => {
-  return (
-    <Dialog>
+  return <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1">
           <Info className="h-4 w-4" />
           Credits
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md py-[50px] my-[10px]">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Project Credits
@@ -44,8 +35,6 @@ const CreditsDialog = () => {
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
-
 export default CreditsDialog;
