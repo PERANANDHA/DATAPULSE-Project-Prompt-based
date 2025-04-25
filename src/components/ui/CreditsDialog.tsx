@@ -9,7 +9,7 @@ import {
 } from "./dialog";
 import { Button } from "./button";
 
-export function CreditsDialog() {
+const CreditsDialog = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -43,4 +43,6 @@ export function CreditsDialog() {
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export default CreditsDialog;
