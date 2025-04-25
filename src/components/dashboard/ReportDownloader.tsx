@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -31,7 +30,6 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   const [downloadProgress, setDownloadProgress] = useState(0);
   const { toast } = useToast();
   
-  // Create memoized handlers to prevent unnecessary re-renders
   const handleDownloadReport = useCallback(async (format: 'word' | 'pdf') => {
     if (!analysis || !studentRecords.length) {
       toast({
@@ -42,10 +40,10 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       return;
     }
     
-    // Only show department dialog if we're not already downloading
     if (!isDownloading) {
       setSelectedFormat(format);
       setIsDepartmentDialogOpen(true);
+      setDownloadProgress(0);
     }
   }, [analysis, studentRecords, isDownloading, toast]);
 
@@ -64,7 +62,7 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
   }, []);
 
   const handleConfirmDepartment = useCallback(async () => {
-    if (isDownloading) return; // Prevent multiple clicks
+    if (isDownloading) return;
     
     setIsDepartmentDialogOpen(false);
     setIsDownloading(true);
@@ -73,12 +71,8 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
     
     try {
       if (analysis) {
-        // Updated to use the college logo image path
         const headerImagePath = "/lovable-uploads/e199a42b-b04e-4918-8bb4-48f3583e7928.png";
-        
-        // Get the correct calculation mode with fallback to 'sgpa'
         const mode = calculationMode || 'sgpa';
-        
         const options = {
           logoImagePath: headerImagePath,
           department: departmentCode,
@@ -96,14 +90,12 @@ const ReportDownloader: React.FC<ReportDownloaderProps> = ({ analysis, studentRe
       clearInterval(progressInterval);
       setDownloadProgress(100);
       
-      // Use a shorter timeout to improve perceived performance
       setTimeout(() => {
         toast({
           title: "Report downloaded",
           description: `Your analysis report has been downloaded as ${selectedFormat?.toUpperCase()}.`,
         });
         
-        // Reset state after download is complete
         setIsDownloading(false);
         setDownloadProgress(0);
         setSelectedFormat(null);
