@@ -11,7 +11,7 @@ const CreditsDialog = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] overflow-hidden my-0 px-[10px]">
         <DialogHeader>
-          <DialogTitle className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-blue-600 to-blue-400 text-transparent bg-clip-text animate-fade-in">
+          <DialogTitle className="font-bold text-center mb-6 bg-gradient-to-r from-blue-600 to-blue-400 text-transparent bg-clip-text animate-fade-in text-3xl">
             Project Credits
           </DialogTitle>
         </DialogHeader>
@@ -26,8 +26,8 @@ const CreditsDialog = () => {
           duration: 0.5,
           delay: 0.2
         }} className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 shadow-sm">
-            <h3 className="font-bold text-lg mb-2 text-center text-blue-700">PROJECT GUIDE</h3>
-            <p className="text-center text-gray-700 font-semibold">K KAVIARASU (CSE DEPT)</p>
+            <h3 className="font-bold text-lg mb-2 text-center text-blue-700">PROJECT MENTOR</h3>
+            <p className="text-center text-gray-700 font-semibold">K KAVIARASU (ASSISTANT PROFESSOR, CSE)</p>
           </motion.div>
           
           <motion.div initial={{
