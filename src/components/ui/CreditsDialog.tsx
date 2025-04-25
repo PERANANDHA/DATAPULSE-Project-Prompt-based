@@ -14,7 +14,7 @@ const CreditsDialog = () => {
         </DialogHeader>
         <div className="space-y-6">
           <div>
-            <h3 className="font-semibold text-lg mb-2 text-center">PROJECT GUIDE</h3>
+            <h3 className="font-semibold text-lg mb-2 text-center">PROJECT MENTOR</h3>
             <p className="text-center">K KAVIARASU (ASSISTANT PROFESSOR, CSE)</p>
           </div>
           
