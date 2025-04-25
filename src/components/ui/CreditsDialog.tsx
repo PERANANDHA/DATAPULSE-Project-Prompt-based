@@ -1,7 +1,9 @@
+
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./dialog";
 import { Button } from "./button";
 import { motion } from "framer-motion";
+
 const CreditsDialog = () => {
   return <Dialog>
       <DialogTrigger asChild>
@@ -11,57 +13,31 @@ const CreditsDialog = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] overflow-hidden my-0 px-[10px]">
         <DialogHeader>
-          <DialogTitle className="font-bold text-center mb-6 bg-gradient-to-r from-blue-600 to-blue-400 text-transparent bg-clip-text animate-fade-in text-3xl">
+          <DialogTitle className="font-bold text-center mb-6 bg-gradient-to-r from-blue-600 to-blue-400 text-transparent bg-clip-text text-3xl">
             Project Credits
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-8">
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.5,
-          delay: 0.2
-        }} className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 shadow-sm">
+          <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 shadow-sm">
             <h3 className="font-bold text-lg mb-2 text-center text-blue-700">PROJECT MENTOR</h3>
             <p className="text-center text-gray-700 font-semibold">K KAVIARASU (ASSISTANT PROFESSOR, CSE)</p>
-          </motion.div>
+          </div>
           
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.5,
-          delay: 0.4
-        }} className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 shadow-sm">
+          <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 shadow-sm">
             <h3 className="font-bold text-lg mb-2 text-center text-blue-700">PROJECT LEAD</h3>
             <p className="text-center text-gray-700 font-semibold">K L PERANANDHA (CSE BATCH: 2023-27)</p>
-          </motion.div>
+          </div>
           
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.5,
-          delay: 0.6
-        }} className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 shadow-sm">
+          <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 shadow-sm">
             <h3 className="font-bold text-lg mb-2 text-center text-blue-700">TEAM MEMBERS</h3>
             <ul className="list-none space-y-2 text-center text-gray-700 font-semibold">
-              <li className="hover:text-blue-600 transition-colors">A SHANMUGESHWARA (CSE BATCH: 2023-27)</li>
-              <li className="hover:text-blue-600 transition-colors">R P ASHWINI (CSE BATCH: 2023-27)</li>
+              <li>A SHANMUGESHWARA (CSE BATCH: 2023-27)</li>
+              <li>R P ASHWINI (CSE BATCH: 2023-27)</li>
             </ul>
-          </motion.div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>;
 };
 export default CreditsDialog;
+
