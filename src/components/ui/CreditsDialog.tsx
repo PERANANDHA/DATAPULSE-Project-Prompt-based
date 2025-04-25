@@ -14,20 +14,20 @@ const CreditsDialog = () => {
         </DialogHeader>
         <div className="space-y-6">
           <div>
-            <h3 className="font-semibold text-lg mb-2">PROJECT GUIDE</h3>
-            <p>K KAVIARASU (CSE DEPT)</p>
+            <h3 className="font-semibold text-lg mb-2 text-center">PROJECT GUIDE</h3>
+            <p className="text-center">K KAVIARASU (ASSISTANT PROFESSOR, CSE)</p>
           </div>
           
           <div>
-            <h3 className="font-semibold text-lg mb-2">PROJECT LEAD</h3>
-            <p>K L PERANANDHA (CSE BATCH: 2023-27)</p>
+            <h3 className="font-semibold text-lg mb-2 text-center">PROJECT LEAD</h3>
+            <p className="text-center">K L PERANANDHA (CSE BATCH: 2023-27)</p>
           </div>
           
           <div>
-            <h3 className="font-semibold text-lg mb-2">TEAM MEMBERS</h3>
+            <h3 className="font-semibold text-lg mb-2 text-center">TEAM MEMBERS</h3>
             <ul className="list-none space-y-2">
-              <li>A SHANMUGESHWARA (CSE BATCH: 2023-27)</li>
-              <li>R P ASHWINI (CSE BATCH: 2023-27)</li>
+              <li>      A SHANMUGESHWARA (CSE BATCH: 2023-27)</li>
+              <li>            R P ASHWINI (CSE BATCH: 2023-27)</li>
             </ul>
           </div>
         </div>
