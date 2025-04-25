@@ -1,19 +1,10 @@
-
 import React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./dialog";
 import { Button } from "./button";
-
 const CreditsDialog = () => {
-  return (
-    <Dialog>
+  return <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Credits</Button>
+        <Button variant="outline" className="group bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500 shadow-lg font-bold">Credits</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -41,8 +32,6 @@ const CreditsDialog = () => {
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
-
 export default CreditsDialog;
