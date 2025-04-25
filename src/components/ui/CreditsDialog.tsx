@@ -1,40 +1,46 @@
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Info } from "lucide-react";
-const CreditsDialog = () => {
-  return <Dialog>
+
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./dialog";
+import { Button } from "./button";
+
+export function CreditsDialog() {
+  return (
+    <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
-          <Info className="h-4 w-4" />
-          Credits
-        </Button>
+        <Button variant="outline">Credits</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md py-[50px] my-[10px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold text-center mb-4">
             Project Credits
           </DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col items-center space-y-6 py-4">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-muted-foreground mb-1">PROJECT LEAD</h3>
-            <p className="text-xl font-bold">K L PERANANDHA</p>
-            <p className="text-sm text-muted-foreground mt-1">(BATCH: 2023-27)</p>
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-semibold text-lg mb-2">PROJECT GUIDE</h3>
+            <p>K KAVIARASU (CSE DEPT)</p>
           </div>
           
-          <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+          <div>
+            <h3 className="font-semibold text-lg mb-2">PROJECT LEAD</h3>
+            <p>K L PERANANDHA (CSE BATCH: 2023-27)</p>
+          </div>
           
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-muted-foreground mb-3">TEAM MEMBERS</h3>
-            <p className="text-xl font-bold mb-1">A SHANMUGESHWARA</p>
-            <p className="text-sm text-muted-foreground">(BATCH: 2023-27)</p>
-            <div className="my-2"></div>
-            <p className="text-xl font-bold mb-1">R P ASHWINI</p>
-            <p className="text-sm text-muted-foreground">(BATCH: 2023-27)</p>
+          <div>
+            <h3 className="font-semibold text-lg mb-2">TEAM MEMBERS</h3>
+            <ul className="list-none space-y-2">
+              <li>A SHANMUGESHWARA (CSE BATCH: 2023-27)</li>
+              <li>R P ASHWINI (CSE BATCH: 2023-27)</li>
+            </ul>
           </div>
         </div>
       </DialogContent>
-    </Dialog>;
-};
-export default CreditsDialog;
+    </Dialog>
+  );
+}
