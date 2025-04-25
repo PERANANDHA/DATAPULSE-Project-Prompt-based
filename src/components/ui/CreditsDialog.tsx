@@ -8,7 +8,7 @@ const CreditsDialog = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center mb-4">
+          <DialogTitle className="bg-gradient-to-r from-blue-600 to-blue-400 ">
             Project Credits
           </DialogTitle>
         </DialogHeader>
