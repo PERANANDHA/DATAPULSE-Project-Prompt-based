@@ -85,9 +85,27 @@ const Dashboard = () => {
     setCreditsAssigned(true);
     
     console.log(`Credits assigned: ${credits.length} subjects`);
-    credits.forEach(credit => {
-      console.log(`Subject ${credit.subjectCode}: ${credit.creditValue} credits`);
-    });
+    
+    // Enhanced logging for debugging
+    console.log("======= CREDIT ASSIGNMENT DETAILS =======");
+    const withSubjectNames = credits.filter(c => c.subjectName && c.subjectName.trim() !== '');
+    const withFacultyNames = credits.filter(c => c.facultyName && c.facultyName.trim() !== '');
+    
+    console.log(`Subjects with names: ${withSubjectNames.length}/${credits.length}`);
+    console.log(`Subjects with faculty names: ${withFacultyNames.length}/${credits.length}`);
+    
+    if (withSubjectNames.length > 0) {
+      console.log("Sample subject names:", 
+        withSubjectNames.slice(0, 3).map(c => `${c.subjectCode}: "${c.subjectName}"`).join(', ')
+      );
+    }
+    
+    if (withFacultyNames.length > 0) {
+      console.log("Sample faculty names:", 
+        withFacultyNames.slice(0, 3).map(c => `${c.subjectCode}: "${c.facultyName}"`).join(', ')
+      );
+    }
+    console.log("=========================================");
     
     analyzeData(credits);
   };
@@ -107,6 +125,10 @@ const Dashboard = () => {
     try {
       const subjectCodesToProcess = credits.map(credit => credit.subjectCode);
       
+      // Enhanced logging for debugging
+      console.log("======= ANALYZE DATA =======");
+      console.log(`Processing ${studentRecords.length} student records with ${credits.length} subject credits`);
+      
       const recordsWithCredits = studentRecords.map(record => {
         const creditInfo = credits.find(c => c.subjectCode === record.SCODE);
         
@@ -119,8 +141,8 @@ const Dashboard = () => {
           return {
             ...record,
             creditValue: creditInfo.creditValue,
-            subjectName: creditInfo.subjectName,
-            facultyName: creditInfo.facultyName,
+            subjectName: creditInfo.subjectName || '',
+            facultyName: creditInfo.facultyName || '',
             isArrear: creditInfo.isArrear || false // Pass the arrear flag
           };
         }
@@ -128,9 +150,18 @@ const Dashboard = () => {
         return {
           ...record,
           creditValue: 3,
+          subjectName: '',
+          facultyName: '',
           isArrear: false
         };
       });
+      
+      // Logging for debug
+      const recordsWithSubjectNames = recordsWithCredits.filter(r => r.subjectName && r.subjectName.trim() !== '');
+      const recordsWithFacultyNames = recordsWithCredits.filter(r => r.facultyName && r.facultyName.trim() !== '');
+      
+      console.log(`Records with subject names: ${recordsWithSubjectNames.length}/${recordsWithCredits.length}`);
+      console.log(`Records with faculty names: ${recordsWithFacultyNames.length}/${recordsWithCredits.length}`);
       
       // Log how many records are marked as current semester
       const currentSemesterRecords = recordsWithCredits.filter(record => record.isArrear);
@@ -139,9 +170,13 @@ const Dashboard = () => {
       console.log(`Applied credits to ${recordsWithCredits.length} records`);
       const recordsWithPositiveCredits = recordsWithCredits.filter(r => r.creditValue && r.creditValue > 0);
       console.log(`Records with positive credits: ${recordsWithPositiveCredits.length} out of ${recordsWithCredits.length}`);
+      console.log("============================");
       
       const analysis = analyzeResults(recordsWithCredits, subjectCodesToProcess);
       setResultAnalysis(analysis);
+      
+      // Store the processed records for later use in report generation
+      setStudentRecords(recordsWithCredits);
       
       setIsAnalyzing(false);
       setResultsAvailable(true);

@@ -1,4 +1,3 @@
-
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, HeadingLevel, ImageRun } from 'docx';
 import { ResultAnalysis, StudentRecord, gradePointMap } from '../types';
 import { calculateSGPA, calculateCGPA, getCurrentSemesterSGPAData } from '../gradeUtils';
@@ -15,6 +14,34 @@ export const downloadWordReport = async (
   records: StudentRecord[],
   options: WordReportOptions
 ): Promise<void> => {
+  // Log important debug information
+  console.log("======= WORD REPORT GENERATION =======");
+  console.log(`Total records passed to report: ${records.length}`);
+  
+  // Check which records have subject/faculty names
+  const recordsWithSubjectNames = records.filter(r => r.subjectName && r.subjectName.trim() !== '');
+  const recordsWithFacultyNames = records.filter(r => r.facultyName && r.facultyName.trim() !== '');
+  
+  console.log(`Records with subject names: ${recordsWithSubjectNames.length}/${records.length}`);
+  console.log(`Records with faculty names: ${recordsWithFacultyNames.length}/${records.length}`);
+  
+  // Sample some records to verify data
+  if (recordsWithSubjectNames.length > 0) {
+    console.log("Sample records with subject names:", 
+      recordsWithSubjectNames.slice(0, 3).map(r => 
+        `${r.SCODE}: "${r.subjectName}"`
+      )
+    );
+  }
+  
+  if (recordsWithFacultyNames.length > 0) {
+    console.log("Sample records with faculty names:", 
+      recordsWithFacultyNames.slice(0, 3).map(r => 
+        `${r.SCODE}: "${r.facultyName}"`
+      )
+    );
+  }
+  
   // Check if we need to recalculate averageCGPA and averageSGPA for current semester subjects
   console.log("Report generation - checking for current semester subjects...");
   
@@ -39,6 +66,8 @@ export const downloadWordReport = async (
     ? 'sgpa-analysis-report.docx' 
     : 'cgpa-analysis-report.docx';
   
+  console.log("Word document ready for download!");
+  
   // Trigger download
   document.body.appendChild(link);
   link.click();
@@ -46,6 +75,7 @@ export const downloadWordReport = async (
   // Clean up
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+  console.log("======= END WORD REPORT GENERATION =======");
 };
 
 const createWordDocument = async (
@@ -466,6 +496,9 @@ const createWordDocument = async (
     // Check if we have subjects explicitly marked as current semester
     const explicitlyMarkedSubjects = currentSemesterRecords.filter(record => record.isArrear === true);
     
+    // Log how many explicitly marked subjects we have
+    console.log(`Found ${explicitlyMarkedSubjects.length} records explicitly marked as current semester`);
+    
     // IMPORTANT FIX: Use explicitly marked current semester subjects if available, otherwise use non-arrear
     const recordsForEndSemesterAnalysis = explicitlyMarkedSubjects.length > 0 
       ? explicitlyMarkedSubjects 
@@ -475,6 +508,9 @@ const createWordDocument = async (
     
     // Use only the selected subjects for analysis in SGPA mode and current semester in CGPA mode
     const uniqueSubjects = [...new Set(recordsForEndSemesterAnalysis.map(record => record.SCODE))];
+    
+    // Log the unique subjects we'll be processing
+    console.log(`Processing ${uniqueSubjects.length} unique subject codes for the End Semester table`);
     
     sections.push(
       new Paragraph({
@@ -492,6 +528,14 @@ const createWordDocument = async (
         ],
       }),
     );
+    
+    // For debugging, let's examine the records being used for the table
+    uniqueSubjects.forEach(subjectCode => {
+      const subjectRecords = recordsForEndSemesterAnalysis.filter(r => r.SCODE === subjectCode);
+      const subjectName = subjectRecords[0]?.subjectName || "";
+      const facultyName = subjectRecords[0]?.facultyName || "";
+      console.log(`Subject ${subjectCode}: Name="${subjectName}", Faculty="${facultyName}", Records=${subjectRecords.length}`);
+    });
     
     // Subject Analysis Table - Make it wider with increased width for subject and faculty name columns
     // Ensuring better alignment and consistent sizing

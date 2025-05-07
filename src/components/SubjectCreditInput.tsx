@@ -109,8 +109,8 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     const subject = updatedCredits.find(credit => credit.subjectCode === subjectCode);
     if (subject) {
       toast({
-        title: subject.isArrear ? "Subject added to Current Semester" : "Subject removed from Current Semester",
-        description: `Subject ${subjectCode} has been ${subject.isArrear ? "added to" : "removed from"} current semester subjects.`
+        title: subject.isArrear ? "Subject marked as Current Semester" : "Subject unmarked from Current Semester",
+        description: `Subject ${subjectCode} has been ${subject.isArrear ? "marked as" : "removed from"} current semester subjects.`
       });
       console.log(`Subject ${subjectCode} is now ${subject.isArrear ? 'marked' : 'unmarked'} as current semester`);
     }
@@ -143,6 +143,17 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
       console.log(`${currentSemesterSubjects.length} subjects marked as current semester: ${currentSemesterSubjects.map(s => s.subjectCode).join(', ')}`);
     }
     
+    // Debug log subject and faculty names
+    const withSubjectNames = credits.filter(c => c.subjectName && c.subjectName.trim() !== '');
+    if (withSubjectNames.length > 0) {
+      console.log(`Subjects with names (${withSubjectNames.length}):`, withSubjectNames.map(c => `${c.subjectCode}: "${c.subjectName}"`).join(', '));
+    }
+    
+    const withFacultyNames = credits.filter(c => c.facultyName && c.facultyName.trim() !== '');
+    if (withFacultyNames.length > 0) {
+      console.log(`Subjects with faculty names (${withFacultyNames.length}):`, withFacultyNames.map(c => `${c.subjectCode}: "${c.facultyName}"`).join(', '));
+    }
+    
     setIsValid(allValid);
     return allValid;
   };
@@ -161,9 +172,22 @@ const SubjectCreditInput: React.FC<SubjectCreditInputProps> = ({
     const creditsToSubmit = JSON.parse(JSON.stringify(subjectCredits));
     
     // Log the data being submitted
-    console.log("Submitting subject credits:", creditsToSubmit);
-    console.log("Subject names included:", creditsToSubmit.map((c: SubjectCredit) => c.subjectName).join(', '));
-    console.log("Faculty names included:", creditsToSubmit.map((c: SubjectCredit) => c.facultyName).join(', '));
+    console.log("======= SUBMITTING SUBJECT CREDITS =======");
+    console.log("Total subjects:", creditsToSubmit.length);
+    
+    // Debug log for subject and faculty names
+    const subjectNameCount = creditsToSubmit.filter((c: SubjectCredit) => c.subjectName && c.subjectName.trim() !== '').length;
+    const facultyNameCount = creditsToSubmit.filter((c: SubjectCredit) => c.facultyName && c.facultyName.trim() !== '').length;
+    
+    console.log(`Subject names included: ${subjectNameCount}/${creditsToSubmit.length}`);
+    console.log(`Faculty names included: ${facultyNameCount}/${creditsToSubmit.length}`);
+    
+    // Log each subject's data for debugging
+    creditsToSubmit.forEach((credit: SubjectCredit, index: number) => {
+      console.log(`Subject ${index + 1}: Code=${credit.subjectCode}, Credits=${credit.creditValue}, Name="${credit.subjectName || 'Not set'}", Faculty="${credit.facultyName || 'Not set'}", Current Semester=${credit.isArrear ? 'Yes' : 'No'}`);
+    });
+    
+    console.log("======= END SUBMITTING =======");
     
     onCreditAssigned(creditsToSubmit);
     
